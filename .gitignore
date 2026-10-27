@@ -1,0 +1,29 @@
+# Java
+backend/target/
+collector/target/
+*.class
+*.log
+
+# Node
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+npm-debug.log*
+
+# Entorno
+.env
+.env.*
+!.env.example
+
+# Capturas GSI
+scripts/gsi-capture/captures/
+collector/captures/
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# SO
+Thumbs.db
+.DS_Store

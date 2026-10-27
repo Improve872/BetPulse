@@ -1,0 +1,21 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: betpulse-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-betpulse}
+      POSTGRES_USER: ${POSTGRES_USER:-betpulse}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-betpulse}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - betpulse-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-betpulse} -d ${POSTGRES_DB:-betpulse}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  betpulse-postgres-data:

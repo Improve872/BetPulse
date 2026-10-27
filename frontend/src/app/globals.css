@@ -1,0 +1,124 @@
+@import "tailwindcss";
+
+@theme {
+  --color-navy: #0b1220;
+  --color-navy-soft: #101a2c;
+  --color-paper: #f4f6f8;
+  --color-surface: #ffffff;
+  --color-ink: #0f172a;
+  --color-muted: #64748b;
+  --color-line: #e2e8f0;
+  --color-accent: #f97316;
+  --color-accent-strong: #ea580c;
+  --color-live: #e11d48;
+  --color-radiant: #16a34a;
+  --color-dire: #dc2626;
+
+  --font-display: "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif;
+  --font-body: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+  --font-score: "Bahnschrift", "DIN Alternate", "Arial Narrow", sans-serif;
+  --font-mono: "Cascadia Mono", "Consolas", monospace;
+
+  --shadow-card: 0 1px 2px rgba(15, 23, 42, 0.04), 0 12px 32px -24px rgba(15, 23, 42, 0.28);
+  --shadow-card-hover: 0 2px 4px rgba(15, 23, 42, 0.05), 0 18px 38px -24px rgba(15, 23, 42, 0.32);
+}
+
+:root {
+  color-scheme: light;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  min-height: 100vh;
+  background-color: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-body);
+}
+
+::selection {
+  background: var(--color-accent);
+  color: #ffffff;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+@keyframes live-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(225, 29, 72, 0.45);
+  }
+  70% {
+    box-shadow: 0 0 0 6px rgba(225, 29, 72, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(225, 29, 72, 0);
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes modal-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.live-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  flex-shrink: 0;
+  border-radius: 9999px;
+  background: var(--color-live);
+  animation: live-pulse 2s ease-out infinite;
+}
+
+.live-dot-sm {
+  width: 5px;
+  height: 5px;
+}
+
+.modal-overlay {
+  animation: fade-in 0.15s ease-out;
+}
+
+.modal-panel {
+  animation: modal-in 0.2s ease-out;
+}
+
+.scrollbar-none {
+  scrollbar-width: none;
+}
+
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  .live-dot,
+  .modal-overlay,
+  .modal-panel {
+    animation: none;
+  }
+}
