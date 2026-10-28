@@ -142,9 +142,9 @@ Aceptación: checklist aprobado; demo de 30 min sin fallos críticos; respaldo l
 
 | Fase | Semanas | Estado |
 |---|---|---|
-| M0 | S1 | En curso (casi cerrado) |
-| M1 | S2–S3 | En curso (esqueleto + DB) |
-| M2 | S4–S5 | Pendiente |
+| M0 | S1 | En curso (falta captura GSI) |
+| M1 | S2–S3 | Cerrado funcionalmente (auth + wallet + tests) |
+| M2 | S4–S5 | En curso (M2a catálogo/SSE listo; M2b GSI pendiente) |
 | M3 | S6–S7 | Pendiente |
 | M4 | S8–S9 | Pendiente |
 | M5 | S10–S11 | Pendiente |
@@ -181,8 +181,7 @@ M0–M5 + UI básica + admin. Si falta tiempo, recortar M6 (streaming/inglés/se
 
 ## Primer paso concreto
 
-1. Instalar Docker Desktop o PostgreSQL nativo.
-2. Configurar GSI en Dota 2.
-3. Capturar payloads reales.
-4. Probar las 4 fuentes y elegir principal/respaldo.
-5. Recién ahí crear el esqueleto del repo y empezar M1.
+1. Publicar M1 + M2a para ejecutar CI.
+2. Activar `-gamestateintegration` y capturar payloads GSI reales.
+3. Probar las 4 fuentes y elegir principal/respaldo; crear fixtures reales.
+4. Cerrar M0 y M2b (ingesta GSI, snapshots/eventos y SSE por partido); en paralelo iniciar M3 pre-partida con OpenDota.

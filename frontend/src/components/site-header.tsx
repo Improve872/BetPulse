@@ -1,10 +1,12 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { GameSwitcher } from "@/components/game-switcher";
-import { CloseIcon, MenuIcon, UserIcon } from "@/components/icons";
+import { CloseIcon, MenuIcon, UserIcon, WalletIcon } from "@/components/icons";
 import { LanguageToggle } from "@/components/language-toggle";
 import { Logo } from "@/components/logo";
+import { useAuth } from "@/lib/auth";
 import { cn } from "@/lib/format";
 import { games } from "@/lib/games";
 import { useLanguage } from "@/lib/i18n";
@@ -31,7 +33,9 @@ export function SiteHeader({
   onRegister,
 }: SiteHeaderProps) {
   const { t } = useLanguage();
+  const { user, loading, logout } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
   const headerRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
@@ -75,11 +79,20 @@ export function SiteHeader({
     onRegister();
   };
 
+  const handleLogout = async () => {
+    setSigningOut(true);
+    try {
+      await logout();
+    } catch {
+      // The local session is cleared even if the server call fails.
+    } finally {
+      setSigningOut(false);
+      setMenuOpen(false);
+    }
+  };
+
   return (
-    <header
-      ref={headerRef}
-      className="sticky top-0 z-40 bg-navy text-white"
-    >
+    <header ref={headerRef} className="sticky top-0 z-40 bg-navy text-white">
       <div className="mx-auto flex h-16 max-w-[1320px] items-center gap-3 px-4 sm:px-6 lg:px-8">
         <Logo />
 
@@ -127,13 +140,22 @@ export function SiteHeader({
           >
             {t("nav.results")}
           </button>
-          <button
-            type="button"
-            onClick={handleLogin}
-            className={cn(navBase, "text-white/65 hover:bg-white/5 hover:text-white")}
-          >
-            {t("nav.myBets")}
-          </button>
+          {user ? (
+            <Link
+              href="/wallet"
+              className={cn(navBase, "text-white/65 hover:bg-white/5 hover:text-white")}
+            >
+              {t("nav.myBets")}
+            </Link>
+          ) : (
+            <button
+              type="button"
+              onClick={handleLogin}
+              className={cn(navBase, "text-white/65 hover:bg-white/5 hover:text-white")}
+            >
+              {t("nav.myBets")}
+            </button>
+          )}
         </nav>
 
         <div className="ml-auto flex items-center gap-2">
@@ -141,39 +163,71 @@ export function SiteHeader({
             <LanguageToggle />
           </div>
 
-          <button
-            type="button"
-            onClick={handleLogin}
-            className="hidden items-center gap-2 whitespace-nowrap rounded-lg px-3 py-2 text-sm font-medium text-white/75 transition hover:bg-white/10 hover:text-white sm:inline-flex"
-          >
-            <UserIcon className="h-4 w-4" />
-            {t("header.login")}
-          </button>
+          {loading ? (
+            <div className="hidden h-8 w-28 animate-pulse rounded-lg bg-white/10 sm:block" />
+          ) : user ? (
+            <>
+              <Link
+                href="/wallet"
+                className="hidden items-center gap-2 whitespace-nowrap rounded-lg px-3 py-2 text-sm font-medium text-white/75 transition hover:bg-white/10 hover:text-white sm:inline-flex"
+              >
+                <WalletIcon className="h-4 w-4" />
+                {t("header.wallet")}
+              </Link>
+              <span className="hidden max-w-[150px] truncate text-sm font-semibold text-white/85 md:block">
+                {user.displayName}
+              </span>
+              <button
+                type="button"
+                onClick={handleLogout}
+                disabled={signingOut}
+                className="hidden whitespace-nowrap rounded-lg border border-white/15 px-3 py-2 text-sm font-medium text-white/75 transition hover:border-white/30 hover:text-white disabled:cursor-not-allowed disabled:opacity-50 sm:inline-flex"
+              >
+                {t("header.logout")}
+              </button>
+              <Link
+                href="/wallet"
+                aria-label={t("header.wallet")}
+                className="grid h-9 w-9 place-items-center rounded-lg text-white/75 transition hover:bg-white/10 hover:text-white sm:hidden"
+              >
+                <WalletIcon className="h-5 w-5" />
+              </Link>
+            </>
+          ) : (
+            <>
+              <button
+                type="button"
+                onClick={handleLogin}
+                className="hidden items-center gap-2 whitespace-nowrap rounded-lg px-3 py-2 text-sm font-medium text-white/75 transition hover:bg-white/10 hover:text-white sm:inline-flex"
+              >
+                <UserIcon className="h-4 w-4" />
+                {t("header.login")}
+              </button>
 
-          <button
-            type="button"
-            onClick={handleLogin}
-            aria-label={t("header.login")}
-            className="grid h-9 w-9 place-items-center rounded-lg text-white/75 transition hover:bg-white/10 hover:text-white sm:hidden"
-          >
-            <UserIcon className="h-5 w-5" />
-          </button>
+              <button
+                type="button"
+                onClick={handleLogin}
+                aria-label={t("header.login")}
+                className="grid h-9 w-9 place-items-center rounded-lg text-white/75 transition hover:bg-white/10 hover:text-white sm:hidden"
+              >
+                <UserIcon className="h-5 w-5" />
+              </button>
 
-          <button
-            type="button"
-            onClick={handleRegister}
-            className="hidden whitespace-nowrap rounded-lg bg-accent px-3.5 py-2 text-sm font-semibold text-white shadow-[0_8px_18px_-10px_rgba(249,115,22,0.9)] transition hover:bg-accent-strong sm:inline-flex"
-          >
-            {t("header.register")}
-          </button>
+              <button
+                type="button"
+                onClick={handleRegister}
+                className="hidden whitespace-nowrap rounded-lg bg-accent px-3.5 py-2 text-sm font-semibold text-white shadow-[0_8px_18px_-10px_rgba(249,115,22,0.9)] transition hover:bg-accent-strong sm:inline-flex"
+              >
+                {t("header.register")}
+              </button>
+            </>
+          )}
 
           <button
             type="button"
             onClick={() => setMenuOpen((currentOpen) => !currentOpen)}
             aria-expanded={menuOpen}
-            aria-label={
-              menuOpen ? t("header.closeMenu") : t("header.openMenu")
-            }
+            aria-label={menuOpen ? t("header.closeMenu") : t("header.openMenu")}
             className="grid h-9 w-9 place-items-center rounded-lg text-white/75 transition hover:bg-white/10 hover:text-white xl:hidden"
           >
             {menuOpen ? (
@@ -247,33 +301,60 @@ export function SiteHeader({
                   {item.label}
                 </button>
               ))}
-              <button
-                type="button"
-                onClick={handleLogin}
-                className="rounded-lg border border-line bg-white px-3 py-2.5 text-left text-sm font-medium text-ink transition hover:bg-slate-50"
-              >
-                {t("nav.myBets")}
-              </button>
+              {user ? (
+                <Link
+                  href="/wallet"
+                  onClick={() => setMenuOpen(false)}
+                  className="rounded-lg border border-line bg-white px-3 py-2.5 text-left text-sm font-medium text-ink transition hover:bg-slate-50"
+                >
+                  {t("header.wallet")}
+                </Link>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleLogin}
+                  className="rounded-lg border border-line bg-white px-3 py-2.5 text-left text-sm font-medium text-ink transition hover:bg-slate-50"
+                >
+                  {t("nav.myBets")}
+                </button>
+              )}
             </div>
 
             <div className="flex items-center justify-between gap-3 border-t border-line pt-4">
               <div className="flex items-center gap-3">
                 <LanguageToggle variant="light" />
+                {user ? (
+                  <span className="max-w-[150px] truncate text-sm font-semibold text-ink">
+                    {user.displayName}
+                  </span>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleLogin}
+                    className="text-sm font-semibold text-accent-strong"
+                  >
+                    {t("header.login")}
+                  </button>
+                )}
+              </div>
+              {user ? (
                 <button
                   type="button"
-                  onClick={handleLogin}
-                  className="text-sm font-semibold text-accent-strong"
+                  onClick={handleLogout}
+                  disabled={signingOut}
+                  className="rounded-lg border border-line px-3.5 py-2 text-sm font-semibold text-ink transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  {t("header.login")}
+                  {t("header.logout")}
                 </button>
-              </div>
-              <button
-                type="button"
-                onClick={handleRegister}
-                className="rounded-lg bg-accent px-3.5 py-2 text-sm font-semibold text-white transition hover:bg-accent-strong sm:hidden"
-              >
-                {t("header.register")}
-              </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleRegister}
+                  className="rounded-lg bg-accent px-3.5 py-2 text-sm font-semibold text-white transition hover:bg-accent-strong sm:hidden"
+                >
+                  {t("header.register")}
+                </button>
+              )}
             </div>
           </div>
         </div>

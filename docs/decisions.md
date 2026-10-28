@@ -191,3 +191,53 @@ Formato: contexto → decisión → consecuencias. Actualizar cuando cambie una 
 **Decisión:** rediseñar el lobby con tema claro, header navy, acento naranja, ticker de partidas en vivo, filtros, cards, bet slip y modales. Dota 2 activo y CS2/LoL/Valorant como “Pronto”. Consumir OpenDota real; sin cuotas falsas. Sin franja “DEMO”: el aviso visible de saldo ficticio queda como línea legal discreta en el footer. Login/registro es UI, sin autenticación simulada.
 
 **Consecuencias:** el frontend no inventa partidas ni cuotas; los mercados muestran “Mercados no publicados” hasta que exista motor. El login se conectará a identidad en M2. Esta decisión sustituye el badge “Modo demo” de ADR-009 por el aviso legal del footer, manteniendo el requisito de aviso visible.
+
+## ADR-020 — Identidad y wallet base de M1
+
+**Estado:** aceptada (2026-10-26)
+
+**Contexto:** M1 necesita autenticación por sesión con CSRF y un ledger de doble entrada verificable antes de construir apuestas.
+
+**Decisión:**
+
+- Sesión con cookie `HttpOnly` y CSRF ligado a sesión; el SPA obtiene el token y el nombre del header en `GET /api/auth/csrf` y lo envía en `X-CSRF-TOKEN` (default de `HttpSessionCsrfTokenRepository`). Login, registro y logout también exigen CSRF.
+- Contraseñas con BCrypt costo 12. Admin sembrado por configuración (`ADMIN_EMAIL`/`ADMIN_PASSWORD`), sin registro público de admin.
+- Wallet y ledger con SQL explícito (`JdbcTemplate`), `SELECT ... FOR UPDATE` sobre el wallet e idempotencia en `idempotency_keys`.
+- PostgreSQL garantiza invariantes con triggers: cada transacción suma cero, `ledger_entries` es append-only y `ledger_accounts.balance_cents` se actualiza desde los asientos.
+- Cada usuario recibe wallet y cuentas `USER_AVAILABLE`/`USER_HELD` al registrarse.
+
+**Consecuencias:** el saldo materializado del wallet se puede conciliar contra el ledger; depósitos y retiros repetidos con la misma `Idempotency-Key` devuelven la misma respuesta. El costo BCrypt 12 hace más lentos los tests de auth, aceptable para el volumen del proyecto. La sesión vive en memoria (`HttpSession`); al reiniciar el backend se cierran las sesiones, aceptable en local-first.
+
+## ADR-021 — Catálogo OpenDota en backend + SSE de lobby (M2a)
+
+**Estado:** aceptada (2026-10-26)
+
+**Contexto:** el lobby consulta OpenDota directamente desde Next.js. M2 requiere una única fuente de catálogo, estado en vivo y un canal SSE, pero la captura GSI sigue pendiente.
+
+**Decisión:**
+
+- El backend es la única fuente del catálogo: poller de OpenDota (`/live`, `/proMatches`) con caché en memoria, timeout de 7 s, intervalo base de 30 s y backoff exponencial de 30 s a 5 min.
+- La API pública es `GET /api/catalog/lobby`; devuelve el mismo contrato que consume el frontend (`live`, `recent`, `updatedAt`, `feed`).
+- SSE público en `GET /api/live/stream`: evento `lobby` con el snapshot y `heartbeat` cada 15 s. Al conectar se envía el snapshot actual.
+- La salud del feed (`STARTING`, `LIVE`, `DEGRADED`, `STALE`, `DOWN`) viaja en la respuesta y se muestra en la UI.
+- Persistencia de snapshots/eventos, `/internal/ingest` con HMAC y proyector de estado quedan para M2b, cuando existan payloads GSI reales. El catálogo OpenDota no se persiste todavía.
+
+**Consecuencias:** el frontend deja de llamar OpenDota; puede renderizar el lobby desde el backend y actualizarlo por SSE. Si OpenDota falla, se conserva el último snapshot y la UI marca el feed degradado o atrasado. La caché se pierde al reiniciar el backend y se reconstruye con el primer poll. El poller vive en `CatalogScheduler` y se puede desactivar con `betpulse.opendota.scheduler-enabled=false`; los tests de integración lo desactivan para no depender de la red.
+
+## ADR-022 - Mercado ganador en vivo y motor de cuotas M3a
+
+**Estado:** aceptada (2026-10-26)
+
+**Contexto:** OpenDota `/proMatches` devuelve partidos terminados y `/live` no ofrece un calendario futuro; por eso el modelo pre-partida con Elo no tiene una fuente de partidos programados en M3. Para avanzar sin GSI y sin inventar datos, M3a empieza por cuotas en vivo calculadas con el marcador y el tiempo reales de OpenDota.
+
+**Decisión:**
+
+- Crear un mercado `MATCH_WINNER` (Ganador del mapa) por cada partida en vivo, con selecciones `RADIANT` y `DIRE`; se persiste en `markets`, `selections` y `odds_history` (V3).
+- Probabilidad base: `z = 0.20 * (killsRadiant - killsDire) * (0.6 + 0.4 * progreso)`, con `progreso = clamp(gameTime / 2400, 0.15, 1)`; `P(Radiant) = 1 / (1 + e^-z)`. Se limita a `[0.08, 0.92]` para que ambas cuotas decimales sean mayores que 1.
+- Cuota: `odds = 1 / (p * (1 + margen))`, margen inicial 6%, redondeada a 3 decimales; probabilidad a 8 decimales.
+- La versión del mercado sube solo cuando cambia alguna cuota redondeada; cada cambio inserta filas en `odds_history` (append-only).
+- El mercado se suspende con motivo `FEED_STALE` o `FEED_DOWN` cuando la salud del catálogo no es confiable; se reabre al recuperarse el feed. Si la partida deja de estar en vivo, el mercado pasa a `CLOSED`; todavía no hay liquidación (M5).
+- API pública: `GET /api/markets/live`; SSE: evento `markets` en `GET /api/live/stream`. El frontend muestra cuotas y estado, pero el botón de apostar sigue deshabilitado hasta M4.
+
+**Consecuencias:** M3a entrega cuotas propias, versionadas y auditables sobre datos reales sin depender de GSI. Quedan para M3b/M3c: modelo pre-partida con Elo cuando exista calendario, mercados de kills/duración/hándicap, features de oro/XP y regresión logística en vivo, y persistencia del catálogo. La fórmula es una línea base transparente, no una promesa de precisión.
+

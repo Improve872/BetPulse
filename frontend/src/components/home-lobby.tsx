@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import { BetSlip } from "@/components/bet-slip";
 import { FilterRail } from "@/components/filter-rail";
@@ -10,21 +11,27 @@ import { MatchDetailModal } from "@/components/match-detail-modal";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 import { TicketIcon, TrophyIcon } from "@/components/icons";
+import { useAuth } from "@/lib/auth";
 import { cn, formatNumber } from "@/lib/format";
 import { useLanguage } from "@/lib/i18n";
+import { useLobbyFeed } from "@/lib/live";
 import type {
   GameId,
   LobbyData,
   LobbyMatch,
   LobbyView,
 } from "@/lib/lobby";
+import { indexMarkets, type LiveMarketsData } from "@/lib/markets";
 
 type HomeLobbyProps = {
   data: LobbyData;
+  markets: LiveMarketsData;
 };
 
-export function HomeLobby({ data }: HomeLobbyProps) {
+export function HomeLobby({ data: initialData, markets: initialMarkets }: HomeLobbyProps) {
   const { t, language } = useLanguage();
+  const { user } = useAuth();
+  const { data, markets, connected } = useLobbyFeed(initialData, initialMarkets);
   const [game, setGame] = useState<GameId>("dota2");
   const [view, setView] = useState<LobbyView>("all");
   const [tournament, setTournament] = useState("all");
@@ -38,6 +45,7 @@ export function HomeLobby({ data }: HomeLobbyProps) {
   );
   const liveMatches = data.live;
   const resultCount = data.recent.length;
+  const marketByMatchId = useMemo(() => indexMarkets(markets), [markets]);
   const tournaments = useMemo(
     () =>
       Array.from(
@@ -109,6 +117,20 @@ export function HomeLobby({ data }: HomeLobbyProps) {
     { id: "upcoming", label: t("state.upcoming") },
   ];
 
+  const feedStatus = data.feed?.status ?? "STARTING";
+  const feedOk = connected && feedStatus === "LIVE";
+  const feedLabel = !connected
+    ? t("feed.reconnecting")
+    : feedStatus === "DOWN"
+      ? t("feed.down")
+      : feedStatus === "STALE"
+        ? t("feed.stale")
+        : feedStatus === "DEGRADED"
+          ? t("feed.degraded")
+          : feedStatus === "STARTING"
+            ? t("feed.starting")
+            : t("feed.live");
+
   return (
     <div className="min-h-screen bg-paper">
       <SiteHeader
@@ -149,6 +171,22 @@ export function HomeLobby({ data }: HomeLobbyProps) {
               {t("lobby.resultsCount", {
                 count: formatNumber(resultCount, language),
               })}
+            </span>
+            <span
+              className={cn(
+                "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold",
+                feedOk
+                  ? "border-live/20 bg-live/5 text-live"
+                  : "border-amber-200 bg-amber-50 text-amber-700",
+              )}
+            >
+              <span
+                className={cn(
+                  "h-1.5 w-1.5 rounded-full",
+                  feedOk ? "bg-live" : "bg-amber-500",
+                )}
+              />
+              {feedLabel}
             </span>
           </div>
         </div>
@@ -228,6 +266,7 @@ export function HomeLobby({ data }: HomeLobbyProps) {
                 <MatchCard
                   key={match.id}
                   match={match}
+                  market={marketByMatchId.get(match.id)}
                   onOpen={handleOpenMatch}
                 />
               ))}
@@ -275,13 +314,22 @@ export function HomeLobby({ data }: HomeLobbyProps) {
               {t("bet.emptyBody")}
             </p>
           </div>
-          <button
-            type="button"
-            onClick={() => openLogin("login")}
-            className="shrink-0 rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white transition hover:bg-accent-strong"
-          >
-            {t("bet.login")}
-          </button>
+          {user ? (
+            <Link
+              href="/wallet"
+              className="shrink-0 rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white transition hover:bg-accent-strong"
+            >
+              {t("header.wallet")}
+            </Link>
+          ) : (
+            <button
+              type="button"
+              onClick={() => openLogin("login")}
+              className="shrink-0 rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white transition hover:bg-accent-strong"
+            >
+              {t("bet.login")}
+            </button>
+          )}
         </div>
       </div>
 
@@ -297,6 +345,7 @@ export function HomeLobby({ data }: HomeLobbyProps) {
       {selectedMatch ? (
         <MatchDetailModal
           match={selectedMatch}
+          market={marketByMatchId.get(selectedMatch.id)}
           onClose={() => setSelectedId(null)}
         />
       ) : null}

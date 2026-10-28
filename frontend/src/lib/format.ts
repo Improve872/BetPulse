@@ -52,6 +52,33 @@ export function formatStartTime(
   );
 }
 
+export function formatMoney(cents: number, language: "es" | "en"): string {
+  const value = new Intl.NumberFormat(
+    language === "es" ? "es-PE" : "en-US",
+    {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    },
+  ).format(cents / 100);
+  return `S/ ${normalizeIntlSpacing(value)}`;
+}
+
+export function formatDateTime(iso: string, language: "es" | "en"): string {
+  return normalizeIntlSpacing(
+    new Intl.DateTimeFormat(language === "es" ? "es-PE" : "en-US", {
+      day: "2-digit",
+      month: "short",
+      hour: "2-digit",
+      minute: "2-digit",
+      timeZone: "America/Lima",
+    }).format(new Date(iso)),
+  );
+}
+
+export function formatOdds(value: number): string {
+  return Number.isFinite(value) ? value.toFixed(2) : "—";
+}
+
 export function getInitials(name: string): string {
   const words = name.trim().split(/\s+/).filter(Boolean);
   if (words.length === 0) {

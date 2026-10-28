@@ -6,7 +6,7 @@ Plataforma web de apuestas simuladas de esports, con Dota 2 como primer juego. D
 
 ## Estado
 
-M0 en curso. Base de M1 creada: backend, frontend, colector e infraestructura. Lobby rediseñado y verificado; build/lint verdes. Ver [`docs/STATUS.md`](docs/STATUS.md).
+M2a cerrado: catálogo OpenDota en backend con `GET /api/catalog/lobby`, SSE de lobby en `GET /api/live/stream` y frontend con badge de salud del feed. M1 sigue funcional (auth + wallet + tests). M0 queda abierto solo por la captura GSI real; M2b espera fixtures. Ver [`docs/STATUS.md`](docs/STATUS.md).
 
 ## Stack
 
@@ -21,10 +21,13 @@ M0 en curso. Base de M1 creada: backend, frontend, colector e infraestructura. L
 
 - Lobby responsive tipo casa de apuestas: header navy, acento naranja, ticker de partidas, filtros, cards, bet slip y modales.
 - Dota 2 activo; CS2, League of Legends y VALORANT marcados como “Pronto”.
-- Catálogo con datos reales de OpenDota (`/live` y `/proMatches`); sin fixtures ni cuotas inventadas.
-- Login/registro es solo UI: no hay autenticación simulada. Los mercados muestran “Mercados no publicados” hasta conectar el motor de cuotas.
-- Aviso de saldo ficticio en el footer; sin franja “DEMO”.
-- Verificación: 1440, 1024 y 390 px; filtros, modales y ES/EN probados.
+- Catálogo con datos reales de OpenDota (`/live` y `/proMatches`) servido por el backend; sin fixtures ni cuotas inventadas.
+- Lobby actualizado por SSE (`/api/live/stream`) con badge de salud del feed; reconexión automática de `EventSource`.
+- Login/registro real contra la API, con sesión, CSRF y header autenticado.
+- Página `/wallet` con saldo disponible/retenido, depósitos y retiros demo, historial e idempotencia.
+- Los mercados muestran “Mercados no publicados” hasta conectar el motor de cuotas.
+- Aviso de saldo ficticio en el footer y en la billetera; sin franja “DEMO”.
+- Verificación: 1440, 1024 y 390 px; filtros, modales, ES/EN y flujo de billetera probados.
 
 ## Documentación
 
@@ -60,6 +63,8 @@ cd frontend && npm run dev
 cd collector && ./mvnw package && java -jar target/collector-0.1.0-SNAPSHOT.jar
 ```
 
+OpenDota funciona sin API key; `OPENDOTA_API_KEY` es opcional para subir el rate limit. El frontend usa `BACKEND_URL` (por defecto `http://127.0.0.1:8081`) para el fetch server-side del catálogo.
+
 ## Próximo paso
 
-M0: instalar Docker/PostgreSQL, activar `-gamestateintegration`, capturar payloads reales y probar fuentes de demo. Cerrar M1 con el smoke test contra PostgreSQL; luego iniciar M2: identidad y wallet.
+M2b cuando existan payloads GSI reales: `/internal/ingest`, snapshots/eventos y proyector. En paralelo se puede iniciar M3 (mercados y cuotas pre-partida) con el catálogo OpenDota. Antes: publicar M1 + M2a para ejecutar CI. Ver [`docs/STATUS.md`](docs/STATUS.md).

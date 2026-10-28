@@ -1,6 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import { ArrowRightIcon, LockIcon, TicketIcon } from "@/components/icons";
+import { useAuth } from "@/lib/auth";
 import { useLanguage } from "@/lib/i18n";
 
 type BetSlipProps = {
@@ -10,6 +12,7 @@ type BetSlipProps = {
 
 export function BetSlip({ onLogin, onExplore }: BetSlipProps) {
   const { t } = useLanguage();
+  const { user } = useAuth();
 
   return (
     <aside className="hidden lg:block">
@@ -42,13 +45,23 @@ export function BetSlip({ onLogin, onExplore }: BetSlipProps) {
             {t("bet.explore")}
             <ArrowRightIcon className="h-4 w-4" />
           </button>
-          <button
-            type="button"
-            onClick={onLogin}
-            className="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-lg border border-line px-4 py-2.5 text-sm font-semibold text-ink transition hover:bg-slate-50"
-          >
-            {t("bet.login")}
-          </button>
+          {user ? (
+            <Link
+              href="/wallet"
+              className="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-lg border border-line px-4 py-2.5 text-sm font-semibold text-ink transition hover:bg-slate-50"
+            >
+              {t("header.wallet")}
+              <ArrowRightIcon className="h-4 w-4" />
+            </Link>
+          ) : (
+            <button
+              type="button"
+              onClick={onLogin}
+              className="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-lg border border-line px-4 py-2.5 text-sm font-semibold text-ink transition hover:bg-slate-50"
+            >
+              {t("bet.login")}
+            </button>
+          )}
         </div>
 
         <div className="border-t border-line bg-slate-50 px-4 py-3">

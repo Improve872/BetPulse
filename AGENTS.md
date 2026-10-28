@@ -171,4 +171,4 @@ Ver `docs/STATUS.md`.
 
 ## Próximo paso
 
-M0: instalar Docker/decidir PostgreSQL, configurar GSI, capturar payloads reales y probar fuentes de demo. Luego, M1: crear el esqueleto del repo.
+M2a cerrado (catálogo OpenDota backend + SSE + frontend); M1 funcional; M0 pendiente solo por la captura GSI real. M2b espera fixtures; M3 pre-partida puede avanzar con OpenDota. Ver `docs/STATUS.md`.

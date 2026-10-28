@@ -33,4 +33,18 @@ export type LobbyData = {
   live: LobbyMatch[];
   recent: LobbyMatch[];
   updatedAt: string;
+  feed?: FeedHealth;
+};
+
+export type FeedStatus = "STARTING" | "LIVE" | "DEGRADED" | "STALE" | "DOWN";
+
+export type FeedHealth = {
+  source: string;
+  status: FeedStatus;
+  lastSuccessAt?: string;
+  lastAttemptAt?: string;
+  nextAttemptAt?: string;
+  consecutiveFailures: number;
+  lastError?: string;
+  stale: boolean;
 };

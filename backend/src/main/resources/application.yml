@@ -19,8 +19,36 @@ spring:
 server:
   port: ${SERVER_PORT:8081}
   forward-headers-strategy: framework
+  servlet:
+    session:
+      timeout: 8h
+      cookie:
+        name: BETPULSE_SESSION
+        http-only: true
+        same-site: lax
+        secure: ${SESSION_COOKIE_SECURE:false}
 management:
   endpoints:
     web:
       exposure:
         include: health,info
+betpulse:
+  admin:
+    email: ${ADMIN_EMAIL:admin@betpulse.local}
+    password: ${ADMIN_PASSWORD:Admin123!}
+    display-name: ${ADMIN_DISPLAY_NAME:Administrador}
+  opendota:
+    base-url: ${OPENDOTA_BASE_URL:https://api.opendota.com/api}
+    api-key: ${OPENDOTA_API_KEY:}
+    scheduler-enabled: ${OPENDOTA_SCHEDULER_ENABLED:true}
+    request-timeout: 7s
+    poll-interval: 30s
+    backoff-base: 30s
+    backoff-max: 5m
+    stale-after: 3m
+  odds:
+    margin: 0.06
+    kill-weight: 0.20
+    reference-game-seconds: 2400
+    min-probability: 0.08
+    max-probability: 0.92

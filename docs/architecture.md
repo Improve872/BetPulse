@@ -50,8 +50,8 @@ En desarrollo, Next.js hace proxy de `/api` al backend para evitar CORS y compar
 | Módulo | Responsabilidad |
 |---|---|
 | `identity` | Registro, login, sesiones, roles |
-| `catalog` | Partidas, equipos, torneos, ratings |
-| `live` | Ingesta GSI/OpenDota, estado del partido, salud del feed |
+| `catalog` | Catálogo OpenDota, poller, caché y contrato del lobby |
+| `live` | SSE de lobby, salud del feed; ingesta GSI pendiente (M2b) |
 | `markets` | Mercados, selecciones, versiones, suspensiones |
 | `odds` | Modelos, probabilidad, margen, historial |
 | `betting` | Bet slip, validación, holds, límites |
@@ -65,22 +65,25 @@ En desarrollo, Next.js hace proxy de `/api` al backend para evitar CORS y compar
 ## Frontend actual
 
 - `app/page.tsx` es un server component dinámico; obtiene el lobby con `getLobbyData()`.
-- `lib/catalog.ts` consulta OpenDota `/live` y `/proMatches` con timeout de 7 s y revalidate de 30 s. Es una implementación temporal de UI; en M2 el backend será la única fuente.
-- `components/home-lobby.tsx` orquesta filtros, lista, bet slip, modales y navegación.
+- `lib/catalog.ts` consulta el backend en `BACKEND_URL` (por defecto `http://127.0.0.1:8081`) vía `GET /api/catalog/lobby`, con timeout de 7 s y `cache: "no-store"`. Si el backend no responde, devuelve lobby vacío con `feed.status=DOWN`.
+- `lib/live.ts` abre `EventSource("/api/live/stream")`, escucha `lobby` y `heartbeat`, y expone `data` + `connected` a `HomeLobby`.
+- `components/home-lobby.tsx` usa el snapshot inicial del servidor y lo reemplaza con cada evento SSE; muestra badge de feed (`feed.live`, `degraded`, `stale`, `reconnecting`, `down`, `starting`) en ES/EN, y orquesta filtros, lista, bet slip, modales y navegación.
 - Componentes: `site-header`, `live-ticker`, `filter-rail`, `match-card`, `bet-slip`, `login-modal`, `match-detail-modal`, `site-footer`, `game-switcher`, `modal`.
 - Tokens en `app/globals.css`: navy `#0B1220`, naranja `#F97316`, fondo `#F4F6F8`; tipografía local.
-- Sin auth ni cuotas simuladas: el login muestra un aviso de módulo pendiente y las cards indican “Mercados no publicados”.
+- Auth y wallet ya implementados: modal de login/registro contra la API, sesión con cookie HttpOnly + CSRF, header autenticado y página `/wallet` con depósitos/retiros demo e historial.
+- Sin cuotas ni apuestas reales todavía: las cards indican “Mercados no publicados” y el bet slip sigue siendo UI.
 
 ## Flujo de datos
 
-1. Dota 2 en modo espectador envía GSI al colector local.
+1. Dota 2 en modo espectador envía GSI al colector local (M2b, pendiente de fixtures).
 2. El colector valida token, normaliza, batchea y envía al backend con HMAC.
 3. El backend guarda snapshot/eventos, actualiza el estado del partido y detecta eventos relevantes.
-4. El motor de cuotas recalcula mercados afectados, aplica margen, versiona y publica por SSE.
-5. OpenDota se consulta periódicamente para catálogo, partidos secundarios, pre-partida y verificación.
-6. El usuario apuesta: el backend valida mercado, versión, cuota, límites y saldo; retiene fondos y registra la apuesta.
-7. Al terminar el partido, el settlement liquida de forma idempotente, paga al ganador y audita.
-8. Depósitos/retiros simulados pasan por la abstracción de pagos y el ledger.
+4. El poller OpenDota refresca el catálogo cada 30 s; `CatalogService` publica un evento interno y `LiveFeedService` lo difunde por SSE (`lobby`).
+5. El motor de cuotas recalculará mercados afectados, aplicará margen, versionará y publicará por SSE (M3).
+6. OpenDota se consulta periódicamente para catálogo, partidos secundarios, pre-partida y verificación.
+7. El usuario apuesta: el backend valida mercado, versión, cuota, límites y saldo; retiene fondos y registra la apuesta (M4).
+8. Al terminar el partido, el settlement liquida de forma idempotente, paga al ganador y audita (M5).
+9. Depósitos/retiros simulados pasan por la abstracción de pagos y el ledger.
 
 ## Fuente híbrida
 
@@ -99,12 +102,13 @@ Reglas:
 - La liquidación del partido GSI se verifica con OpenDota cuando exista `match_id`.
 - OpenDota `/live` puede informar `is_watch_eligible` y `delay`; usarlos para decidir qué partido espectar.
 
-> Implementación temporal: el lobby actual hace fetch server-side a OpenDota desde Next.js para validar la UI. En M2 el backend será la única fuente de catálogo y el frontend consumirá `/api`; no se usarán cuotas ni datos simulados.
+> Implementación M2a: el backend es la única fuente del catálogo. El poller (`CatalogScheduler` + `CatalogService`) mantiene un snapshot en memoria; `GET /api/catalog/lobby` lo expone y `GET /api/live/stream` lo difunde por SSE. El frontend ya no llama OpenDota. La caché se pierde al reiniciar el backend y se reconstruye con el primer poll. No se usan cuotas ni datos simulados.
 
 ## Modelo de datos (alto nivel)
 
-- `users`, `roles`, `sessions`
+- `users`, `roles`
 - `wallets`, `ledger_accounts`, `ledger_transactions`, `ledger_entries`
+- `idempotency_keys`
 - `matches`, `tournaments`, `teams`, `players`, `match_participants`
 - `game_snapshots`, `game_events`, `match_state`
 - `markets`, `selections`, `odds_history`, `market_suspensions`
@@ -112,6 +116,8 @@ Reglas:
 - `settlements`, `payouts`
 - `deposits`, `withdrawals`, `payment_intents`
 - `idempotency_keys`, `audit_logs`, `outbox_events`
+
+> Sesión de M1: `HttpSession` en memoria con cookie `BETPULSE_SESSION`; no hay tabla `sessions`. Al reiniciar el backend se pierden las sesiones, aceptable en local-first. Si la demo lo requiere, se migrará a Spring Session JDBC.
 - `stream_sources`, `model_versions`, `feature_snapshots`
 - `collector_sessions`, `ingestion_health`
 
@@ -128,8 +134,9 @@ Constraints clave:
 ## API y eventos
 
 - REST para auth, catálogo, mercados, apuestas, wallet, pagos y admin.
-- SSE para marcador, cuotas, suspensiones y estado de apuestas.
-- Endpoint interno `/internal/ingest` con HMAC para el colector.
+- Catálogo actual: `GET /api/catalog/lobby` (público) y `GET /api/live/health`.
+- SSE actual: `GET /api/live/stream` con eventos `lobby` y `heartbeat`; en M3 se sumarán cuotas y suspensiones.
+- Endpoint interno `/internal/ingest` con HMAC para el colector (M2b).
 - `Idempotency-Key` en apuestas, depósitos y retiros.
 - OpenAPI como contrato.
 - Errores estandarizados sin filtrar detalles internos.
@@ -149,7 +156,17 @@ Constraints clave:
 }
 ```
 
-### Mensaje SSE
+### Mensaje SSE actual (M2a)
+
+```text
+event: lobby
+data: {"live":[...],"recent":[...],"updatedAt":"...","feed":{"source":"OPENDOTA","status":"LIVE",...}}
+
+event: heartbeat
+data: {"at":"2026-10-27T03:49:26Z"}
+```
+
+### Mensaje SSE futuro (cuotas)
 
 ```json
 {

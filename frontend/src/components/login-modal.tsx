@@ -9,6 +9,8 @@ import {
 } from "@/components/icons";
 import { Logo } from "@/components/logo";
 import { Modal } from "@/components/modal";
+import { ApiError } from "@/lib/api";
+import { useAuth } from "@/lib/auth";
 import { cn } from "@/lib/format";
 import { useLanguage } from "@/lib/i18n";
 
@@ -28,16 +30,53 @@ export function LoginModal({
   onClose,
 }: LoginModalProps) {
   const { t } = useLanguage();
+  const { login, register } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
-  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    setMessage("");
+    setError("");
+    setNotice("");
   }, [mode]);
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setMessage(t("login.pending"));
+    setError("");
+    setNotice("");
+    setSubmitting(true);
+
+    const form = new FormData(event.currentTarget);
+    const email = String(form.get("email") ?? "").trim();
+    const password = String(form.get("password") ?? "");
+    const isRegister = mode === "register";
+
+    try {
+      if (isRegister) {
+        await register({
+          displayName: String(form.get("name") ?? "").trim(),
+          email,
+          password,
+          acceptsTerms: form.get("terms") === "on",
+          isAdult: form.get("adult") === "on",
+        });
+      } else {
+        await login(email, password);
+      }
+      onClose();
+    } catch (caught) {
+      if (caught instanceof ApiError) {
+        const fieldError = caught.fieldErrors
+          ? Object.values(caught.fieldErrors)[0]
+          : undefined;
+        setError(fieldError ?? caught.message);
+      } else {
+        setError(t("login.errorGeneric"));
+      }
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const isRegister = mode === "register";
@@ -113,6 +152,7 @@ export function LoginModal({
                 name="name"
                 autoComplete="name"
                 required
+                maxLength={80}
                 className="mt-1.5 w-full rounded-lg border border-line bg-white px-3 py-2.5 text-sm text-ink outline-none transition placeholder:text-muted/60 focus:border-accent focus:ring-2 focus:ring-accent/15"
                 placeholder="Alex"
               />
@@ -128,6 +168,7 @@ export function LoginModal({
               name="email"
               autoComplete="email"
               required
+              maxLength={255}
               data-autofocus
               className="mt-1.5 w-full rounded-lg border border-line bg-white px-3 py-2.5 text-sm text-ink outline-none transition placeholder:text-muted/60 focus:border-accent focus:ring-2 focus:ring-accent/15"
               placeholder="tu@correo.com"
@@ -144,7 +185,8 @@ export function LoginModal({
                 name="password"
                 autoComplete={isRegister ? "new-password" : "current-password"}
                 required
-                minLength={8}
+                minLength={isRegister ? 8 : undefined}
+                maxLength={72}
                 className="w-full rounded-lg border border-line bg-white px-3 py-2.5 pr-11 text-sm text-ink outline-none transition placeholder:text-muted/60 focus:border-accent focus:ring-2 focus:ring-accent/15"
                 placeholder="••••••••"
               />
@@ -168,19 +210,31 @@ export function LoginModal({
           </label>
 
           {isRegister ? (
-            <label className="flex items-start gap-2.5 text-[11px] leading-5 text-muted">
-              <input
-                type="checkbox"
-                required
-                className="mt-0.5 h-3.5 w-3.5 rounded border-line accent-[var(--color-accent)]"
-              />
-              <span>{t("login.terms")}</span>
-            </label>
+            <div className="space-y-2.5">
+              <label className="flex items-start gap-2.5 text-[11px] leading-5 text-muted">
+                <input
+                  type="checkbox"
+                  name="terms"
+                  required
+                  className="mt-0.5 h-3.5 w-3.5 rounded border-line accent-[var(--color-accent)]"
+                />
+                <span>{t("login.terms")}</span>
+              </label>
+              <label className="flex items-start gap-2.5 text-[11px] leading-5 text-muted">
+                <input
+                  type="checkbox"
+                  name="adult"
+                  required
+                  className="mt-0.5 h-3.5 w-3.5 rounded border-line accent-[var(--color-accent)]"
+                />
+                <span>{t("login.adult")}</span>
+              </label>
+            </div>
           ) : (
             <div className="flex justify-end">
               <button
                 type="button"
-                onClick={() => setMessage(t("login.recoveryPending"))}
+                onClick={() => setNotice(t("login.recoveryPending"))}
                 className="text-[11px] font-semibold text-accent-strong transition hover:text-accent"
               >
                 {t("login.forgot")}
@@ -190,19 +244,34 @@ export function LoginModal({
 
           <button
             type="submit"
-            className="w-full rounded-lg bg-accent px-4 py-3 text-sm font-semibold text-white shadow-[0_10px_22px_-14px_rgba(249,115,22,0.9)] transition hover:bg-accent-strong"
+            disabled={submitting}
+            className="w-full rounded-lg bg-accent px-4 py-3 text-sm font-semibold text-white shadow-[0_10px_22px_-14px_rgba(249,115,22,0.9)] transition hover:bg-accent-strong disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {isRegister ? t("login.submitRegister") : t("login.submitLogin")}
+            {submitting
+              ? t("login.loading")
+              : isRegister
+                ? t("login.submitRegister")
+                : t("login.submitLogin")}
           </button>
         </form>
 
-        {message ? (
+        {error ? (
+          <p
+            role="alert"
+            className="mt-3 flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 p-3 text-[11px] leading-5 text-red-700"
+          >
+            <InfoIcon className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+            {error}
+          </p>
+        ) : null}
+
+        {notice ? (
           <p
             aria-live="polite"
             className="mt-3 flex items-start gap-2 rounded-lg border border-accent/20 bg-accent/5 p-3 text-[11px] leading-5 text-accent-strong"
           >
             <InfoIcon className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-            {message}
+            {notice}
           </p>
         ) : null}
 
