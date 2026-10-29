@@ -23,14 +23,13 @@ Cerrados: M1 (identidad y wallet), M2a (catálogo OpenDota + SSE), M3a y M3b (cu
 - Admin sembrado por configuración; en desarrollo `admin@betpulse.local` / `Admin123!`.
 - Colector Javalin compila y expone `/health` y `/gsi`.
 - **No hay liquidación**: las apuestas quedan `PLACED` y el saldo retenido no se paga ni se libera.
-- CI en `.github/workflows/ci.yml`; lockfile del frontend corregido, falta publicar para confirmar verde.
+- CI verde en `60ea4c3`: backend (49 tests con Testcontainers), colector y frontend (lint + build).
 
 ## Próxima acción
 
-1. Publicar el commit `23e6a61` (M3b + M4 + corrección de lockfile) y confirmar CI verde.
-2. Implementar M5: liquidación exactly-once, payout/void y actualización de wallet.
-3. Añadir el panel admin de mercados (suspender/reanudar/override).
-4. M3c cuando exista una fuente pre-partida fiable.
+1. Implementar M5: liquidación exactly-once, payout/void y actualización de wallet.
+2. Añadir el panel admin de mercados (suspender/reanudar/override).
+3. M3c cuando exista una fuente pre-partida fiable.
 
 ## Pendiente de entorno (no bloquea M5)
 
@@ -62,6 +61,7 @@ Resultados 2026-10-28:
 - Backend: 49/49 tests verdes (Bet 9, CatalogController 3, CatalogService 5, Auth 7, MarketService 8, MarketController 1, OddsEngine 7, Wallet 8, Health 1).
 - Frontend: lint y build verdes; rutas `/`, `/bets` y `/wallet` generadas.
 - Flyway: V1–V4 aplicadas en Testcontainers.
+- CI (2026-10-29, `60ea4c3`): backend, colector y frontend en verde.
 
 Verificación funcional anterior (2026-10-27): 24 mercados abiertos (4 por partida en 6 partidas en vivo); E2E registro → depósito S/ 100 → apuesta S/ 10 → `PLACED` con disponible S/ 90 y retenido S/ 10.
 
