@@ -6,7 +6,7 @@ Plataforma web de apuestas simuladas de esports, con Dota 2 como primer juego. D
 
 ## Estado
 
-M3a, M3b y M4 cerrados funcionalmente (pendiente CI): cuatro mercados en vivo con cuotas propias y apuestas simples con retención de saldo. M1 y M2a siguen funcionales. M0 queda abierto solo por la captura GSI real; M2b está diferido hasta tener fixtures. La liquidación (M5) sigue pendiente. Ver [`docs/STATUS.md`](docs/STATUS.md).
+El estado vigente (hito actual, bloqueos y próxima acción) está en [`docs/STATUS.md`](docs/STATUS.md). Los hitos cerrados, en [`docs/milestones/`](docs/milestones/).
 
 ## Stack
 
@@ -40,6 +40,7 @@ M3a, M3b y M4 cerrados funcionalmente (pendiente CI): cuatro mercados en vivo co
 - [`docs/domain.md`](docs/domain.md) — dominio, mercados y reglas de liquidación.
 - [`docs/security.md`](docs/security.md) — plan de seguridad.
 - [`docs/demo.md`](docs/demo.md) — guion y pruebas de demo.
+- [`docs/milestones/`](docs/milestones/) — histórico de hitos cerrados.
 
 ## Requisitos
 
@@ -65,7 +66,3 @@ cd collector && ./mvnw package && java -jar target/collector-0.1.0-SNAPSHOT.jar
 ```
 
 OpenDota funciona sin API key; `OPENDOTA_API_KEY` es opcional para subir el rate limit. El frontend usa `BACKEND_URL` (por defecto `http://127.0.0.1:8081`) para el fetch server-side del catálogo.
-
-## Próximo paso
-
-Publicar M3b + M4 y confirmar CI verde. Después, implementar M5 (liquidación exactly-once y payout/void). M2b queda diferido hasta disponer de payloads GSI reales. Ver [`docs/STATUS.md`](docs/STATUS.md).

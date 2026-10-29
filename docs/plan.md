@@ -140,17 +140,19 @@ Aceptación: checklist aprobado; demo de 30 min sin fallos críticos; respaldo l
 
 ## Programación referencial
 
-| Fase | Semanas | Estado |
-|---|---|---|
-| M0 | S1 | En curso (falta captura GSI) |
-| M1 | S2–S3 | Cerrado funcionalmente (auth + wallet + tests) |
-| M2 | S4–S5 | M2a cerrado; M2b diferido hasta tener fixtures GSI |
-| M3 | S6–S7 | M3a/M3b cerrados funcionalmente; M3c, admin y mercados GSI pendientes |
-| M4 | S8–S9 | Cerrado funcionalmente (apuestas + holds; falta CI) |
-| M5 | S10–S11 | Pendiente |
-| M6 | S12–S13 | Pendiente |
-| M7 | S14–S15 | Pendiente |
-| Buffer | S16 | Pendiente |
+El estado de avance vive solo en `docs/STATUS.md`. Aquí únicamente el calendario previsto.
+
+| Fase | Semanas |
+|---|---|
+| M0 | S1 |
+| M1 | S2–S3 |
+| M2 | S4–S5 |
+| M3 | S6–S7 |
+| M4 | S8–S9 |
+| M5 | S10–S11 |
+| M6 | S12–S13 |
+| M7 | S14–S15 |
+| Buffer | S16 |
 
 Las semanas son relativas porque la fecha de inicio está por definir. Con 16 GB de RAM y Docker solo para PostgreSQL, el desarrollo es viable.
 
@@ -179,10 +181,6 @@ M0–M5 + UI básica + admin. Si falta tiempo, recortar M6 (streaming/inglés/se
 | Concurrencia en wallet | Locks, constraints, tests de doble gasto |
 | Tiempo | Buffer de 2 semanas; priorizar M0–M5 |
 
-## Primer paso concreto
+## Próximo paso
 
-1. Publicar M3b + M4 y el lockfile; confirmar CI verde.
-2. Implementar M5: liquidación exactly-once, payout/void y actualización de wallet.
-3. Añadir el panel admin de mercados y M3c cuando exista una fuente pre-partida.
-4. Cuando sea posible, activar `-gamestateintegration` y capturar payloads GSI reales.
-5. Probar las 4 fuentes y elegir principal/respaldo; crear fixtures reales para cerrar M0 y M2b.
+Ver `docs/STATUS.md` → "Próxima acción". No duplicar el estado aquí.

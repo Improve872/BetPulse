@@ -2,6 +2,16 @@
 
 Formato: contexto → decisión → consecuencias. Actualizar cuando cambie una decisión.
 
+## Índice
+
+- **Infra:** 001 local-first · 014 colector separado · 015 Docker solo PostgreSQL · 016 sin LAN
+- **Stack:** 002 Java + Spring Boot · 003 Next.js · 004 PostgreSQL + céntimos · 005 SSE · 013 monolito modular
+- **Producto:** 007 fuente híbrida · 008 motor de cuotas · 009 PEN ficticio · 010 ES/EN · 011 streaming · 012 sin parlays · 019 lobby
+- **Seguridad y datos:** 006 sesión + CSRF · 017 fixtures reales sin simulación
+- **Entorno:** 018 backend en 8081
+- **Hitos:** 020 M1 identidad/wallet · 021 M2a catálogo/SSE · 022 M3a mercado ganador · 023 M2b diferido · 024 M3b mercados · 025 M4 apuestas
+- **Proceso:** 026 estado en `STATUS.md` y una sesión por hito
+
 ## ADR-001 — Local-first en una sola PC
 
 **Estado:** aceptada (2026-10-25)
@@ -289,4 +299,21 @@ Formato: contexto → decisión → consecuencias. Actualizar cuando cambie una 
 - API autenticada: `POST /api/bets`, `GET /api/bets` y `GET /api/bets/{id}`. El historial siempre filtra por el usuario de la sesión.
 
 **Consecuencias:** el flujo monetario de apuesta queda cerrado hasta el hold. El replay idempotente devuelve la misma apuesta y no vuelve a retener saldo. Las apuestas quedan abiertas hasta M5.
+
+## ADR-026 — Estado en `STATUS.md` y una sesión por hito
+
+**Estado:** aceptada (2026-10-28)
+
+**Contexto:** el proyecto se desarrolla con agentes que reciben `AGENTS.md` en cada turno y reenvían todo el historial de la conversación. Tener el estado repetido en `AGENTS.md`, `README.md`, `plan.md` y `STATUS.md` produjo ya descripciones divergentes del mismo hito. Un hilo largo degrada el contexto: el agente arrastra afirmaciones obsoletas que compiten con las vigentes.
+
+**Decisión:**
+
+- `docs/STATUS.md` es la única fuente de verdad del estado, escrita en presente: hito actual, estado del sistema, bloqueos, próxima acción.
+- `AGENTS.md` solo contiene guardarraíles que deben sobrevivir a cada turno (proyecto, no negociables, invariantes, comandos, flujo) y punteros. No repite alcance, stack, arquitectura ni estado.
+- El histórico de hitos cerrados vive en `docs/milestones/` y no se lee al inicio de una sesión.
+- `docs/decisions.md` se consulta por ADR concreto, no completo.
+- Una sesión de agente por hito. Al cerrar: tests verdes → commit → actualizar `STATUS.md` → cerrar la sesión.
+- Un hito bloqueado por el entorno se documenta en una línea con su causa y lo que lo desbloquearía, sin entrar en "Próxima acción" salvo que sea accionable de inmediato.
+
+**Consecuencias:** el arranque de una sesión cuesta un documento en lugar de seis. El estado no puede divergir porque solo existe en un sitio. Se pierde la comodidad del historial de chat, que se sustituye por `STATUS.md` y `docs/milestones/`. La disciplina de commit antes de cerrar pasa a ser parte de la Definition of Done.
 
