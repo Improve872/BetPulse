@@ -14,12 +14,18 @@ import {
 } from "@/lib/format";
 import { useLanguage } from "@/lib/i18n";
 import type { LobbyMatch, LobbyTeam } from "@/lib/lobby";
-import type { Market } from "@/lib/markets";
+import {
+  marketTitle,
+  selectionLabel,
+  type Market,
+  type Selection,
+} from "@/lib/markets";
 
 type MatchDetailModalProps = {
   match: LobbyMatch;
-  market?: Market;
+  markets?: Market[];
   onClose: () => void;
+  onSelect: (match: LobbyMatch, market: Market, selection: Selection) => void;
 };
 
 function TeamPanel({
@@ -89,8 +95,9 @@ function Stat({ label, value }: { label: string; value: string }) {
 
 export function MatchDetailModal({
   match,
-  market,
+  markets = [],
   onClose,
+  onSelect,
 }: MatchDetailModalProps) {
   const { t, language } = useLanguage();
   const [tab, setTab] = useState<"summary" | "markets">("summary");
@@ -101,21 +108,6 @@ export function MatchDetailModal({
   const winnerName = match.radiant.winner
     ? match.radiant.name
     : match.dire.name;
-  const marketStatusLabel = !market
-    ? null
-    : market.status === "OPEN"
-      ? t("market.open")
-      : market.status === "SUSPENDED"
-        ? t("market.suspended")
-        : t("market.closed");
-  const suspensionLabel =
-    market?.suspensionReason === "FEED_STALE"
-      ? t("market.reason.FEED_STALE")
-      : market?.suspensionReason === "FEED_DOWN"
-        ? t("market.reason.FEED_DOWN")
-        : market?.suspensionReason === "MATCH_LEFT_LIVE"
-          ? t("market.reason.MATCH_LEFT_LIVE")
-          : null;
 
   useEffect(() => {
     setTab("summary");
@@ -247,79 +239,91 @@ export function MatchDetailModal({
           )}
         </div>
       ) : (
-        <div className="p-5 sm:p-6">
-          {market ? (
+        <div className="space-y-4 p-5 sm:p-6">
+          {markets.length > 0 ? (
             <>
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted">
-                    {t("match.market")}
-                  </p>
-                  <p className="mt-1 text-xs text-muted">
-                    {t("market.version", { version: market.version })}
-                  </p>
-                </div>
-                <span
-                  className={cn(
-                    "shrink-0 rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide ring-1",
-                    market.status === "OPEN"
-                      ? "bg-emerald-50 text-emerald-700 ring-emerald-200"
-                      : market.status === "SUSPENDED"
-                        ? "bg-amber-50 text-amber-700 ring-amber-200"
-                        : "bg-slate-50 text-slate-500 ring-line",
-                  )}
-                >
-                  {marketStatusLabel}
-                </span>
-              </div>
+              {markets.map((market) => {
+                const suspensionLabel =
+                  market.suspensionReason === "FEED_STALE"
+                    ? t("market.reason.FEED_STALE")
+                    : market.suspensionReason === "FEED_DOWN"
+                      ? t("market.reason.FEED_DOWN")
+                      : market.suspensionReason === "MATCH_LEFT_LIVE"
+                        ? t("market.reason.MATCH_LEFT_LIVE")
+                        : null;
+                const statusLabel =
+                  market.status === "OPEN"
+                    ? t("market.open")
+                    : market.status === "SUSPENDED"
+                      ? t("market.suspended")
+                      : t("market.closed");
 
-              {market.status !== "OPEN" ? (
-                <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-800">
-                  {suspensionLabel ?? t("market.suspended")}
-                </p>
-              ) : null}
-
-              <div className="mt-4 grid grid-cols-2 gap-3">
-                {market.selections.map((selection) => (
-                  <div
-                    key={selection.key}
-                    className={cn(
-                      "rounded-xl border p-4",
-                      market.status === "OPEN"
-                        ? "border-line bg-white shadow-sm"
-                        : "border-line bg-slate-50/70 opacity-75",
-                    )}
+                return (
+                  <section
+                    key={market.id}
+                    className="rounded-xl border border-line bg-white p-4 shadow-sm"
                   >
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted">
-                        {selection.key === "RADIANT"
-                          ? t("market.radiant")
-                          : t("market.dire")}
-                      </span>
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="text-sm font-semibold text-ink">
+                          {marketTitle(market, t)}
+                        </p>
+                        <p className="mt-1 text-[11px] text-muted">
+                          {t("market.version", { version: market.version })}
+                          {market.line != null
+                            ? ` · ${t("market.line", { line: Number(market.line).toFixed(1) })}`
+                            : ""}
+                        </p>
+                      </div>
                       <span
                         className={cn(
-                          "h-2 w-2 rounded-full",
-                          selection.key === "RADIANT"
-                            ? "bg-radiant"
-                            : "bg-dire",
+                          "shrink-0 rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide ring-1",
+                          market.status === "OPEN"
+                            ? "bg-emerald-50 text-emerald-700 ring-emerald-200"
+                            : market.status === "SUSPENDED"
+                              ? "bg-amber-50 text-amber-700 ring-amber-200"
+                              : "bg-slate-50 text-slate-500 ring-line",
                         )}
-                      />
+                      >
+                        {statusLabel}
+                      </span>
                     </div>
-                    <p className="mt-3 font-score text-2xl font-semibold text-ink">
-                      {formatOdds(selection.odds)}
-                    </p>
-                    <p className="mt-1 text-[9px] font-semibold uppercase tracking-[0.12em] text-muted">
-                      {t("market.odds")}
-                    </p>
-                  </div>
-                ))}
-              </div>
 
-              <p className="mt-4 text-[10px] leading-4 text-muted">
+                    {market.status !== "OPEN" ? (
+                      <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-800">
+                        {suspensionLabel ?? t("market.suspended")}
+                      </p>
+                    ) : null}
+
+                    <div className="mt-3 grid grid-cols-2 gap-2">
+                      {market.selections.map((selection) => (
+                        <button
+                          key={selection.key}
+                          type="button"
+                          disabled={market.status !== "OPEN"}
+                          onClick={() => onSelect(match, market, selection)}
+                          className={cn(
+                            "rounded-lg border px-3 py-2.5 text-left transition",
+                            market.status === "OPEN"
+                              ? "border-line bg-white hover:border-accent/40 hover:bg-accent/5"
+                              : "cursor-not-allowed border-line bg-slate-50/70 opacity-70",
+                          )}
+                        >
+                          <span className="block truncate text-[10px] font-semibold text-muted">
+                            {selectionLabel(market, selection.key, t)}
+                          </span>
+                          <span className="mt-1 block font-score text-xl font-semibold text-ink">
+                            {formatOdds(selection.odds)}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </section>
+                );
+              })}
+
+              <p className="text-[10px] leading-4 text-muted">
                 {t("market.demoNote")}
-              </p>
-              <p className="mt-1 text-[10px] font-semibold text-accent-strong">
-                {t("market.bettingSoon")}
               </p>
             </>
           ) : (

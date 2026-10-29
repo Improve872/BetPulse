@@ -171,4 +171,4 @@ Ver `docs/STATUS.md`.
 
 ## Próximo paso
 
-M2a cerrado (catálogo OpenDota backend + SSE + frontend); M1 funcional; M0 pendiente solo por la captura GSI real. M2b espera fixtures; M3 pre-partida puede avanzar con OpenDota. Ver `docs/STATUS.md`.
+M3a, M3b y M4 cerrados funcionalmente (cuatro mercados en vivo + cuotas + apuestas con holds; CI pendiente); M1 y M2a funcionales; M0 pendiente solo por la captura GSI real. M2b está diferido hasta tener fixtures. M5 (liquidación), admin de mercados y M3c pendientes. Ver `docs/STATUS.md`.

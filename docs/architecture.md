@@ -70,8 +70,9 @@ En desarrollo, Next.js hace proxy de `/api` al backend para evitar CORS y compar
 - `components/home-lobby.tsx` usa el snapshot inicial del servidor y lo reemplaza con cada evento SSE; muestra badge de feed (`feed.live`, `degraded`, `stale`, `reconnecting`, `down`, `starting`) en ES/EN, y orquesta filtros, lista, bet slip, modales y navegación.
 - Componentes: `site-header`, `live-ticker`, `filter-rail`, `match-card`, `bet-slip`, `login-modal`, `match-detail-modal`, `site-footer`, `game-switcher`, `modal`.
 - Tokens en `app/globals.css`: navy `#0B1220`, naranja `#F97316`, fondo `#F4F6F8`; tipografía local.
-- Auth y wallet ya implementados: modal de login/registro contra la API, sesión con cookie HttpOnly + CSRF, header autenticado y página `/wallet` con depósitos/retiros demo e historial.
-- Sin cuotas ni apuestas reales todavía: las cards indican “Mercados no publicados” y el bet slip sigue siendo UI.
+- Auth y wallet implementados: modal de login/registro contra la API, sesión con cookie HttpOnly + CSRF, header autenticado y página `/wallet` con depósitos/retiros demo e historial.
+- M3a/M3b implementados: `lib/markets.ts` obtiene `GET /api/markets/live`; cards y modal muestran cuatro mercados por partida, línea, versión y estado de suspensión.
+- M4 implementado: bet slip y modal móvil permiten elegir cuota y stake; `lib/bets.ts` llama a `/api/bets` con idempotencia. `/bets` muestra el historial privado.
 
 ## Flujo de datos
 
@@ -79,9 +80,9 @@ En desarrollo, Next.js hace proxy de `/api` al backend para evitar CORS y compar
 2. El colector valida token, normaliza, batchea y envía al backend con HMAC.
 3. El backend guarda snapshot/eventos, actualiza el estado del partido y detecta eventos relevantes.
 4. El poller OpenDota refresca el catálogo cada 30 s; `CatalogService` publica un evento interno y `LiveFeedService` lo difunde por SSE (`lobby`).
-5. El motor de cuotas recalculará mercados afectados, aplicará margen, versionará y publicará por SSE (M3).
+5. El motor de cuotas recalcula los mercados `MATCH_WINNER`, `TOTAL_KILLS`, `KILL_HANDICAP` y `DURATION` en cada refresco del catálogo, aplica margen, versiona si cambian las cuotas y publica por SSE (M3a/M3b).
 6. OpenDota se consulta periódicamente para catálogo, partidos secundarios, pre-partida y verificación.
-7. El usuario apuesta: el backend valida mercado, versión, cuota, límites y saldo; retiene fondos y registra la apuesta (M4).
+7. El usuario apuesta: el backend valida mercado, versión, cuota, límites y saldo; retiene fondos, registra la apuesta y su estado inicial `PLACED` (M4).
 8. Al terminar el partido, el settlement liquida de forma idempotente, paga al ganador y audita (M5).
 9. Depósitos/retiros simulados pasan por la abstracción de pagos y el ledger.
 
@@ -118,6 +119,8 @@ Reglas:
 - `idempotency_keys`, `audit_logs`, `outbox_events`
 
 > Sesión de M1: `HttpSession` en memoria con cookie `BETPULSE_SESSION`; no hay tabla `sessions`. Al reiniciar el backend se pierden las sesiones, aceptable en local-first. Si la demo lo requiere, se migrará a Spring Session JDBC.
+
+> Implementación actual: V3 crea `markets`, `selections` y `odds_history`; V4 crea `bets` y `bet_status_history`. Las apuestas simples guardan snapshots de mercado, selección, versión y cuota aceptada, y referencian la transacción de hold del ledger.
 - `stream_sources`, `model_versions`, `feature_snapshots`
 - `collector_sessions`, `ingestion_health`
 
@@ -134,8 +137,9 @@ Constraints clave:
 ## API y eventos
 
 - REST para auth, catálogo, mercados, apuestas, wallet, pagos y admin.
-- Catálogo actual: `GET /api/catalog/lobby` (público) y `GET /api/live/health`.
-- SSE actual: `GET /api/live/stream` con eventos `lobby` y `heartbeat`; en M3 se sumarán cuotas y suspensiones.
+- Catálogo actual: `GET /api/catalog/lobby` (público), `GET /api/markets/live` (público) y `GET /api/live/health`.
+- Apuestas autenticadas: `POST /api/bets` con `Idempotency-Key`, `GET /api/bets` y `GET /api/bets/{id}`.
+- SSE actual: `GET /api/live/stream` con eventos `lobby`, `markets` y `heartbeat`. Los eventos de mercados se emiten después del commit de la sincronización.
 - Endpoint interno `/internal/ingest` con HMAC para el colector (M2b).
 - `Idempotency-Key` en apuestas, depósitos y retiros.
 - OpenAPI como contrato.
@@ -234,4 +238,4 @@ Mitigaciones: modo espectador, híbrido, caché/backoff, tests de concurrencia, 
 
 ## Decisiones relacionadas
 
-Ver `docs/decisions.md` (ADR-001 a ADR-017).
+Ver `docs/decisions.md` (ADR-001 a ADR-025).

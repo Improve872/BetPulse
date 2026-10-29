@@ -6,7 +6,7 @@ Plataforma web de apuestas simuladas de esports, con Dota 2 como primer juego. D
 
 ## Estado
 
-M2a cerrado: catálogo OpenDota en backend con `GET /api/catalog/lobby`, SSE de lobby en `GET /api/live/stream` y frontend con badge de salud del feed. M1 sigue funcional (auth + wallet + tests). M0 queda abierto solo por la captura GSI real; M2b espera fixtures. Ver [`docs/STATUS.md`](docs/STATUS.md).
+M3a, M3b y M4 cerrados funcionalmente (pendiente CI): cuatro mercados en vivo con cuotas propias y apuestas simples con retención de saldo. M1 y M2a siguen funcionales. M0 queda abierto solo por la captura GSI real; M2b está diferido hasta tener fixtures. La liquidación (M5) sigue pendiente. Ver [`docs/STATUS.md`](docs/STATUS.md).
 
 ## Stack
 
@@ -22,10 +22,11 @@ M2a cerrado: catálogo OpenDota en backend con `GET /api/catalog/lobby`, SSE de 
 - Lobby responsive tipo casa de apuestas: header navy, acento naranja, ticker de partidas, filtros, cards, bet slip y modales.
 - Dota 2 activo; CS2, League of Legends y VALORANT marcados como “Pronto”.
 - Catálogo con datos reales de OpenDota (`/live` y `/proMatches`) servido por el backend; sin fixtures ni cuotas inventadas.
-- Lobby actualizado por SSE (`/api/live/stream`) con badge de salud del feed; reconexión automática de `EventSource`.
+- Lobby actualizado por SSE (`/api/live/stream`) con eventos `lobby`, `markets` y `heartbeat`; badge de salud del feed y reconexión automática de `EventSource`.
 - Login/registro real contra la API, con sesión, CSRF y header autenticado.
 - Página `/wallet` con saldo disponible/retenido, depósitos y retiros demo, historial e idempotencia.
-- Los mercados muestran “Mercados no publicados” hasta conectar el motor de cuotas.
+- Cuatro mercados por partida en vivo: ganador, total de kills, hándicap de kills y duración, con cuotas propias a 3 decimales y versión.
+- Bet slip funcional con stake, payout potencial y retención de saldo; historial privado en `/bets`.
 - Aviso de saldo ficticio en el footer y en la billetera; sin franja “DEMO”.
 - Verificación: 1440, 1024 y 390 px; filtros, modales, ES/EN y flujo de billetera probados.
 
@@ -67,4 +68,4 @@ OpenDota funciona sin API key; `OPENDOTA_API_KEY` es opcional para subir el rate
 
 ## Próximo paso
 
-M2b cuando existan payloads GSI reales: `/internal/ingest`, snapshots/eventos y proyector. En paralelo se puede iniciar M3 (mercados y cuotas pre-partida) con el catálogo OpenDota. Antes: publicar M1 + M2a para ejecutar CI. Ver [`docs/STATUS.md`](docs/STATUS.md).
+Publicar M3b + M4 y confirmar CI verde. Después, implementar M5 (liquidación exactly-once y payout/void). M2b queda diferido hasta disponer de payloads GSI reales. Ver [`docs/STATUS.md`](docs/STATUS.md).

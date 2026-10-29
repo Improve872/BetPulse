@@ -1,18 +1,19 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
-import { BetSlip } from "@/components/bet-slip";
+import { useEffect, useMemo, useState } from "react";
+import { BetSlip, type BetTarget } from "@/components/bet-slip";
 import { FilterRail } from "@/components/filter-rail";
 import { LiveTicker } from "@/components/live-ticker";
 import { LoginModal, type LoginMode } from "@/components/login-modal";
 import { MatchCard } from "@/components/match-card";
 import { MatchDetailModal } from "@/components/match-detail-modal";
+import { Modal } from "@/components/modal";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 import { TicketIcon, TrophyIcon } from "@/components/icons";
 import { useAuth } from "@/lib/auth";
-import { cn, formatNumber } from "@/lib/format";
+import { cn, formatNumber, formatOdds } from "@/lib/format";
 import { useLanguage } from "@/lib/i18n";
 import { useLobbyFeed } from "@/lib/live";
 import type {
@@ -21,11 +22,24 @@ import type {
   LobbyMatch,
   LobbyView,
 } from "@/lib/lobby";
-import { indexMarkets, type LiveMarketsData } from "@/lib/markets";
+import {
+  indexMarkets,
+  marketTitle,
+  selectionLabel,
+  type LiveMarketsData,
+  type Market,
+  type Selection,
+} from "@/lib/markets";
 
 type HomeLobbyProps = {
   data: LobbyData;
   markets: LiveMarketsData;
+};
+
+type BetSelectionRef = {
+  matchId: string;
+  marketId: string;
+  selectionKey: string;
 };
 
 export function HomeLobby({ data: initialData, markets: initialMarkets }: HomeLobbyProps) {
@@ -38,6 +52,8 @@ export function HomeLobby({ data: initialData, markets: initialMarkets }: HomeLo
   const [loginOpen, setLoginOpen] = useState(false);
   const [loginMode, setLoginMode] = useState<LoginMode>("login");
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [betSelection, setBetSelection] = useState<BetSelectionRef | null>(null);
+  const [betPanelOpen, setBetPanelOpen] = useState(false);
 
   const allMatches = useMemo(
     () => [...data.live, ...data.recent],
@@ -46,6 +62,29 @@ export function HomeLobby({ data: initialData, markets: initialMarkets }: HomeLo
   const liveMatches = data.live;
   const resultCount = data.recent.length;
   const marketByMatchId = useMemo(() => indexMarkets(markets), [markets]);
+  const betTarget = useMemo<BetTarget | null>(() => {
+    if (!betSelection) {
+      return null;
+    }
+    const match = allMatches.find(
+      (candidate) => candidate.id === betSelection.matchId,
+    );
+    const market = marketByMatchId
+      .get(betSelection.matchId)
+      ?.find((candidate) => candidate.id === betSelection.marketId);
+    const selection = market?.selections.find(
+      (candidate) => candidate.key === betSelection.selectionKey,
+    );
+    return match && market && selection ? { match, market, selection } : null;
+  }, [allMatches, betSelection, marketByMatchId]);
+
+  useEffect(() => {
+    if (betSelection && !betTarget) {
+      setBetSelection(null);
+      setBetPanelOpen(false);
+    }
+  }, [betSelection, betTarget]);
+
   const tournaments = useMemo(
     () =>
       Array.from(
@@ -108,6 +147,34 @@ export function HomeLobby({ data: initialData, markets: initialMarkets }: HomeLo
 
   const handleOpenMatch = (match: LobbyMatch) => {
     setSelectedId(match.id);
+  };
+
+  const handleSelect = (
+    match: LobbyMatch,
+    market: Market,
+    selection: Selection,
+  ) => {
+    setBetSelection({
+      matchId: match.id,
+      marketId: market.id,
+      selectionKey: selection.key,
+    });
+    setSelectedId(null);
+    if (
+      typeof window !== "undefined" &&
+      window.matchMedia("(max-width: 1023px)").matches
+    ) {
+      setBetPanelOpen(true);
+    } else {
+      document
+        .getElementById("bet-slip")
+        ?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  };
+
+  const handleClearBet = () => {
+    setBetSelection(null);
+    setBetPanelOpen(false);
   };
 
   const mobileViews: Array<{ id: LobbyView; label: string }> = [
@@ -266,8 +333,9 @@ export function HomeLobby({ data: initialData, markets: initialMarkets }: HomeLo
                 <MatchCard
                   key={match.id}
                   match={match}
-                  market={marketByMatchId.get(match.id)}
+                  markets={marketByMatchId.get(match.id)}
                   onOpen={handleOpenMatch}
+                  onSelect={handleSelect}
                 />
               ))}
 
@@ -295,6 +363,8 @@ export function HomeLobby({ data: initialData, markets: initialMarkets }: HomeLo
           </section>
 
           <BetSlip
+            target={betTarget}
+            onClear={handleClearBet}
             onLogin={() => openLogin("login")}
             onExplore={scrollToMatches}
           />
@@ -309,12 +379,36 @@ export function HomeLobby({ data: initialData, markets: initialMarkets }: HomeLo
             <TicketIcon className="h-4 w-4" />
           </span>
           <div className="min-w-0 flex-1">
-            <p className="text-xs font-semibold text-ink">{t("bet.title")}</p>
-            <p className="truncate text-[11px] text-muted">
-              {t("bet.emptyBody")}
-            </p>
+            {betTarget ? (
+              <>
+                <p className="truncate text-xs font-semibold text-ink">
+                  {selectionLabel(betTarget.market, betTarget.selection.key, t)}
+                </p>
+                <p className="truncate text-[11px] text-muted">
+                  {marketTitle(betTarget.market, t)} ·{" "}
+                  {formatOdds(betTarget.selection.odds)}
+                </p>
+              </>
+            ) : (
+              <>
+                <p className="text-xs font-semibold text-ink">
+                  {t("bet.title")}
+                </p>
+                <p className="truncate text-[11px] text-muted">
+                  {t("bet.emptyBody")}
+                </p>
+              </>
+            )}
           </div>
-          {user ? (
+          {betTarget ? (
+            <button
+              type="button"
+              onClick={() => setBetPanelOpen(true)}
+              className="shrink-0 rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white transition hover:bg-accent-strong"
+            >
+              {t("bet.open")}
+            </button>
+          ) : user ? (
             <Link
               href="/wallet"
               className="shrink-0 rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white transition hover:bg-accent-strong"
@@ -345,9 +439,33 @@ export function HomeLobby({ data: initialData, markets: initialMarkets }: HomeLo
       {selectedMatch ? (
         <MatchDetailModal
           match={selectedMatch}
-          market={marketByMatchId.get(selectedMatch.id)}
+          markets={marketByMatchId.get(selectedMatch.id)}
           onClose={() => setSelectedId(null)}
+          onSelect={handleSelect}
         />
+      ) : null}
+
+      {betPanelOpen ? (
+        <Modal
+          open
+          onClose={() => setBetPanelOpen(false)}
+          labelledBy="mobile-bet-title"
+          panelClassName="sm:max-w-md"
+        >
+          <div id="mobile-bet-title" className="sr-only">
+            {t("bet.title")}
+          </div>
+          <div className="p-3 sm:p-4">
+            <BetSlip
+              compact
+              target={betTarget}
+              onClear={handleClearBet}
+              onLogin={() => openLogin("login")}
+              onExplore={scrollToMatches}
+              onClose={() => setBetPanelOpen(false)}
+            />
+          </div>
+        </Modal>
       ) : null}
     </div>
   );

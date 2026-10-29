@@ -11,6 +11,8 @@ import org.springframework.context.event.EventListener;
 import org.springframework.http.MediaType;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.event.TransactionPhase;
+import org.springframework.transaction.event.TransactionalEventListener;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import com.betpulse.catalog.CatalogUpdatedEvent;
@@ -53,7 +55,7 @@ public class LiveFeedService {
 		broadcast("lobby", event.response());
 	}
 
-	@EventListener
+	@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
 	public void onMarketsUpdated(MarketsUpdatedEvent event) {
 		broadcast("markets", event.response());
 	}

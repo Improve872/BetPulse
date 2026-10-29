@@ -85,8 +85,11 @@ Reglas:
 - Se abre al publicar cuotas.
 - Se suspende ante kill, torre, Roshan, pausa, lag o fin de partida.
 - Se reabre tras recalcular y aplicar un debounce (2–3 s).
-- Se cierra al terminar el partido.
+- Se cierra al terminar el partido o cuando el resultado ya es determinista.
+- `CLOSED` no se reabre; espera liquidación o anulación.
 - Se liquida una sola vez.
+
+> M3b: las líneas de `TOTAL_KILLS`, `KILL_HANDICAP` y `DURATION` se fijan al crear el mercado y se guardan en `markets.line`. Las fórmulas y límites están en ADR-024.
 
 ## Ciclo de vida de una apuesta
 

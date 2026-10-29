@@ -20,7 +20,9 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import com.betpulse.catalog.CatalogUpdatedEvent;
 import com.betpulse.catalog.LobbyDtos.FeedHealth;
@@ -29,36 +31,38 @@ import com.betpulse.catalog.LobbyDtos.LobbyResponse;
 import com.betpulse.markets.MarketDtos.LiveMarketsResponse;
 import com.betpulse.markets.MarketDtos.MarketView;
 import com.betpulse.markets.MarketDtos.SelectionView;
-import com.betpulse.markets.OddsEngine.MatchWinnerQuote;
 import com.betpulse.markets.OddsEngine.Quote;
 
 @Service
 public class MarketService {
 
 	private static final Logger log = LoggerFactory.getLogger(MarketService.class);
-	private static final String MATCH_WINNER = "MATCH_WINNER";
 	private static final String OPEN = "OPEN";
 	private static final String SUSPENDED = "SUSPENDED";
 	private static final String CLOSED = "CLOSED";
+	private static final String SETTLED = "SETTLED";
+	private static final String VOID = "VOID";
 	private static final String SOURCE = "ODDS_ENGINE_V1";
 
 	private final JdbcTemplate jdbcTemplate;
 	private final OddsEngine oddsEngine;
 	private final Clock clock;
 	private final ApplicationEventPublisher eventPublisher;
+	private final TransactionTemplate transactionTemplate;
 
 	public MarketService(JdbcTemplate jdbcTemplate, OddsEngine oddsEngine, Clock clock,
-			ApplicationEventPublisher eventPublisher) {
+			ApplicationEventPublisher eventPublisher, PlatformTransactionManager transactionManager) {
 		this.jdbcTemplate = jdbcTemplate;
 		this.oddsEngine = oddsEngine;
 		this.clock = clock;
 		this.eventPublisher = eventPublisher;
+		this.transactionTemplate = new TransactionTemplate(transactionManager);
 	}
 
 	@EventListener
 	public void onCatalogUpdated(CatalogUpdatedEvent event) {
 		try {
-			sync(event.response());
+			transactionTemplate.executeWithoutResult(status -> sync(event.response()));
 		} catch (RuntimeException exception) {
 			log.error("No se pudieron sincronizar los mercados del catálogo", exception);
 		}
@@ -86,15 +90,23 @@ public class MarketService {
 	@Transactional(readOnly = true)
 	public LiveMarketsResponse getLiveMarkets() {
 		List<MarketRow> rows = jdbcTemplate.query("""
-				SELECT m.id, m.match_id, m.market_key, m.market_type, m.title, m.status, m.version,
+				SELECT m.id, m.match_id, m.market_key, m.market_type, m.title, m.status, m.line, m.version,
 				       m.suspension_reason, m.updated_at,
 				       s.selection_key, s.label, s.probability, s.odds
 				FROM markets m
 				JOIN selections s ON s.market_id = m.id
-				WHERE m.market_key = ? AND m.status IN (?, ?)
+				WHERE m.status IN (?, ?)
 				ORDER BY m.match_id,
-				         CASE s.selection_key WHEN 'RADIANT' THEN 0 WHEN 'DIRE' THEN 1 ELSE 2 END
-				""", (resultSet, rowNumber) -> mapRow(resultSet), MATCH_WINNER, OPEN, SUSPENDED);
+				         CASE m.market_key
+				             WHEN 'MATCH_WINNER' THEN 0
+				             WHEN 'TOTAL_KILLS' THEN 1
+				             WHEN 'KILL_HANDICAP' THEN 2
+				             WHEN 'DURATION' THEN 3
+				             ELSE 4
+				         END,
+				         CASE s.selection_key WHEN 'RADIANT' THEN 0 WHEN 'OVER' THEN 0 WHEN 'DIRE' THEN 1
+				             WHEN 'UNDER' THEN 1 ELSE 2 END
+				""", (resultSet, rowNumber) -> mapRow(resultSet), OPEN, SUSPENDED);
 
 		Map<UUID, MarketBuilder> markets = new LinkedHashMap<>();
 		for (MarketRow row : rows) {
@@ -107,30 +119,45 @@ public class MarketService {
 	}
 
 	private void syncMatch(LobbyMatch match) {
+		for (MarketKind kind : MarketKind.values()) {
+			syncMarket(match, kind);
+		}
+	}
+
+	private void syncMarket(LobbyMatch match, MarketKind kind) {
+		int radiantKills = match.radiant().score();
+		int direKills = match.dire().score();
+		long gameTimeSeconds = match.durationSeconds();
+		BigDecimal initialLine = oddsEngine.initialLine(kind, radiantKills, direKills, gameTimeSeconds);
+
 		jdbcTemplate.update("""
-				INSERT INTO markets (match_id, market_key, market_type, title, status, opened_at)
-				VALUES (?, ?, ?, ?, ?, now())
+				INSERT INTO markets (match_id, market_key, market_type, title, line, status, opened_at)
+				VALUES (?, ?, ?, ?, CAST(? AS NUMERIC), ?, now())
 				ON CONFLICT (match_id, market_key) DO NOTHING
-				""", match.id(), MATCH_WINNER, MATCH_WINNER, "Ganador del mapa", OPEN);
+				""", match.id(), kind.name(), kind.name(), kind.title(), initialLine, OPEN);
 
 		MarketState market = jdbcTemplate.queryForObject("""
-				SELECT id, status, version
+				SELECT id, status, version, line
 				FROM markets
 				WHERE match_id = ? AND market_key = ?
 				""", (resultSet, rowNumber) -> new MarketState(
 				resultSet.getObject("id", UUID.class),
 				resultSet.getString("status"),
-				resultSet.getInt("version")), match.id(), MATCH_WINNER);
-		if (market == null) {
+				resultSet.getInt("version"),
+				resultSet.getBigDecimal("line")), match.id(), kind.name());
+		if (market == null || isTerminal(market.status())) {
 			return;
 		}
 
-		MatchWinnerQuote quote = oddsEngine.matchWinner(match.radiant().score(), match.dire().score(),
-				match.durationSeconds());
+		if (isDeterministic(kind, market.line(), radiantKills + direKills, gameTimeSeconds)) {
+			closeMarket(market.id());
+			return;
+		}
+
+		List<Quote> quotes = oddsEngine.quotes(kind, radiantKills, direKills, gameTimeSeconds, market.line());
 		Map<String, BigDecimal> currentOdds = currentOdds(market.id());
-		boolean oddsChanged = currentOdds.isEmpty()
-				|| !sameOdds(currentOdds, quote.radiant())
-				|| !sameOdds(currentOdds, quote.dire());
+		boolean oddsChanged = currentOdds.size() != quotes.size()
+				|| quotes.stream().anyMatch(quote -> !sameOdds(currentOdds, quote));
 		int nextVersion = oddsChanged ? market.version() + 1 : market.version();
 
 		jdbcTemplate.update("""
@@ -140,15 +167,28 @@ public class MarketService {
 				WHERE id = ?
 				""", OPEN, nextVersion, market.id());
 
-		upsertSelection(market.id(), quote.radiant());
-		upsertSelection(market.id(), quote.dire());
+		for (Quote quote : quotes) {
+			upsertSelection(market.id(), quote);
+		}
 
 		if (oddsChanged) {
-			insertHistory(market.id(), nextVersion, quote.radiant());
-			insertHistory(market.id(), nextVersion, quote.dire());
-			log.info("Mercado {} actualizado a versión {} (Radiant {} / Dire {})", match.id(), nextVersion,
-					quote.radiant().odds(), quote.dire().odds());
+			for (Quote quote : quotes) {
+				insertHistory(market.id(), nextVersion, quote);
+			}
+			log.info("Mercado {} {} actualizado a versión {} ({})", match.id(), kind,
+					nextVersion, oddsSummary(quotes));
 		}
+	}
+
+	private boolean isDeterministic(MarketKind kind, BigDecimal line, int totalKills, long gameTimeSeconds) {
+		if (line == null) {
+			return false;
+		}
+		return switch (kind) {
+			case TOTAL_KILLS -> totalKills > line.doubleValue();
+			case DURATION -> gameTimeSeconds / 60.0 > line.doubleValue();
+			case MATCH_WINNER, KILL_HANDICAP -> false;
+		};
 	}
 
 	private void upsertSelection(UUID marketId, Quote quote) {
@@ -175,10 +215,22 @@ public class MarketService {
 				UPDATE markets
 				SET status = ?, suspension_reason = ?, suspended_at = COALESCE(suspended_at, now()),
 				    updated_at = now()
-				WHERE market_key = ? AND status IN (?, ?)
-				""", SUSPENDED, reason, MATCH_WINNER, OPEN, SUSPENDED);
+				WHERE status IN (?, ?)
+				""", SUSPENDED, reason, OPEN, SUSPENDED);
 		if (updated > 0) {
 			log.warn("Mercados suspendidos por salud del feed: {} ({} mercados)", reason, updated);
+		}
+	}
+
+	private void closeMarket(UUID marketId) {
+		int updated = jdbcTemplate.update("""
+				UPDATE markets
+				SET status = ?, suspension_reason = NULL, suspended_at = NULL, closed_at = now(),
+				    updated_at = now()
+				WHERE id = ? AND status IN (?, ?)
+				""", CLOSED, marketId, OPEN, SUSPENDED);
+		if (updated > 0) {
+			log.info("Mercado {} cerrado por resultado determinista", marketId);
 		}
 	}
 
@@ -189,13 +241,12 @@ public class MarketService {
 					UPDATE markets
 					SET status = ?, suspension_reason = NULL, suspended_at = NULL, closed_at = now(),
 					    updated_at = now()
-					WHERE market_key = ? AND status IN (?, ?)
-					""", CLOSED, MATCH_WINNER, OPEN, SUSPENDED);
+					WHERE status IN (?, ?)
+					""", CLOSED, OPEN, SUSPENDED);
 		} else {
 			String placeholders = liveMatchIds.stream().map(ignored -> "?").collect(Collectors.joining(", "));
 			List<Object> arguments = new ArrayList<>();
 			arguments.add(CLOSED);
-			arguments.add(MATCH_WINNER);
 			arguments.add(OPEN);
 			arguments.add(SUSPENDED);
 			arguments.addAll(liveMatchIds);
@@ -203,7 +254,7 @@ public class MarketService {
 					UPDATE markets
 					SET status = ?, suspension_reason = NULL, suspended_at = NULL, closed_at = now(),
 					    updated_at = now()
-					WHERE market_key = ? AND status IN (?, ?) AND match_id NOT IN (%s)
+					WHERE status IN (?, ?) AND match_id NOT IN (%s)
 					""".formatted(placeholders), arguments.toArray());
 		}
 		if (updated > 0) {
@@ -228,6 +279,10 @@ public class MarketService {
 		return existing != null && existing.compareTo(quote.odds()) == 0;
 	}
 
+	private static boolean isTerminal(String status) {
+		return CLOSED.equals(status) || SETTLED.equals(status) || VOID.equals(status);
+	}
+
 	private static boolean isTrusted(FeedHealth feed) {
 		return feed != null && !feed.stale()
 				&& ("LIVE".equals(feed.status()) || "DEGRADED".equals(feed.status()));
@@ -246,7 +301,19 @@ public class MarketService {
 	}
 
 	private static String label(String selectionKey) {
-		return "RADIANT".equals(selectionKey) ? "Radiant" : "Dire";
+		return switch (selectionKey) {
+			case "RADIANT" -> "Radiant";
+			case "DIRE" -> "Dire";
+			case "OVER" -> "Over";
+			case "UNDER" -> "Under";
+			default -> selectionKey;
+		};
+	}
+
+	private static String oddsSummary(List<Quote> quotes) {
+		return quotes.stream()
+				.map(quote -> quote.selectionKey() + " " + quote.odds())
+				.collect(Collectors.joining(" / "));
 	}
 
 	private static MarketRow mapRow(ResultSet resultSet) throws SQLException {
@@ -257,6 +324,7 @@ public class MarketService {
 				resultSet.getString("market_type"),
 				resultSet.getString("title"),
 				resultSet.getString("status"),
+				resultSet.getBigDecimal("line"),
 				resultSet.getInt("version"),
 				resultSet.getString("suspension_reason"),
 				resultSet.getTimestamp("updated_at").toInstant(),
@@ -266,11 +334,11 @@ public class MarketService {
 				resultSet.getBigDecimal("odds"));
 	}
 
-	private record MarketState(UUID id, String status, int version) {
+	private record MarketState(UUID id, String status, int version, BigDecimal line) {
 	}
 
 	private record MarketRow(UUID id, String matchId, String marketKey, String marketType, String title, String status,
-			int version, String suspensionReason, Instant updatedAt, String selectionKey, String label,
+			BigDecimal line, int version, String suspensionReason, Instant updatedAt, String selectionKey, String label,
 			BigDecimal probability, BigDecimal odds) {
 	}
 
@@ -289,7 +357,7 @@ public class MarketService {
 
 		private MarketView build() {
 			return new MarketView(row.id(), row.matchId(), row.marketKey(), row.marketType(), row.title(), row.status(),
-					row.version(), row.suspensionReason(), row.updatedAt(), List.copyOf(selections));
+					row.line(), row.version(), row.suspensionReason(), row.updatedAt(), List.copyOf(selections));
 		}
 	}
 }

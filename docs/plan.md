@@ -144,9 +144,9 @@ Aceptación: checklist aprobado; demo de 30 min sin fallos críticos; respaldo l
 |---|---|---|
 | M0 | S1 | En curso (falta captura GSI) |
 | M1 | S2–S3 | Cerrado funcionalmente (auth + wallet + tests) |
-| M2 | S4–S5 | En curso (M2a catálogo/SSE listo; M2b GSI pendiente) |
-| M3 | S6–S7 | Pendiente |
-| M4 | S8–S9 | Pendiente |
+| M2 | S4–S5 | M2a cerrado; M2b diferido hasta tener fixtures GSI |
+| M3 | S6–S7 | M3a/M3b cerrados funcionalmente; M3c, admin y mercados GSI pendientes |
+| M4 | S8–S9 | Cerrado funcionalmente (apuestas + holds; falta CI) |
 | M5 | S10–S11 | Pendiente |
 | M6 | S12–S13 | Pendiente |
 | M7 | S14–S15 | Pendiente |
@@ -181,7 +181,8 @@ M0–M5 + UI básica + admin. Si falta tiempo, recortar M6 (streaming/inglés/se
 
 ## Primer paso concreto
 
-1. Publicar M1 + M2a para ejecutar CI.
-2. Activar `-gamestateintegration` y capturar payloads GSI reales.
-3. Probar las 4 fuentes y elegir principal/respaldo; crear fixtures reales.
-4. Cerrar M0 y M2b (ingesta GSI, snapshots/eventos y SSE por partido); en paralelo iniciar M3 pre-partida con OpenDota.
+1. Publicar M3b + M4 y el lockfile; confirmar CI verde.
+2. Implementar M5: liquidación exactly-once, payout/void y actualización de wallet.
+3. Añadir el panel admin de mercados y M3c cuando exista una fuente pre-partida.
+4. Cuando sea posible, activar `-gamestateintegration` y capturar payloads GSI reales.
+5. Probar las 4 fuentes y elegir principal/respaldo; crear fixtures reales para cerrar M0 y M2b.

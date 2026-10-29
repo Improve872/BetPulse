@@ -14,7 +14,7 @@ public final class MarketDtos {
 	}
 
 	public record MarketView(UUID id, String matchId, String marketKey, String marketType, String title, String status,
-			int version, String suspensionReason, Instant updatedAt, List<SelectionView> selections) {
+			BigDecimal line, int version, String suspensionReason, Instant updatedAt, List<SelectionView> selections) {
 	}
 
 	public record LiveMarketsResponse(List<MarketView> markets, Instant updatedAt) {

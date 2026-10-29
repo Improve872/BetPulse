@@ -192,6 +192,8 @@ Formato: contexto → decisión → consecuencias. Actualizar cuando cambie una 
 
 **Consecuencias:** el frontend no inventa partidas ni cuotas; los mercados muestran “Mercados no publicados” hasta que exista motor. El login se conectará a identidad en M2. Esta decisión sustituye el badge “Modo demo” de ADR-009 por el aviso legal del footer, manteniendo el requisito de aviso visible.
 
+**Actualización (2026-10-27):** ADR-022 implementó el M3a; las partidas en vivo ya publican el mercado `MATCH_WINNER` con cuotas propias. Se mantiene la regla de no inventar partidas ni cuotas.
+
 ## ADR-020 — Identidad y wallet base de M1
 
 **Estado:** aceptada (2026-10-26)
@@ -240,4 +242,51 @@ Formato: contexto → decisión → consecuencias. Actualizar cuando cambie una 
 - API pública: `GET /api/markets/live`; SSE: evento `markets` en `GET /api/live/stream`. El frontend muestra cuotas y estado, pero el botón de apostar sigue deshabilitado hasta M4.
 
 **Consecuencias:** M3a entrega cuotas propias, versionadas y auditables sobre datos reales sin depender de GSI. Quedan para M3b/M3c: modelo pre-partida con Elo cuando exista calendario, mercados de kills/duración/hándicap, features de oro/XP y regresión logística en vivo, y persistencia del catálogo. La fórmula es una línea base transparente, no una promesa de precisión.
+
+## ADR-023 — M2b diferido hasta contar con payloads GSI reales
+
+**Estado:** aceptada (2026-10-27)
+
+**Contexto:** M2b necesita fixtures de GSI reales para implementar y probar la ingesta sin simular datos. La captura sigue pendiente y no debe bloquear el resto del desarrollo.
+
+**Decisión:** dejar M0 abierto solo por la captura y M2b diferido hasta disponer de payloads reales. El desarrollo continúa con los hitos que puedan usar OpenDota: M3a quedó cerrado funcionalmente y el siguiente alcance se decide entre M3b y M4.
+
+**Consecuencias:** no habrá ingesta GSI, snapshots ni SSE por partido hasta cerrar la captura. El catálogo y las cuotas en vivo dependen de OpenDota y el mercado GSI seguirá fuera de la demo hasta M2b. M2b no se considera cerrado y debe retomarse antes de la demo final.
+
+## ADR-024 — Mercados M3b calculables con OpenDota
+
+**Estado:** aceptada (2026-10-27)
+
+**Contexto:** M2b sigue diferido. OpenDota `/live` entrega kills por equipo y tiempo de juego, pero no eventos como primera sangre, primera torre o siguiente Roshan. M3b debe aportar más mercados sin inventar datos.
+
+**Decisión:**
+
+- Publicar por partida en vivo cuatro mercados: `MATCH_WINNER`, `TOTAL_KILLS`, `KILL_HANDICAP` y `DURATION`.
+- Las líneas se fijan al crear el mercado y se guardan en `markets.line`; no cambian durante la vida del mercado.
+- `TOTAL_KILLS`: línea basada en kills actuales más kills esperados al ritmo de 1.2 kills/min, redondeada a `.5`. Probabilidad de `OVER` por supervivencia de Poisson del kills restantes.
+- `KILL_HANDICAP`: línea móvil solo en su creación, `diferencia actual + 0.5`; se publica como `RADIANT`/`DIRE`. Probabilidad normal sobre la diferencia final con desviación proporcional a la raíz del tiempo restante.
+- `DURATION`: línea `max(40.5 min, minuto actual + 5.5)`, redondeada a `.5`. Probabilidad de `OVER` con supervivencia exponencial y media restante `max(5, 45 - minuto actual)`.
+- Todos los mercados aplican el mismo margen del 6% y los límites de probabilidad `[0.08, 0.92]`.
+- Un mercado `CLOSED`, `SETTLED` o `VOID` no se reabre. `TOTAL_KILLS` y `DURATION` se cierran cuando el resultado ya es determinista y todavía no hay apuestas que deban liquidarse.
+- Primera sangre, primera torre y siguiente Roshan quedan para M2b/M5 porque requieren eventos GSI.
+
+**Consecuencias:** M3b ofrece cuatro mercados en vivo con datos reales y fórmulas transparentes. Las cuotas no pretenden precisión comercial. Los mercados que dependen de eventos quedan fuera hasta que exista GSI.
+
+## ADR-025 — Apuestas simples y holds en M4
+
+**Estado:** aceptada (2026-10-27)
+
+**Contexto:** M3a/M3b ya publican mercados versionados. M4 debe permitir apostar sin permitir doble gasto, cuotas obsoletas ni duplicados.
+
+**Decisión:**
+
+- Una apuesta simple referencia un mercado, una selección, stake, `marketVersion` y `expectedOdds`.
+- El cliente envía `Idempotency-Key`; `bets` tiene `UNIQUE (user_id, idempotency_key)` y guarda un hash del request.
+- El servidor valida mercado `OPEN`, versión, cuota esperada, selección, stake y payout máximo.
+- El stake se retiene con el ledger existente (`USER_AVAILABLE` → `USER_HELD`) en la misma transacción que crea la apuesta.
+- Límites iniciales: stake entre S/ 1.00 y S/ 1,000.00; payout potencial máximo S/ 10,000.00.
+- La apuesta nace `PLACED` y guarda una fila inicial en `bet_status_history`. La liquidación queda para M5; M4 no acredita ganancias.
+- API autenticada: `POST /api/bets`, `GET /api/bets` y `GET /api/bets/{id}`. El historial siempre filtra por el usuario de la sesión.
+
+**Consecuencias:** el flujo monetario de apuesta queda cerrado hasta el hold. El replay idempotente devuelve la misma apuesta y no vuelve a retener saldo. Las apuestas quedan abiertas hasta M5.
 

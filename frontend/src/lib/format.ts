@@ -76,7 +76,7 @@ export function formatDateTime(iso: string, language: "es" | "en"): string {
 }
 
 export function formatOdds(value: number): string {
-  return Number.isFinite(value) ? value.toFixed(2) : "—";
+  return Number.isFinite(value) ? value.toFixed(3) : "—";
 }
 
 export function getInitials(name: string): string {

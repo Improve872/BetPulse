@@ -63,9 +63,9 @@ OpenDota `/live` puede informar `is_watch_eligible` y `delay`; usar esos campos 
 | 0–3 | Presentar BetPulse, alcance y arquitectura en una diapositiva |
 | 3–5 | Login como usuario demo; mostrar wallet en S/ |
 | 5–8 | Abrir partido en vivo; mostrar marcador, stream y mercados |
-| 8–12 | Mostrar cómo un kill/torre mueve la cuota y suspende el mercado |
-| 12–15 | Apostar; mostrar hold y apuesta en historial |
-| 15–18 | Cambiar a admin; suspender/reanudar mercado y auditar |
+| 8–12 | Mostrar cómo un kill o el tiempo de juego mueve las cuotas y cómo se suspende el feed |
+| 12–15 | Apostar; mostrar hold, saldo retenido y apuesta en `/bets` |
+| 15–18 | Mostrar la arquitectura del motor de cuotas y el estado de las apuestas |
 | 18–22 | Mostrar liquidación de una apuesta (partido terminado o cerca del final) |
 | 22–25 | Mostrar wallet actualizada, ledger y auditoría |
 | 25–30 | Cerrar con arquitectura, seguridad, límites y trabajo futuro |

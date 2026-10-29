@@ -1,61 +1,87 @@
 # Estado del proyecto
 
-Última actualización: 2026-10-26
+Última actualización: 2026-10-27
 
 ## Hito actual
 
-M2a cerrado: el backend es la única fuente del catálogo OpenDota, expone `GET /api/catalog/lobby` y emite el lobby por SSE (`/api/live/stream`), y el frontend ya consume ambos con indicador de salud del feed. M1 sigue funcional (auth + wallet + tests). M0 queda abierto solo por la captura GSI real; por decisión del usuario, GSI no bloquea el avance y M2b se hará cuando existan payloads reales. CI básico agregado en `.github/workflows/ci.yml`, pendiente de ejecutarse en GitHub.
+M3a, M3b y M4 cerrados funcionalmente (pendiente CI verde): hay cuatro mercados en vivo por partida, cuotas propias versionadas y apuestas simples con retención de saldo. M1 y M2a siguen funcionales. M0 queda abierto únicamente por la captura GSI real; M2b está diferido hasta tener fixtures. La liquidación (M5), el panel admin de mercados y M3c (modelo pre-partida con Elo) siguen pendientes.
 
-## M2a — cerrado (2026-10-26)
+## M4 — apuestas simples y holds (2026-10-27)
 
 Realizado:
 
-- `catalog`: `OpenDotaClient` (`/live`, `/proMatches`), `OpenDotaProperties`, `CatalogConfig`, DTOs, `CatalogService`, `CatalogScheduler` y `CatalogController`.
-- Poller con timeout de 7 s, intervalo de 30 s, backoff 30 s → 5 min, caché en memoria y salud `STARTING/LIVE/DEGRADED/STALE/DOWN`.
-- `GET /api/catalog/lobby` con `live`, `recent`, `updatedAt` y `feed`.
-- SSE `GET /api/live/stream` con snapshot inicial, evento `lobby` por refresco y `heartbeat` cada 15 s; `GET /api/live/health`.
-- Frontend: `getLobbyData()` contra `BACKEND_URL`, hook `useLobbyFeed`, badge de feed ES/EN y actualización sin recarga.
-- Tests: `CatalogServiceTest` 5, `CatalogControllerTest` 3; suite total 24/24.
-- Smoke REST/SSE vía proxy `3000` y `next start`; E2E headless en 1440/390 sin overflow.
+- Migración `V4__betting.sql`: `bets` y `bet_status_history` append-only.
+- `POST /api/bets` autenticado, con `Idempotency-Key` obligatoria y `UNIQUE (user_id, idempotency_key)`.
+- Validación server-side de mercado abierto, selección, `marketVersion`, `expectedOdds` y stake.
+- El stake se retiene en la misma transacción con `USER_AVAILABLE` → `USER_HELD`; la apuesta guarda la transacción de hold.
+- Límites iniciales: stake entre S/ 1.00 y S/ 1,000.00; payout potencial máximo S/ 10,000.00.
+- Replay idempotente devuelve la misma apuesta sin retener dos veces; una misma clave con datos distintos devuelve conflicto.
+- `GET /api/bets` y `GET /api/bets/{id}` filtran siempre por el usuario de la sesión.
+- Frontend: bet slip real, stake, payout potencial, estados de error, selección desde cards o modal, panel móvil y página `/bets`.
+- Tests: `BetFlowTest` 9 (hold, replay, mismatch, versión/cuota obsoleta, mercado suspendido, fondos insuficientes, payout máximo, aislamiento por usuario, concurrencia y CSRF).
 
-Pendiente:
+Pendiente de M5:
 
-- M2b: `/internal/ingest` con HMAC, `game_snapshots`, `game_events`, proyector de estado y SSE por partido.
-- Captura GSI real y fixtures para probar M2b sin simulación en el producto.
-- Persistencia del catálogo OpenDota (hoy solo caché en memoria).
+- Liquidación exactly-once, payout/void, actualización de wallet y auditoría de settlement.
+- Cancelación de apuestas y estados `NEEDS_REVIEW` operativos.
+- Exposición agregada y límites por usuario/mercado.
+
+## M3b — más mercados en vivo con OpenDota (2026-10-27)
+
+Realizado:
+
+- Cuatro mercados por partida en vivo: `MATCH_WINNER`, `TOTAL_KILLS`, `KILL_HANDICAP` y `DURATION`.
+- Las líneas se fijan al crear el mercado y se guardan en `markets.line`.
+- `TOTAL_KILLS`: línea por ritmo esperado de kills y probabilidad Poisson.
+- `KILL_HANDICAP`: línea `diferencia actual + 0.5` y probabilidad normal sobre la diferencia final.
+- `DURATION`: línea `max(40.5, minuto actual + 5.5)` y supervivencia exponencial.
+- Cierre determinista de `TOTAL_KILLS` y `DURATION` cuando el resultado ya no puede cambiar; `CLOSED` no se reabre.
+- `GET /api/markets/live` y SSE `markets` devuelven todos los mercados con línea, versión y estado.
+- Frontend: contador de mercados por card, listado completo en el modal, etiquetas de over/under y hándicap.
+- Tests: `MarketServiceTest` 8, `OddsEngineTest` 7, `MarketControllerTest` 1.
+- Primera sangre, primera torre y siguiente Roshan quedan para M2b/M5 porque requieren eventos GSI.
+
+## M3a — mercado ganador y motor base (2026-10-27)
+
+- Mercado `MATCH_WINNER` con `RADIANT`/`DIRE`, margen del 6%, límites `[0.08, 0.92]` y cuotas a 3 decimales.
+- Migración V3: `markets`, `selections`, `odds_history` append-only.
+- Sincronización transaccional desde el catálogo, historial por versión, suspensión por feed y cierre al salir de vivo.
+- SSE de mercados publicado después del commit.
+- Adaptador para desconexiones SSE sin generar errores de respuesta.
+
+## M2a — catálogo OpenDota y SSE (2026-10-26)
+
+- `OpenDotaClient` (`/live`, `/proMatches`), poller con timeout de 7 s, intervalo de 30 s y backoff 30 s → 5 min.
+- Caché en memoria y salud `STARTING/LIVE/DEGRADED/STALE/DOWN`.
+- `GET /api/catalog/lobby` y SSE `GET /api/live/stream` con `lobby`, `markets` y `heartbeat`.
+- Frontend con snapshot inicial, actualización por SSE y badge de salud del feed.
 
 ## Estado
 
 - Documentación base completa.
-- Backend Spring Boot 3.5.16 / Java 21 en `8081`; compila, arranca con PostgreSQL real y expone `/api/health` y `/actuator/health`.
+- Backend Spring Boot 3.5.16 / Java 21 en `8081`; compila y arranca con PostgreSQL real.
 - Frontend Next.js 15.5.28 + React 19.1 + Tailwind 4; build y lint verdes.
-- Lobby rediseñado como casa de apuestas: header navy, acento naranja, ticker de partidas, filtros, cards, bet slip y modales. Responsive verificado en 1440, 1024 y 390 px.
-- Datos reales de OpenDota (`/live` y `/proMatches`) servidos por el backend; sin fixtures ni cuotas inventadas. Los mercados muestran “Mercados no publicados”.
-- Backend de catálogo M2a: poller OpenDota con caché en memoria, timeout de 7 s, intervalo de 30 s, backoff exponencial de 30 s a 5 min y salud `STARTING/LIVE/DEGRADED/STALE/DOWN`; `GET /api/catalog/lobby` devuelve `live`, `recent`, `updatedAt` y `feed`.
-- SSE de lobby: `GET /api/live/stream` envía `lobby` al conectar y en cada refresco, más `heartbeat` cada 15 s. El frontend muestra badge de feed y se actualiza sin recargar.
-- Frontend migrado: `lib/catalog.ts` consulta el backend (`BACKEND_URL`, por defecto `http://127.0.0.1:8081`); `lib/live.ts` mantiene el `EventSource`; `HomeLobby` usa el snapshot inicial + SSE.
-- Autenticación real: registro, login, logout, sesión con cookie `BETPULSE_SESSION` (HttpOnly, SameSite=Lax), CSRF ligado a sesión y roles `USER`/`ADMIN`. El modal de login/registro ya llama a la API.
-- Wallet demo real: saldo disponible/retenido, depósitos y retiros simulados, holds/releases, ledger de doble entrada, `idempotency_keys`, locks `FOR UPDATE` y triggers de suma cero/append-only.
-- Migración `V2__identity_wallet_ledger.sql` aplicada: usuarios, roles, wallets, cuentas de ledger, transacciones, asientos e idempotencia.
-- Admin sembrado por configuración (`ADMIN_EMAIL`/`ADMIN_PASSWORD`); en desarrollo usa `admin@betpulse.local` / `Admin123!` y registra una advertencia de contraseña por defecto.
-- UI de billetera en `/wallet`: saldo, depósito/retiro demo, montos rápidos, historial, estados de carga/error/vacío, login requerido y navegación autenticada.
-- Tests backend con Testcontainers: 24/24 verdes (`CatalogControllerTest` 3, `CatalogServiceTest` 5, `AuthFlowTest` 7, `WalletFlowTest` 8, `HealthControllerTest` 1).
-- Colector Javalin 6.7.0; compila, `/health` y `/gsi` probados con payload de prueba.
-- Backend movido a `8081` porque Jenkins ocupa `8080`; el proxy de Next.js apunta a `8081`.
-- PostgreSQL 17.11 en Docker (`betpulse-postgres`) con healthcheck; Flyway aplicó `V1__baseline.sql` y `V2__identity_wallet_ledger.sql`.
-- GSI `.cfg` instalado en Dota 2; falta activar `-gamestateintegration` y capturar una partida real.
-- No hay mercados, apuestas, liquidación ni ingesta GSI todavía; el catálogo OpenDota y el SSE de lobby ya son backend. La ingesta GSI (M2b) espera fixtures reales.
-- CI básico definido para backend (Testcontainers), frontend (lint/build) y colector; aún no se ejecutó en GitHub porque los cambios no se han publicado.
+- Lobby responsive tipo casa de apuestas con cards, filtros, modal de partido, bet slip y página de apuestas.
+- Catálogo con datos reales de OpenDota; sin fixtures ni datos inventados en el producto.
+- Mercados: 4 por partida en vivo, cuotas con margen propio, versión e historial append-only.
+- Apuestas: validation server-side, holds en el ledger, idempotencia y aislamiento por usuario.
+- Autenticación real con sesión HttpOnly, CSRF y roles; wallet demo con ledger de doble entrada.
+- Migraciones aplicadas: V1, V2, V3 y V4.
+- Admin sembrado por configuración; en desarrollo `admin@betpulse.local` / `Admin123!`.
+- Colector Javalin compila y expone `/health` y `/gsi`.
+- PostgreSQL 17.11 en Docker (`betpulse-postgres`).
+- No hay liquidación ni ingesta GSI todavía. Las apuestas quedan `PLACED` hasta M5.
+- CI en `.github/workflows/ci.yml`; la primera ejecución falló por el lockfile del frontend, ya corregido localmente. Falta publicar y confirmar verde.
 
 ## Entorno
 
 - Windows 11 Pro, 13.9 GB de RAM visible (16 GB nominales).
 - Java 21.0.7 (Temurin).
-- Node 24.11.1, npm 11.6.2.
+- Node 24.11.1, npm 11.6.2; lockfile validado también con npm 10.9.4.
 - Maven Wrapper en backend y colector.
-- Docker Desktop instalado; engine 29.9.2. PostgreSQL 17.11 corre en el contenedor `betpulse-postgres` (puerto `5432`, healthcheck `healthy`).
+- Docker Desktop instalado; engine 29.9.2. PostgreSQL 17.11 en `betpulse-postgres` (puerto `5432`, healthcheck `healthy`).
 - Dota 2: `C:\Program Files (x86)\Steam\steamapps\common\dota 2 beta`.
-- Puerto `8080` ocupado por Jenkins; BetPulse backend usa `8081` en desarrollo.
+- Puerto `8080` ocupado por Jenkins; BetPulse backend usa `8081`.
 - Presentación: laptop propia; se empaquetará al final.
 - Estrategia: local-first; sin LAN ni nube en la primera etapa.
 - Un solo desarrollador.
@@ -73,96 +99,72 @@ Pendiente:
 - Registro de usuarios + admin.
 - Docker solo para PostgreSQL en dev; empaquetado para laptop al final.
 - Backend de desarrollo en `8081` por conflicto con Jenkins en `8080` (ADR-018).
-- Lobby light-first, multi-juego y con datos reales; sin cuotas ni auth simuladas (ADR-019).
-- Docker Desktop instalado para PostgreSQL en desarrollo; engine 29.9.2 y PostgreSQL 17.11 en contenedor (ADR-015).
+- Lobby light-first, multi-juego y con datos reales (ADR-019).
 - Identidad y wallet de M1 con sesión + CSRF, BCrypt 12, ledger SQL y triggers (ADR-020).
-- Catálogo OpenDota en backend + SSE de lobby con salud de feed y frontend migrado (ADR-021).
+- Catálogo OpenDota en backend + SSE de lobby con salud de feed (ADR-021).
+- Mercado ganador en vivo y motor de cuotas M3a (ADR-022).
+- M2b diferido hasta contar con payloads GSI reales (ADR-023).
+- Mercados M3b calculables con OpenDota y líneas fijas (ADR-024).
+- Apuestas simples con holds, idempotencia y validación de cuota/versión (ADR-025).
 
 ## Hecho
 
-- Definición del proyecto, justificación, objetivos, metodología, arquitectura y plan de seguridad (documento académico).
-- Plan de desarrollo por hitos.
-- Decisiones técnicas iniciales.
-- Documentación base del repositorio: `AGENTS.md`, `README.md`, `docs/plan.md`, `docs/decisions.md`, `docs/architecture.md`, `docs/domain.md`, `docs/security.md`, `docs/demo.md`.
-- Herramienta de captura GSI temporal en `scripts/gsi-capture/`.
-- `.cfg` de GSI instalado en la carpeta de Dota 2.
-- Backend base con Spring Boot 3.5.16, Flyway, PostgreSQL, Spring Security y `/api/health`.
-- Frontend base con Next.js 15, React 19, Tailwind 4 e i18n ES/EN.
-- Rediseño del lobby: `HomeLobby`, `SiteHeader`, `LiveTicker`, `FilterRail`, `MatchCard`, `BetSlip`, `LoginModal`, `MatchDetailModal`, `SiteFooter`, `GameSwitcher` y `Modal`.
-- Catálogo frontend con OpenDota real (`catalog.ts`); fallback `Radiant`/`Dire` para partidas en vivo sin equipos nombrados.
-- Selector multi-juego con Dota 2 activo y CS2/LoL/Valorant como “Pronto”.
-- Hidratación corregida normalizando espacios de `Intl` en fechas y números.
-- Componentes antiguos (`PulseLine`, `StatusPill`, `useBackendHealth`) eliminados.
-- Verificación visual headless del lobby en 1440/1024/390, modal de login, modal de partido, tab de mercados y toggle ES/EN.
-- Colector Javalin con `POST /gsi`, `GET /health` y persistencia local de payloads.
-- `infra/docker-compose.yml` con PostgreSQL 17 y healthcheck; `infra/.env.example`.
-- Backend reconfigurado a `8081`; `next.config.ts`, README y arquitectura actualizados.
-- Docker Desktop instalado y PostgreSQL 17.11 levantado con `infra/docker-compose.yml` (contenedor `betpulse-postgres`, `healthy`).
-- Smoke test completo frontend `3000` → proxy `/api/health` → backend `8081` → PostgreSQL.
-- Migración V2 con identidad, wallet, ledger e idempotencia; triggers de invariantes y cuentas de sistema.
-- Backend de identidad: registro, login, logout, `/me`, CSRF, sesión, roles y admin sembrado.
-- Backend de wallet: saldo, depósitos/retiros demo, holds/releases, historial e idempotencia.
-- Frontend de auth: `AuthProvider`, cliente API con CSRF, header autenticado y modal de login/registro real.
-- Página `/wallet` con saldo, operaciones demo, montos rápidos, historial y estados de UI.
-- Tests de integración con Testcontainers para auth, wallet/ledger e idempotencia.
-- Backend de catálogo M2a: `OpenDotaClient`, `CatalogService`, `CatalogScheduler`, `CatalogController`, DTOs y salud del feed; tests unitarios y de controller.
-- SSE de lobby: `LiveFeedService` y `LiveFeedController` con snapshot inicial, broadcast por evento de catálogo y heartbeat.
-- Frontend M2a: fetch server-side al backend, hook `useLobbyFeed`, badge de feed ES/EN y datos en vivo sin recarga.
-- CI básico en `.github/workflows/ci.yml` para backend, frontend y colector.
+- Documentación base y plan por hitos.
+- Backend base, Flyway, PostgreSQL, Spring Security y `/api/health`.
+- Frontend base con Next.js, React, Tailwind e i18n ES/EN.
+- Rediseño del lobby y componentes de catálogo, modales y wallet.
+- Colector Javalin con `/gsi`, `/health` y persistencia local.
+- Docker Compose con PostgreSQL 17 y smoke completo `3000` → `8081` → PostgreSQL.
+- V2 de identidad, wallet, ledger e idempotencia con triggers.
+- Auth real, wallet demo, holds/releases e historial.
+- Tests de auth, wallet, ledger e idempotencia con Testcontainers.
+- Catálogo OpenDota M2a con poller, salud y tests.
+- SSE de lobby con snapshot, broadcast y heartbeat.
+- V3 de mercados, selecciones e historial append-only.
+- Motor de cuotas M3a y sincronización transaccional.
+- M3b con cuatro mercados en vivo y UI de mercados múltiples.
+- V4 de apuestas y bet status history.
+- API de apuestas, hold transaccional, idempotencia y tests de concurrencia.
+- Bet slip funcional y página `/bets`.
+- CI básico para backend, frontend y colector.
 
 ## Verificación
 
 ```powershell
 cd backend
-.\mvnw.cmd test
+.\mvnw.cmd verify
 
 cd ..\frontend
-npm run build
 npm run lint
-
-cd ..\collector
-.\mvnw.cmd package
+npm run build
 ```
 
-Resultados 2026-10-26:
+Resultados 2026-10-27:
 
-- Backend: `.\mvnw.cmd verify` → 24/24 tests verdes (CatalogController 3, CatalogService 5, Auth 7, Wallet 8, Health 1).
-- Frontend: `npm run build` y `npm run lint` verdes; rutas `/` y `/wallet` generadas.
-- Flyway: V1 y V2 aplicadas sobre PostgreSQL 17.11; backend arranca y admin se siembra.
-- Catálogo: `GET /api/catalog/lobby` directo y vía proxy devuelve 6 live + 8 recent con `feed.status=LIVE`.
-- SSE: `GET /api/live/stream` vía proxy entrega snapshot inicial, 2 eventos `lobby` en 40 s y heartbeats cada 15 s; también verificado con `next start` (build de producción).
-- UI E2E con Chrome headless: home 1440/390 con badge “Feed en vivo”, cards en vivo y sin overflow; sin errores de consola salvo el 401 esperado de `/api/auth/me` en estado anónimo.
-- API vía proxy de Next.js: `GET /api/auth/csrf` → registro → `GET /api/wallet` → depósito → replay idempotente con el mismo `transactionId` y `replayed=true`.
-- UI E2E de wallet: registro → depósito S/ 50 → retiro S/ 20 → saldo S/ 30 → recarga → logout → login.
-- CI: workflow agregado; falta publicarlo para verlo verde en GitHub.
+- Backend: 49/49 tests verdes (Bet 9, CatalogController 3, CatalogService 5, Auth 7, MarketService 8, MarketController 1, OddsEngine 7, Wallet 8, Health 1).
+- Frontend: lint y build verdes; rutas `/`, `/wallet` y `/bets` generadas.
+- Flyway: V1–V4 aplicadas en Testcontainers y en la base local.
+- Catálogo real: 24 mercados abiertos (4 por cada una de las 6 partidas en vivo) con línea, versión y cuotas a 3 decimales.
+- SSE: snapshot `lobby`, snapshot `markets` y heartbeats.
+- E2E vía proxy de Next.js: registro → depósito S/ 100.00 → apuesta de S/ 10.00 → `PLACED`; disponible S/ 90.00, retenido S/ 10.00 y una apuesta en historial.
+- SSR: el lobby devuelve cards con “4 mercados” y cuotas reales; `/bets` renderiza correctamente.
+- CI: la primera ejecución del push `67f6bfd` terminó con backend y collector verdes; frontend falló en `npm ci` por lockfile desincronizado. El lockfile fue corregido y validado con npm 10; falta publicar para reejecutar.
 
 ## Próxima acción
 
-1. Publicar M1 + M2a (commit/push) para ejecutar el workflow de CI en GitHub.
-2. Cuando sea posible, activar `-gamestateintegration`, espectar una partida y capturar payloads reales para cerrar M0 y crear fixtures.
-3. M2b: contrato `/internal/ingest` con HMAC, `game_snapshots`/`game_events`, proyector de estado y SSE por partido, usando fixtures reales.
-4. En paralelo, iniciar M3 por la parte pre-partida: mercados y motor de cuotas con datos de OpenDota, sin depender de GSI.
+1. Publicar M3b + M4, la corrección del lockfile y los cambios de docs; confirmar CI verde.
+2. Implementar M5: liquidación exactly-once, payout/void y actualización de wallet.
+3. Añadir el panel admin de mercados (suspender/reanudar/override) y M3c cuando exista una fuente pre-partida.
+4. Cuando sea posible, activar `-gamestateintegration` y capturar payloads reales para cerrar M0 y crear fixtures de M2b.
 5. Actualizar este archivo al cerrar cada hito.
-
-Referencia para levantar el entorno:
-
-```powershell
-docker compose -f infra/docker-compose.yml up -d postgres
-
-cd backend
-.\mvnw.cmd spring-boot:run
-
-cd ..\frontend
-npm run dev
-```
-
-El backend escucha en `http://localhost:8081`.
 
 ## Bloqueos
 
-- Captura GSI real pendiente de que se active `-gamestateintegration` y se especte una partida; M2b no avanza sin fixtures.
-- CI aún no se ejecutó en GitHub; los cambios están sin publicar.
-- No hay mercados, cuotas, apuestas ni liquidación; los CTAs de apuesta siguen siendo UI y los mercados no se publican.
+- Captura GSI real pendiente; M2b y los mercados de primera sangre/torre/Roshan no avanzan sin fixtures.
+- No hay liquidación: las apuestas permanecen `PLACED` y el saldo retenido no se paga ni se libera todavía.
+- OpenDota no ofrece calendario futuro fiable para M3c.
+- CI de frontend pendiente de reejecución tras el push.
+- `npm audit` reporta 2 vulnerabilidades transitivas de Next.js/PostCSS; se resolverán en M7 o con una actualización mayor planificada.
 
 ## Preguntas abiertas
 

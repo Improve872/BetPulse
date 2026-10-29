@@ -17,12 +17,19 @@ import {
 } from "@/lib/format";
 import { useLanguage } from "@/lib/i18n";
 import type { LobbyMatch, LobbyTeam } from "@/lib/lobby";
-import type { Market } from "@/lib/markets";
+import {
+  marketTitle,
+  primaryMarket,
+  selectionLabel,
+  type Market,
+  type Selection,
+} from "@/lib/markets";
 
 type MatchCardProps = {
   match: LobbyMatch;
-  market?: Market;
+  markets?: Market[];
   onOpen: (match: LobbyMatch) => void;
+  onSelect: (match: LobbyMatch, market: Market, selection: Selection) => void;
 };
 
 function TeamRow({
@@ -72,9 +79,15 @@ function TeamRow({
   );
 }
 
-export function MatchCard({ match, market, onOpen }: MatchCardProps) {
+export function MatchCard({
+  match,
+  markets = [],
+  onOpen,
+  onSelect,
+}: MatchCardProps) {
   const { t, language } = useLanguage();
   const finished = match.state === "finished";
+  const market = primaryMarket(markets);
   const tournamentLabel =
     match.tournament ||
     (match.tournamentKind === "ranked" ? t("match.ranked") : t("match.pro"));
@@ -179,7 +192,14 @@ export function MatchCard({ match, market, onOpen }: MatchCardProps) {
             <span className="grid h-5 w-5 shrink-0 place-items-center rounded bg-white text-accent ring-1 ring-line">
               <TrophyIcon className="h-3 w-3" />
             </span>
-            <span className="truncate">{t("match.market")}</span>
+            <span className="truncate">
+              {market ? marketTitle(market, t) : t("match.market")}
+            </span>
+            {markets.length > 1 ? (
+              <span className="shrink-0 text-[9px] font-semibold text-muted">
+                {t("market.moreMarkets", { count: markets.length })}
+              </span>
+            ) : null}
             {market?.status === "SUSPENDED" ? (
               <span className="shrink-0 rounded bg-amber-50 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-amber-700 ring-1 ring-amber-200">
                 {t("market.suspended")}
@@ -202,8 +222,12 @@ export function MatchCard({ match, market, onOpen }: MatchCardProps) {
               <button
                 key={selection.key}
                 type="button"
-                onClick={() => onOpen(match)}
-                aria-label={`${selection.key === "RADIANT" ? t("market.radiant") : t("market.dire")} ${formatOdds(selection.odds)}`}
+                onClick={() =>
+                  market.status === "OPEN"
+                    ? onSelect(match, market, selection)
+                    : onOpen(match)
+                }
+                aria-label={`${selectionLabel(market, selection.key, t)} ${formatOdds(selection.odds)}`}
                 className={cn(
                   "flex items-center justify-between gap-2 rounded-lg border px-2.5 py-1.5 text-left transition",
                   market.status === "OPEN"
@@ -211,8 +235,8 @@ export function MatchCard({ match, market, onOpen }: MatchCardProps) {
                     : "border-line bg-white/60 opacity-70",
                 )}
               >
-                <span className="truncate text-[10px] font-semibold uppercase tracking-[0.08em] text-muted">
-                  {selection.key === "RADIANT" ? t("market.radiant") : t("market.dire")}
+                <span className="truncate text-[10px] font-semibold text-muted">
+                  {selectionLabel(market, selection.key, t)}
                 </span>
                 <span className="font-score text-sm font-semibold text-ink">
                   {formatOdds(selection.odds)}

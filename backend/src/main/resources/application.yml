@@ -52,3 +52,7 @@ betpulse:
     reference-game-seconds: 2400
     min-probability: 0.08
     max-probability: 0.92
+  betting:
+    min-stake-cents: 100
+    max-stake-cents: 100000
+    max-payout-cents: 1000000

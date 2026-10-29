@@ -13,6 +13,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.context.request.async.AsyncRequestNotUsableException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -44,6 +45,11 @@ public class GlobalExceptionHandler {
 	public ResponseEntity<ErrorResponse> handleUnreadableBody(HttpMessageNotReadableException exception) {
 		return ResponseEntity.badRequest()
 				.body(new ErrorResponse("INVALID_BODY", "El cuerpo de la solicitud no es válido."));
+	}
+
+	@ExceptionHandler(AsyncRequestNotUsableException.class)
+	public void handleClientDisconnect(AsyncRequestNotUsableException exception) {
+		log.debug("Client disconnected before the async response completed: {}", exception.getMessage());
 	}
 
 	@ExceptionHandler(DataIntegrityViolationException.class)

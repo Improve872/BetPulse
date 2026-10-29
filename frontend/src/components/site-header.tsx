@@ -142,7 +142,7 @@ export function SiteHeader({
           </button>
           {user ? (
             <Link
-              href="/wallet"
+              href="/bets"
               className={cn(navBase, "text-white/65 hover:bg-white/5 hover:text-white")}
             >
               {t("nav.myBets")}
@@ -303,11 +303,11 @@ export function SiteHeader({
               ))}
               {user ? (
                 <Link
-                  href="/wallet"
+                  href="/bets"
                   onClick={() => setMenuOpen(false)}
                   className="rounded-lg border border-line bg-white px-3 py-2.5 text-left text-sm font-medium text-ink transition hover:bg-slate-50"
                 >
-                  {t("header.wallet")}
+                  {t("nav.myBets")}
                 </Link>
               ) : (
                 <button

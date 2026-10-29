@@ -47,7 +47,7 @@ class MarketControllerTest {
 	private static LiveMarketsResponse sampleResponse() {
 		Instant now = Instant.parse("2026-10-26T12:00:00Z");
 		MarketView market = new MarketView(UUID.randomUUID(), "123", "MATCH_WINNER", "MATCH_WINNER",
-				"Ganador del mapa", "OPEN", 3, null, now,
+				"Ganador del mapa", "OPEN", null, 3, null, now,
 				List.of(new SelectionView("DIRE", "Dire", new BigDecimal("0.40000000"), new BigDecimal("2.350")),
 						new SelectionView("RADIANT", "Radiant", new BigDecimal("0.60000000"),
 								new BigDecimal("1.570"))));
