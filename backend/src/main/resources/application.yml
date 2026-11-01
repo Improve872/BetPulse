@@ -48,6 +48,8 @@ betpulse:
     stale-after: 3m
     result-scheduler-enabled: ${OPENDOTA_RESULT_SCHEDULER_ENABLED:true}
     result-max-attempts: ${OPENDOTA_RESULT_MAX_ATTEMPTS:20}
+  markets:
+    resolution-scheduler-enabled: ${MARKET_RESULT_SCHEDULER_ENABLED:true}
   odds:
     margin: 0.06
     kill-weight: 0.20

@@ -334,3 +334,20 @@ Formato: contexto → decisión → consecuencias. Actualizar cuando cambie una 
 - GSI/M2b queda diferido con los fixtures reales ya capturados.
 
 **Consecuencias:** la demo no depende de que haya una partida en vivo ni de espectar; si no hay torneo, el lobby cae a ranked. Sin key de Steam no hay draft, torres ni Roshan en vivo. Las partidas locales o con bots no existen en OpenDota: si en el futuro se crean mercados para ellas, su resultado tendra que venir de GSI y no de `match_results`.
+
+## ADR-028 - Resultados por mercado y reglas de settlement (V6)
+
+**Estado:** aceptada (2026-11-01)
+
+**Contexto:** M5 necesita un resultado ya resuelto por mercado. Hasta V5 los mercados pasaban a `CLOSED` sin dejar ganador, y la liquidacion no tenia de donde partir.
+
+**Decision:**
+
+- `market_results` guarda un resultado por mercado (`market_id` unico): `outcome` (`SETTLED`/`VOID`), `winning_selection_key`, `resolver` (`MARKET_RESULT_V1`), `details` JSON y `resolved_at`.
+- La resolucion solo consume `match_results` en estado `READY` o `VOID`; no consulta OpenDota ni GSI.
+- Reglas: `MATCH_WINNER` usa `radiant_win`; `TOTAL_KILLS` compara kills totales con la linea; `KILL_HANDICAP` compara la diferencia final con la linea (RADIANT si `radiantKills - direKills > line`); `DURATION` compara minutos finales con la linea.
+- Sin resultado valido, linea ausente o `match_results` en `VOID`, el mercado queda `VOID` sin ganador.
+- El mercado resuelto pasa a `SETTLED` o `VOID` y no se reabre. La resolucion es idempotente: `ON CONFLICT (market_id) DO NOTHING`.
+- Un scheduler cada 30 s resuelve mercados pendientes; se puede desactivar con `betpulse.markets.resolution-scheduler-enabled=false`.
+
+**Consecuencias:** M5 ya tiene una entrada estable: apuestas sobre mercados `SETTLED`/`VOID` con ganador y detalles auditables. Queda para M5 el pago, el void de apuestas, la cola `NEEDS_REVIEW` y la administracion. Las apuestas existentes no se tocan todavia.

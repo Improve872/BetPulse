@@ -162,6 +162,13 @@ Fuente de verdad:
 - OpenDota para verificación cuando exista `match_id`.
 - Si hay discrepancia: `NEEDS_REVIEW` y decisión admin.
 
+Resultado por mercado (`market_results`):
+
+- Un resultado por mercado (`market_id` único): `SETTLED` con selección ganadora o `VOID`.
+- `MATCH_WINNER` usa `radiant_win`; `TOTAL_KILLS` compara kills totales; `KILL_HANDICAP` compara `radiantKills - direKills`; `DURATION` compara minutos jugados.
+- Sin resultado válido, línea ausente o partido `VOID`: mercado `VOID`.
+- Un mercado resuelto pasa a `SETTLED`/`VOID` y no se reabre.
+
 Reglas:
 
 - Una sola liquidación por apuesta (`UNIQUE (bet_id)`).
@@ -178,6 +185,7 @@ Reglas:
 - `ledger_entries` suma cero por transacción.
 - `bets` unique `(user_id, idempotency_key)`.
 - `settlements` unique `bet_id`.
+- `market_results` unique `(market_id)`.
 - `game_events` unique `(match_id, event_id)`.
 - `odds_history` append-only.
 - `audit_logs` append-only.

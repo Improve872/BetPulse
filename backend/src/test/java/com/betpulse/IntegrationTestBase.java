@@ -11,7 +11,8 @@ import org.testcontainers.containers.PostgreSQLContainer;
 @AutoConfigureMockMvc
 @TestPropertySource(properties = {
 		"betpulse.opendota.scheduler-enabled=false",
-		"betpulse.opendota.result-scheduler-enabled=false"
+		"betpulse.opendota.result-scheduler-enabled=false",
+		"betpulse.markets.resolution-scheduler-enabled=false"
 })
 public abstract class IntegrationTestBase {
 

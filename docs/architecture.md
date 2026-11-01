@@ -52,7 +52,7 @@ En desarrollo, Next.js hace proxy de `/api` al backend para evitar CORS y compar
 | `identity` | Registro, login, sesiones, roles |
 | `catalog` | Catálogo OpenDota, poller, caché y contrato del lobby |
 | `live` | SSE de lobby, salud del feed y resolución de resultados finales (`match_results`); ingesta GSI pendiente (M2b) |
-| `markets` | Mercados, selecciones, versiones, suspensiones |
+| `markets` | Mercados, selecciones, versiones, suspensiones y resultados por mercado (`market_results`) |
 | `odds` | Modelos, probabilidad, margen, historial |
 | `betting` | Bet slip, validación, holds, límites |
 | `wallet` | Ledger, saldos, depósitos/retiros simulados |
@@ -83,9 +83,10 @@ En desarrollo, Next.js hace proxy de `/api` al backend para evitar CORS y compar
 5. El motor de cuotas recalcula los mercados `MATCH_WINNER`, `TOTAL_KILLS`, `KILL_HANDICAP` y `DURATION` en cada refresco del catálogo, aplica margen, versiona si cambian las cuotas y publica por SSE (M3a/M3b).
 6. OpenDota se consulta periódicamente para catálogo, partidos secundarios, pre-partida y verificación.
 7. El usuario apuesta: el backend valida mercado, versión, cuota, límites y saldo; retiene fondos, registra la apuesta y su estado inicial `PLACED` (M4).
-8. Cuando los mercados de una partida se cierran, `MatchResultService` encola `match_results` y consulta OpenDota `/matches/{id}` con backoff hasta guardar el resultado final y los objetivos (primera sangre, torres, Roshan). Ese resultado ya resuelto es la entrada de M5.
-9. Al terminar el partido, el settlement liquida de forma idempotente, paga al ganador y audita (M5).
-10. Depósitos/retiros simulados pasan por la abstracción de pagos y el ledger.
+8. Cuando los mercados de una partida se cierran, `MatchResultService` encola `match_results` y consulta OpenDota `/matches/{id}` con backoff hasta guardar el resultado final y los objetivos (primera sangre, torres, Roshan).
+9. `MarketResultService` convierte ese resultado en un resultado por mercado (`market_results`): `SETTLED` con selección ganadora o `VOID`, y cierra el mercado como `SETTLED`/`VOID`. Es idempotente.
+10. Al terminar el partido, el settlement liquida de forma idempotente, paga al ganador y audita (M5).
+11. Depósitos/retiros simulados pasan por la abstracción de pagos y el ledger.
 
 ## Fuente híbrida
 
@@ -115,6 +116,7 @@ Reglas:
 - `idempotency_keys`
 - `matches`, `tournaments`, `teams`, `players`, `match_participants`
 - `match_results` (resultado final verificado y objetivos de la partida)
+- `market_results` (resultado por mercado: ganador o void)
 - `game_snapshots`, `game_events`, `match_state`
 - `markets`, `selections`, `odds_history`, `market_suspensions`
 - `bets`, `bet_selections`, `bet_status_history`
