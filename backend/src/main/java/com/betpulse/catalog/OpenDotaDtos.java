@@ -1,5 +1,7 @@
 package com.betpulse.catalog;
 
+import java.util.List;
+
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -23,6 +25,37 @@ public final class OpenDotaDtos {
 			@JsonProperty("team_name_radiant") String teamNameRadiant,
 			@JsonProperty("team_name_dire") String teamNameDire,
 			@JsonProperty("is_watch_eligible") Boolean watchEligible) {
+	}
+
+	@JsonIgnoreProperties(ignoreUnknown = true)
+	public record League(
+			@JsonProperty("leagueid") Long leagueId,
+			@JsonProperty("name") String name,
+			@JsonProperty("tier") String tier) {
+	}
+
+	@JsonIgnoreProperties(ignoreUnknown = true)
+	public record MatchDetails(
+			@JsonProperty("match_id") Long matchId,
+			@JsonProperty("radiant_win") Boolean radiantWin,
+			@JsonProperty("radiant_score") Integer radiantScore,
+			@JsonProperty("dire_score") Integer direScore,
+			@JsonProperty("duration") Long duration,
+			@JsonProperty("first_blood_time") Long firstBloodTime,
+			@JsonProperty("leagueid") Long leagueId,
+			@JsonProperty("start_time") Long startTime,
+			@JsonProperty("game_mode") Integer gameMode,
+			@JsonProperty("lobby_type") Integer lobbyType,
+			@JsonProperty("objectives") List<Objective> objectives) {
+	}
+
+	@JsonIgnoreProperties(ignoreUnknown = true)
+	public record Objective(
+			@JsonProperty("time") Long time,
+			@JsonProperty("type") String type,
+			@JsonProperty("team") Integer team,
+			@JsonProperty("slot") Integer slot,
+			@JsonProperty("key") String key) {
 	}
 
 	@JsonIgnoreProperties(ignoreUnknown = true)

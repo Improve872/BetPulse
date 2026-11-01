@@ -26,6 +26,7 @@ public class CatalogService {
 	private static final int RECENT_LIMIT = 8;
 
 	private final OpenDotaClient openDotaClient;
+	private final LeagueNameCache leagueNames;
 	private final ApplicationEventPublisher eventPublisher;
 	private final OpenDotaProperties properties;
 	private final Clock clock;
@@ -38,9 +39,10 @@ public class CatalogService {
 	private volatile int consecutiveFailures;
 	private volatile String lastError;
 
-	public CatalogService(OpenDotaClient openDotaClient, ApplicationEventPublisher eventPublisher,
-			OpenDotaProperties properties, Clock clock) {
+	public CatalogService(OpenDotaClient openDotaClient, LeagueNameCache leagueNames,
+			ApplicationEventPublisher eventPublisher, OpenDotaProperties properties, Clock clock) {
 		this.openDotaClient = openDotaClient;
+		this.leagueNames = leagueNames;
 		this.eventPublisher = eventPublisher;
 		this.properties = properties;
 		this.clock = clock;
@@ -120,7 +122,9 @@ public class CatalogService {
 				.filter(match -> value(match.gameTime()) > 0)
 				.filter(match -> value(match.deactivateTime()) == 0)
 				.sorted(Comparator
-						.comparingInt((LiveMatch match) -> value(match.spectators())).reversed()
+						.comparingInt((LiveMatch match) -> value(match.leagueId()) > 0 ? 0 : 1)
+						.thenComparing(Comparator
+								.comparingInt((LiveMatch match) -> value(match.spectators())).reversed())
 						.thenComparing(Comparator
 								.comparingInt((LiveMatch match) -> value(match.averageMmr())).reversed()))
 				.limit(LIVE_LIMIT)
@@ -142,13 +146,15 @@ public class CatalogService {
 		String radiantName = hasText(match.teamNameRadiant()) ? match.teamNameRadiant().trim() : "Radiant";
 		String direName = hasText(match.teamNameDire()) ? match.teamNameDire().trim() : "Dire";
 		int delay = value(match.delay());
+		boolean pro = value(match.leagueId()) > 0;
+		String tournament = pro ? leagueNames.name(value(match.leagueId())) : "";
 
 		return new LobbyMatch(
 				String.valueOf(match.matchId()),
 				"dota2",
 				"live",
-				"",
-				value(match.leagueId()) > 0 ? "pro" : "ranked",
+				tournament,
+				pro ? "pro" : "ranked",
 				"",
 				value(match.activateTime()),
 				value(match.gameTime()),

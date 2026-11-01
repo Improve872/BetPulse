@@ -14,6 +14,7 @@ public class OpenDotaProperties {
 	private Duration backoffBase = Duration.ofSeconds(30);
 	private Duration backoffMax = Duration.ofMinutes(5);
 	private Duration staleAfter = Duration.ofMinutes(3);
+	private int resultMaxAttempts = 20;
 
 	public String getBaseUrl() {
 		return baseUrl;
@@ -69,6 +70,14 @@ public class OpenDotaProperties {
 
 	public void setStaleAfter(Duration staleAfter) {
 		this.staleAfter = staleAfter;
+	}
+
+	public int getResultMaxAttempts() {
+		return resultMaxAttempts;
+	}
+
+	public void setResultMaxAttempts(int resultMaxAttempts) {
+		this.resultMaxAttempts = resultMaxAttempts;
 	}
 
 }

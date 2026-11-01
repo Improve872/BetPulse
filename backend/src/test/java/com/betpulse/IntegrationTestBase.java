@@ -9,7 +9,10 @@ import org.testcontainers.containers.PostgreSQLContainer;
 
 @SpringBootTest
 @AutoConfigureMockMvc
-@TestPropertySource(properties = "betpulse.opendota.scheduler-enabled=false")
+@TestPropertySource(properties = {
+		"betpulse.opendota.scheduler-enabled=false",
+		"betpulse.opendota.result-scheduler-enabled=false"
+})
 public abstract class IntegrationTestBase {
 
 	private static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>("postgres:17-alpine");

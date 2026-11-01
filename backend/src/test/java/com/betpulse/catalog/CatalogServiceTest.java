@@ -2,6 +2,8 @@ package com.betpulse.catalog;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -32,6 +34,9 @@ class CatalogServiceTest {
 	private OpenDotaClient openDotaClient;
 
 	@Mock
+	private LeagueNameCache leagueNames;
+
+	@Mock
 	private ApplicationEventPublisher eventPublisher;
 
 	private MutableClock clock;
@@ -42,7 +47,8 @@ class CatalogServiceTest {
 	void setUp() {
 		clock = new MutableClock(Instant.parse("2026-10-26T12:00:00Z"));
 		properties = new OpenDotaProperties();
-		service = new CatalogService(openDotaClient, eventPublisher, properties, clock);
+		service = new CatalogService(openDotaClient, leagueNames, eventPublisher, properties, clock);
+		lenient().when(leagueNames.name(anyLong())).thenAnswer(invocation -> "Liga " + invocation.getArgument(0));
 	}
 
 	@Test
@@ -84,11 +90,14 @@ class CatalogServiceTest {
 
 		assertThat(response.live()).hasSize(6);
 		assertThat(response.live()).extracting(match -> match.id())
-				.containsExactly("2", "6", "7", "1", "8", "9");
+				.containsExactly("2", "7", "1", "8", "9", "6");
 		assertThat(response.live().getFirst().radiant().name()).isEqualTo("Radiant 2");
 		assertThat(response.live().getFirst().dire().score()).isEqualTo(7);
 		assertThat(response.live().getFirst().delaySeconds()).isEqualTo(120);
-		assertThat(response.live().get(1).tournamentKind()).isEqualTo("ranked");
+		assertThat(response.live().getFirst().tournamentKind()).isEqualTo("pro");
+		assertThat(response.live().getFirst().tournament()).isEqualTo("Liga 1");
+		assertThat(response.live().getLast().tournamentKind()).isEqualTo("ranked");
+		assertThat(response.live().getLast().tournament()).isEmpty();
 
 		assertThat(response.recent()).hasSize(8);
 		assertThat(response.recent()).extracting(match -> match.id())

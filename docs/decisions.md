@@ -317,3 +317,20 @@ Formato: contexto → decisión → consecuencias. Actualizar cuando cambie una 
 
 **Consecuencias:** el arranque de una sesión cuesta un documento en lugar de seis. El estado no puede divergir porque solo existe en un sitio. Se pierde la comodidad del historial de chat, que se sustituye por `STATUS.md` y `docs/milestones/`. La disciplina de commit antes de cerrar pasa a ser parte de la Definition of Done.
 
+
+## ADR-027 - Feed competitivo sin GSI y resolucion de resultados
+
+**Estado:** aceptada (2026-11-01)
+
+**Contexto:** la demo necesita partidas de torneo con cuotas que fluctuen sin abrir Dota 2 ni espectar. GSI solo emite mientras se especta. OpenDota `/live` entrega hasta 100 partidas con `league_id`, marcador, tiempo, ventaja de oro y `building_state`, pero no trae el nombre de la liga ni eventos. OpenDota `/matches/{id}` entrega el resultado final, `first_blood_time`, `picks_bans` y `objectives` con tiempos exactos.
+
+**Decision:**
+
+- Las partidas con `league_id > 0` de `/live` se priorizan sobre las ranked en el lobby y muestran el nombre de liga resuelto con `/leagues/{id}` (cache de 6 h, negativo de 10 min).
+- Las cuotas se siguen calculando con marcador y tiempo reales; no se simula movimiento ni se inventan eventos.
+- Cuando los mercados de un partido se cierran, se encola una fila `PENDING` en `match_results` y se consulta `/matches/{id}` con backoff (60 s base, tope 30 min, 20 intentos). Al obtener resultado se guarda `READY` con ganador, scores, duracion, `first_blood_time`, `league_id` y `objectives` como JSON.
+- `match_results` es la entrada del settlement de M5: la liquidacion consume un resultado ya resuelto y no consulta la fuente.
+- Steam `GetLiveLeagueGames` queda como enriquecimiento opcional (torres, Roshan, draft, net worth) cuando exista `STEAM_API_KEY`. Sin key, el sistema funciona con OpenDota.
+- GSI/M2b queda diferido con los fixtures reales ya capturados.
+
+**Consecuencias:** la demo no depende de que haya una partida en vivo ni de espectar; si no hay torneo, el lobby cae a ranked. Sin key de Steam no hay draft, torres ni Roshan en vivo. Las partidas locales o con bots no existen en OpenDota: si en el futuro se crean mercados para ellas, su resultado tendra que venir de GSI y no de `match_results`.

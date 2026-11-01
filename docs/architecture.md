@@ -51,7 +51,7 @@ En desarrollo, Next.js hace proxy de `/api` al backend para evitar CORS y compar
 |---|---|
 | `identity` | Registro, login, sesiones, roles |
 | `catalog` | Catálogo OpenDota, poller, caché y contrato del lobby |
-| `live` | SSE de lobby, salud del feed; ingesta GSI pendiente (M2b) |
+| `live` | SSE de lobby, salud del feed y resolución de resultados finales (`match_results`); ingesta GSI pendiente (M2b) |
 | `markets` | Mercados, selecciones, versiones, suspensiones |
 | `odds` | Modelos, probabilidad, margen, historial |
 | `betting` | Bet slip, validación, holds, límites |
@@ -83,8 +83,9 @@ En desarrollo, Next.js hace proxy de `/api` al backend para evitar CORS y compar
 5. El motor de cuotas recalcula los mercados `MATCH_WINNER`, `TOTAL_KILLS`, `KILL_HANDICAP` y `DURATION` en cada refresco del catálogo, aplica margen, versiona si cambian las cuotas y publica por SSE (M3a/M3b).
 6. OpenDota se consulta periódicamente para catálogo, partidos secundarios, pre-partida y verificación.
 7. El usuario apuesta: el backend valida mercado, versión, cuota, límites y saldo; retiene fondos, registra la apuesta y su estado inicial `PLACED` (M4).
-8. Al terminar el partido, el settlement liquida de forma idempotente, paga al ganador y audita (M5).
-9. Depósitos/retiros simulados pasan por la abstracción de pagos y el ledger.
+8. Cuando los mercados de una partida se cierran, `MatchResultService` encola `match_results` y consulta OpenDota `/matches/{id}` con backoff hasta guardar el resultado final y los objetivos (primera sangre, torres, Roshan). Ese resultado ya resuelto es la entrada de M5.
+9. Al terminar el partido, el settlement liquida de forma idempotente, paga al ganador y audita (M5).
+10. Depósitos/retiros simulados pasan por la abstracción de pagos y el ledger.
 
 ## Fuente híbrida
 
@@ -105,12 +106,15 @@ Reglas:
 
 > Implementación M2a: el backend es la única fuente del catálogo. El poller (`CatalogScheduler` + `CatalogService`) mantiene un snapshot en memoria; `GET /api/catalog/lobby` lo expone y `GET /api/live/stream` lo difunde por SSE. El frontend ya no llama OpenDota. La caché se pierde al reiniciar el backend y se reconstruye con el primer poll. No se usan cuotas ni datos simulados.
 
+> Implementación del feed competitivo (2026-11-01): las partidas con `league_id > 0` de OpenDota `/live` se priorizan sobre las ranked y muestran el nombre de liga resuelto con `/leagues/{id}` (caché de 6 h). No hace falta espectar ni abrir Dota 2: las cuotas se mueven con marcador y tiempo. Steam `GetLiveLeagueGames` queda como enriquecimiento opcional cuando exista API key. Al cerrarse los mercados de un partido, `MatchResultService` persiste el resultado final en `match_results` para M5.
+
 ## Modelo de datos (alto nivel)
 
 - `users`, `roles`
 - `wallets`, `ledger_accounts`, `ledger_transactions`, `ledger_entries`
 - `idempotency_keys`
 - `matches`, `tournaments`, `teams`, `players`, `match_participants`
+- `match_results` (resultado final verificado y objetivos de la partida)
 - `game_snapshots`, `game_events`, `match_state`
 - `markets`, `selections`, `odds_history`, `market_suspensions`
 - `bets`, `bet_selections`, `bet_status_history`

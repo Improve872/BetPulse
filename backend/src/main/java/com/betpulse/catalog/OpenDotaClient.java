@@ -13,7 +13,9 @@ import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestClientResponseException;
 import org.springframework.web.util.UriBuilder;
 
+import com.betpulse.catalog.OpenDotaDtos.League;
 import com.betpulse.catalog.OpenDotaDtos.LiveMatch;
+import com.betpulse.catalog.OpenDotaDtos.MatchDetails;
 import com.betpulse.catalog.OpenDotaDtos.ProMatch;
 
 @Component
@@ -23,6 +25,10 @@ public class OpenDotaClient {
 	private static final ParameterizedTypeReference<List<LiveMatch>> LIVE_TYPE = new ParameterizedTypeReference<>() {
 	};
 	private static final ParameterizedTypeReference<List<ProMatch>> PRO_TYPE = new ParameterizedTypeReference<>() {
+	};
+	private static final ParameterizedTypeReference<League> LEAGUE_TYPE = new ParameterizedTypeReference<>() {
+	};
+	private static final ParameterizedTypeReference<MatchDetails> MATCH_TYPE = new ParameterizedTypeReference<>() {
 	};
 
 	private final RestClient restClient;
@@ -39,6 +45,14 @@ public class OpenDotaClient {
 
 	public List<ProMatch> fetchProMatches() {
 		return get("/proMatches", PRO_TYPE);
+	}
+
+	public League fetchLeague(long leagueId) {
+		return get("/leagues/" + leagueId, LEAGUE_TYPE);
+	}
+
+	public MatchDetails fetchMatch(long matchId) {
+		return get("/matches/" + matchId, MATCH_TYPE);
 	}
 
 	private <T> T get(String path, ParameterizedTypeReference<T> type) {
