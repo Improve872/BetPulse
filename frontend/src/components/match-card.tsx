@@ -90,7 +90,13 @@ export function MatchCard({
   const market = primaryMarket(markets);
   const tournamentLabel =
     match.tournament ||
-    (match.tournamentKind === "ranked" ? t("match.ranked") : t("match.pro"));
+    (match.tournamentKind === "ranked"
+      ? t("match.ranked")
+      : match.tournamentKind === "gsi"
+        ? t("match.gsi")
+        : t("match.pro"));
+  const gsiLabel =
+    match.playersScope === "LOCAL" ? t("match.practice") : t("match.spectating");
 
   return (
     <article className="group overflow-hidden rounded-2xl border border-line bg-surface shadow-card transition duration-200 hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-card-hover">
@@ -107,13 +113,35 @@ export function MatchCard({
               {match.format}
             </span>
           ) : null}
+          {match.source === "GSI" ? (
+            <span className="shrink-0 rounded bg-accent/10 px-1.5 py-0.5 text-[10px] font-semibold text-accent-strong">
+              {gsiLabel}
+            </span>
+          ) : null}
         </div>
 
         {match.state === "live" ? (
-          <span className="inline-flex shrink-0 items-center gap-1.5 rounded-md bg-live/10 px-2 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-live">
-            <span className="live-dot live-dot-sm" />
-            {t("match.live")}
-            <span className="font-mono font-medium text-live/70">
+          <span
+            className={cn(
+              "inline-flex shrink-0 items-center gap-1.5 rounded-md px-2 py-1 text-[10px] font-bold uppercase tracking-[0.12em]",
+              match.paused
+                ? "bg-amber-50 text-amber-700"
+                : "bg-live/10 text-live",
+            )}
+          >
+            <span
+              className={cn(
+                "h-1.5 w-1.5 rounded-full",
+                match.paused ? "bg-amber-500" : "live-dot live-dot-sm",
+              )}
+            />
+            {match.paused ? t("match.paused") : t("match.live")}
+            <span
+              className={cn(
+                "font-mono font-medium",
+                match.paused ? "text-amber-700/70" : "text-live/70",
+              )}
+            >
               {formatGameTime(match.durationSeconds)}
             </span>
           </span>

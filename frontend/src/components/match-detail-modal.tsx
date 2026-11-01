@@ -104,7 +104,11 @@ export function MatchDetailModal({
   const finished = match.state === "finished";
   const tournamentLabel =
     match.tournament ||
-    (match.tournamentKind === "ranked" ? t("match.ranked") : t("match.pro"));
+    (match.tournamentKind === "ranked"
+      ? t("match.ranked")
+      : match.tournamentKind === "gsi"
+        ? t("match.gsi")
+        : t("match.pro"));
   const winnerName = match.radiant.winner
     ? match.radiant.name
     : match.dire.name;
@@ -134,7 +138,14 @@ export function MatchDetailModal({
             </h2>
             <p className="mt-1 text-xs text-white/50">
               {match.format ? `${match.format} · ` : ""}
-              {finished ? t("match.final") : t("match.live")}
+              {finished
+                ? t("match.final")
+                : match.paused
+                  ? t("match.paused")
+                  : t("match.live")}
+              {match.source === "GSI"
+                ? ` · ${match.playersScope === "LOCAL" ? t("match.practice") : t("match.spectating")}`
+                : ""}
             </p>
           </div>
           <button

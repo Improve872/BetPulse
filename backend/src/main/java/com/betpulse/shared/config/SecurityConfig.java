@@ -30,12 +30,13 @@ public class SecurityConfig {
 		return http
 				.csrf(csrf -> csrf
 						.csrfTokenRepository(new HttpSessionCsrfTokenRepository())
-						.ignoringRequestMatchers("/api/health", "/actuator/health"))
+						.ignoringRequestMatchers("/api/health", "/actuator/health", "/internal/**"))
 				.securityContext(context -> context.securityContextRepository(securityContextRepository))
 				.sessionManagement(session -> session.sessionFixation(fixation -> fixation.migrateSession()))
 				.authorizeHttpRequests(auth -> auth
 						.requestMatchers("/api/health", "/actuator/health", "/api/auth/csrf", "/api/auth/login",
-								"/api/auth/register", "/api/catalog/**", "/api/live/**", "/api/markets/**")
+								"/api/auth/register", "/api/catalog/**", "/api/live/**", "/api/markets/**",
+								"/internal/**")
 						.permitAll()
 						.anyRequest().authenticated())
 				.exceptionHandling(exceptions -> exceptions

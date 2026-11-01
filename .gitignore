@@ -18,6 +18,7 @@ npm-debug.log*
 # Capturas GSI
 scripts/gsi-capture/captures/
 collector/captures/
+collector/spool/
 
 # IDE
 .idea/

@@ -101,6 +101,27 @@ class BetFlowTest extends IntegrationTestBase {
 	}
 
 	@Test
+	void rejectsStakeAbovePracticeLimit() throws Exception {
+		RegisteredUser user = registerUser();
+		walletService.deposit(user.id(), 20_000, "deposit-" + UUID.randomUUID());
+		MarketInfo market = createMarket(12, 8);
+		jdbcTemplate.update("UPDATE markets SET practice = true, source = 'GSI' WHERE id = ?", market.id());
+
+		mockMvc.perform(post("/api/bets")
+				.session(user.session())
+				.with(csrf())
+				.header("Idempotency-Key", "bet-" + UUID.randomUUID())
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(body(market, "RADIANT", 15_000, market.radiantOdds(), market.version())))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.code").value("INVALID_STAKE"));
+
+		assertThat(jdbcTemplate.queryForObject("SELECT COUNT(*) FROM bets WHERE user_id = ?",
+				Integer.class, user.id())).isZero();
+		assertThat(walletService.getBalance(user.id()).heldCents()).isZero();
+	}
+
+	@Test
 	void replayReturnsSameBetWithoutSecondHold() throws Exception {
 		RegisteredUser user = registerUser();
 		walletService.deposit(user.id(), 10_000, "deposit-" + UUID.randomUUID());
@@ -324,7 +345,7 @@ class BetFlowTest extends IntegrationTestBase {
 				now.getEpochSecond(), 1200,
 				new LobbyTeam("Team Radiant", radiantKills, "radiant", null),
 				new LobbyTeam("Team Dire", direKills, "dire", null),
-				7000, 500, 120));
+				7000, 500, 120, "OPENDOTA", null, null, null));
 		return new LobbyResponse(live, List.of(), now,
 				new FeedHealth("OPENDOTA", "LIVE", now, now, now.plusSeconds(30), 0, null, false));
 	}

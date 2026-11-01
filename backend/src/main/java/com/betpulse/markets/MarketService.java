@@ -71,17 +71,16 @@ public class MarketService {
 	@Transactional
 	public synchronized void sync(LobbyResponse lobby) {
 		FeedHealth feed = lobby.feed();
-		if (!isTrusted(feed)) {
-			suspendAll(reason(feed));
-			publish();
-			return;
-		}
-
+		boolean trusted = isTrusted(feed);
 		Set<String> liveMatchIds = lobby.live().stream()
 				.map(LobbyMatch::id)
 				.collect(Collectors.toSet());
 		for (LobbyMatch match : lobby.live()) {
-			syncMatch(match);
+			if ("GSI".equals(match.source()) || trusted) {
+				syncMatch(match);
+			} else {
+				suspendMatches(match.id(), reason(feed));
+			}
 		}
 		closeMissing(liveMatchIds);
 		publish();
@@ -130,11 +129,14 @@ public class MarketService {
 		long gameTimeSeconds = match.durationSeconds();
 		BigDecimal initialLine = oddsEngine.initialLine(kind, radiantKills, direKills, gameTimeSeconds);
 
+		boolean practice = "LOCAL".equals(match.playersScope());
+		String source = match.source() == null ? "OPENDOTA" : match.source();
 		jdbcTemplate.update("""
-				INSERT INTO markets (match_id, market_key, market_type, title, line, status, opened_at)
-				VALUES (?, ?, ?, ?, CAST(? AS NUMERIC), ?, now())
+				INSERT INTO markets (match_id, market_key, market_type, title, line, status, source, practice,
+				    opened_at)
+				VALUES (?, ?, ?, ?, CAST(? AS NUMERIC), ?, ?, ?, now())
 				ON CONFLICT (match_id, market_key) DO NOTHING
-				""", match.id(), kind.name(), kind.name(), kind.title(), initialLine, OPEN);
+				""", match.id(), kind.name(), kind.name(), kind.title(), initialLine, OPEN, source, practice);
 
 		MarketState market = jdbcTemplate.queryForObject("""
 				SELECT id, status, version, line
@@ -146,6 +148,11 @@ public class MarketService {
 				resultSet.getInt("version"),
 				resultSet.getBigDecimal("line")), match.id(), kind.name());
 		if (market == null || isTerminal(market.status())) {
+			return;
+		}
+
+		if (Boolean.TRUE.equals(match.paused())) {
+			suspendMarket(market.id(), "MATCH_PAUSED");
 			return;
 		}
 
@@ -210,16 +217,25 @@ public class MarketService {
 				""", marketId, version, quote.selectionKey(), quote.probability(), quote.odds(), SOURCE);
 	}
 
-	private void suspendAll(String reason) {
+	private void suspendMatches(String matchId, String reason) {
 		int updated = jdbcTemplate.update("""
 				UPDATE markets
 				SET status = ?, suspension_reason = ?, suspended_at = COALESCE(suspended_at, now()),
 				    updated_at = now()
-				WHERE status IN (?, ?)
-				""", SUSPENDED, reason, OPEN, SUSPENDED);
+				WHERE match_id = ? AND status IN (?, ?)
+				""", SUSPENDED, reason, matchId, OPEN, SUSPENDED);
 		if (updated > 0) {
-			log.warn("Mercados suspendidos por salud del feed: {} ({} mercados)", reason, updated);
+			log.warn("Mercados de {} suspendidos por salud del feed: {} ({} mercados)", matchId, reason, updated);
 		}
+	}
+
+	private void suspendMarket(UUID marketId, String reason) {
+		jdbcTemplate.update("""
+				UPDATE markets
+				SET status = ?, suspension_reason = ?, suspended_at = COALESCE(suspended_at, now()),
+				    updated_at = now()
+				WHERE id = ? AND status IN (?, ?)
+				""", SUSPENDED, reason, marketId, OPEN, SUSPENDED);
 	}
 
 	private void closeMarket(UUID marketId) {

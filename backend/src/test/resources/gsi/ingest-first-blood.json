@@ -1,0 +1,388 @@
+{
+    "schemaVersion":  1,
+    "sessionId":  "adf699e5-4e69-4f6f-9d86-e1ca606c97ab",
+    "snapshotId":  "91214c26-143c-4fb7-b3fe-3516b5cf4352",
+    "matchId":  "9072345549",
+    "capturedAt":  "2026-11-01T23:25:28Z",
+    "clockTime":  76,
+    "gameTime":  309,
+    "gameState":  "DOTA_GAMERULES_STATE_GAME_IN_PROGRESS",
+    "paused":  false,
+    "radiantScore":  1,
+    "direScore":  0,
+    "winTeam":  "none",
+    "leagueId":  null,
+    "leagueName":  null,
+    "players":  [
+                    {
+                        "accountId":  "186580415",
+                        "name":  "obsessed",
+                        "team":  "radiant",
+                        "slot":  5,
+                        "kills":  1,
+                        "deaths":  0,
+                        "assists":  0,
+                        "lastHits":  5,
+                        "denies":  1,
+                        "gold":  110,
+                        "netWorth":  1200,
+                        "gpm":  534,
+                        "xpm":  179
+                    },
+                    {
+                        "accountId":  "178913403",
+                        "name":  "Polymorph",
+                        "team":  "radiant",
+                        "slot":  2,
+                        "kills":  0,
+                        "deaths":  0,
+                        "assists":  1,
+                        "lastHits":  0,
+                        "denies":  0,
+                        "gold":  238,
+                        "netWorth":  673,
+                        "gpm":  181,
+                        "xpm":  179
+                    },
+                    {
+                        "accountId":  "175463659",
+                        "name":  "Cooman",
+                        "team":  "radiant",
+                        "slot":  7,
+                        "kills":  0,
+                        "deaths":  0,
+                        "assists":  0,
+                        "lastHits":  9,
+                        "denies":  1,
+                        "gold":  57,
+                        "netWorth":  907,
+                        "gpm":  329,
+                        "xpm":  292
+                    },
+                    {
+                        "accountId":  "911937022",
+                        "name":  "zvbl",
+                        "team":  "radiant",
+                        "slot":  4,
+                        "kills":  0,
+                        "deaths":  0,
+                        "assists":  0,
+                        "lastHits":  4,
+                        "denies":  0,
+                        "gold":  42,
+                        "netWorth":  942,
+                        "gpm":  267,
+                        "xpm":  136
+                    },
+                    {
+                        "accountId":  "212958343",
+                        "name":  "m1ks\u0027",
+                        "team":  "radiant",
+                        "slot":  6,
+                        "kills":  0,
+                        "deaths":  0,
+                        "assists":  0,
+                        "lastHits":  1,
+                        "denies":  0,
+                        "gold":  71,
+                        "netWorth":  671,
+                        "gpm":  141,
+                        "xpm":  92
+                    },
+                    {
+                        "accountId":  "869040407",
+                        "name":  "Dylerzm",
+                        "team":  "dire",
+                        "slot":  8,
+                        "kills":  0,
+                        "deaths":  1,
+                        "assists":  0,
+                        "lastHits":  0,
+                        "denies":  2,
+                        "gold":  86,
+                        "netWorth":  736,
+                        "gpm":  153,
+                        "xpm":  78
+                    },
+                    {
+                        "accountId":  "867752791",
+                        "name":  "Shiro",
+                        "team":  "dire",
+                        "slot":  3,
+                        "kills":  0,
+                        "deaths":  0,
+                        "assists":  0,
+                        "lastHits":  5,
+                        "denies":  0,
+                        "gold":  433,
+                        "netWorth":  963,
+                        "gpm":  306,
+                        "xpm":  352
+                    },
+                    {
+                        "accountId":  "114035408",
+                        "name":  "tv/alikdota",
+                        "team":  "dire",
+                        "slot":  10,
+                        "kills":  0,
+                        "deaths":  0,
+                        "assists":  0,
+                        "lastHits":  1,
+                        "denies":  0,
+                        "gold":  76,
+                        "netWorth":  656,
+                        "gpm":  231,
+                        "xpm":  125
+                    },
+                    {
+                        "accountId":  "114285547",
+                        "name":  "chroMium",
+                        "team":  "dire",
+                        "slot":  1,
+                        "kills":  0,
+                        "deaths":  0,
+                        "assists":  0,
+                        "lastHits":  5,
+                        "denies":  0,
+                        "gold":  65,
+                        "netWorth":  960,
+                        "gpm":  304,
+                        "xpm":  159
+                    },
+                    {
+                        "accountId":  "913536856",
+                        "name":  ".",
+                        "team":  "dire",
+                        "slot":  9,
+                        "kills":  0,
+                        "deaths":  0,
+                        "assists":  0,
+                        "lastHits":  2,
+                        "denies":  0,
+                        "gold":  293,
+                        "netWorth":  843,
+                        "gpm":  213,
+                        "xpm":  78
+                    }
+                ],
+    "buildings":  [
+                      {
+                          "name":  "dota_goodguys_tower1_top",
+                          "health":  1800,
+                          "maxHealth":  1800
+                      },
+                      {
+                          "name":  "dota_goodguys_tower2_top",
+                          "health":  2500,
+                          "maxHealth":  2500
+                      },
+                      {
+                          "name":  "dota_goodguys_tower3_top",
+                          "health":  2500,
+                          "maxHealth":  2500
+                      },
+                      {
+                          "name":  "dota_goodguys_tower1_mid",
+                          "health":  1800,
+                          "maxHealth":  1800
+                      },
+                      {
+                          "name":  "dota_goodguys_tower2_mid",
+                          "health":  2500,
+                          "maxHealth":  2500
+                      },
+                      {
+                          "name":  "dota_goodguys_tower3_mid",
+                          "health":  2500,
+                          "maxHealth":  2500
+                      },
+                      {
+                          "name":  "dota_goodguys_tower1_bot",
+                          "health":  1800,
+                          "maxHealth":  1800
+                      },
+                      {
+                          "name":  "dota_goodguys_tower2_bot",
+                          "health":  2500,
+                          "maxHealth":  2500
+                      },
+                      {
+                          "name":  "dota_goodguys_tower3_bot",
+                          "health":  2500,
+                          "maxHealth":  2500
+                      },
+                      {
+                          "name":  "dota_goodguys_tower4_top",
+                          "health":  2600,
+                          "maxHealth":  2600
+                      },
+                      {
+                          "name":  "dota_goodguys_tower4_bot",
+                          "health":  2600,
+                          "maxHealth":  2600
+                      },
+                      {
+                          "name":  "good_rax_melee_top",
+                          "health":  2200,
+                          "maxHealth":  2200
+                      },
+                      {
+                          "name":  "good_rax_range_top",
+                          "health":  1300,
+                          "maxHealth":  1300
+                      },
+                      {
+                          "name":  "good_rax_melee_mid",
+                          "health":  2200,
+                          "maxHealth":  2200
+                      },
+                      {
+                          "name":  "good_rax_range_mid",
+                          "health":  1300,
+                          "maxHealth":  1300
+                      },
+                      {
+                          "name":  "good_rax_melee_bot",
+                          "health":  2200,
+                          "maxHealth":  2200
+                      },
+                      {
+                          "name":  "good_rax_range_bot",
+                          "health":  1300,
+                          "maxHealth":  1300
+                      },
+                      {
+                          "name":  "dota_goodguys_fort",
+                          "health":  4500,
+                          "maxHealth":  4500
+                      },
+                      {
+                          "name":  "dota_badguys_tower1_top",
+                          "health":  1800,
+                          "maxHealth":  1800
+                      },
+                      {
+                          "name":  "dota_badguys_tower2_top",
+                          "health":  2500,
+                          "maxHealth":  2500
+                      },
+                      {
+                          "name":  "dota_badguys_tower3_top",
+                          "health":  2500,
+                          "maxHealth":  2500
+                      },
+                      {
+                          "name":  "dota_badguys_tower1_mid",
+                          "health":  1800,
+                          "maxHealth":  1800
+                      },
+                      {
+                          "name":  "dota_badguys_tower2_mid",
+                          "health":  2500,
+                          "maxHealth":  2500
+                      },
+                      {
+                          "name":  "dota_badguys_tower3_mid",
+                          "health":  2500,
+                          "maxHealth":  2500
+                      },
+                      {
+                          "name":  "dota_badguys_tower1_bot",
+                          "health":  1800,
+                          "maxHealth":  1800
+                      },
+                      {
+                          "name":  "dota_badguys_tower2_bot",
+                          "health":  2500,
+                          "maxHealth":  2500
+                      },
+                      {
+                          "name":  "dota_badguys_tower3_bot",
+                          "health":  2500,
+                          "maxHealth":  2500
+                      },
+                      {
+                          "name":  "dota_badguys_tower4_top",
+                          "health":  2600,
+                          "maxHealth":  2600
+                      },
+                      {
+                          "name":  "dota_badguys_tower4_bot",
+                          "health":  2600,
+                          "maxHealth":  2600
+                      },
+                      {
+                          "name":  "bad_rax_melee_top",
+                          "health":  2200,
+                          "maxHealth":  2200
+                      },
+                      {
+                          "name":  "bad_rax_range_top",
+                          "health":  1300,
+                          "maxHealth":  1300
+                      },
+                      {
+                          "name":  "bad_rax_melee_mid",
+                          "health":  2200,
+                          "maxHealth":  2200
+                      },
+                      {
+                          "name":  "bad_rax_range_mid",
+                          "health":  1300,
+                          "maxHealth":  1300
+                      },
+                      {
+                          "name":  "bad_rax_melee_bot",
+                          "health":  2200,
+                          "maxHealth":  2200
+                      },
+                      {
+                          "name":  "bad_rax_range_bot",
+                          "health":  1300,
+                          "maxHealth":  1300
+                      },
+                      {
+                          "name":  "dota_badguys_fort",
+                          "health":  4500,
+                          "maxHealth":  4500
+                      }
+                  ],
+    "roshan":  {
+                   "alive":  true,
+                   "phaseTimeRemaining":  0
+               },
+    "events":  [
+                   {
+                       "eventId":  "9072345549:FIRST_BLOOD:77:0",
+                       "type":  "FIRST_BLOOD",
+                       "clockTime":  77,
+                       "team":  "radiant",
+                       "payload":  {
+                                       "type":  "CHAT_MESSAGE_FIRSTBLOOD",
+                                       "value":  320,
+                                       "playerid1":  0,
+                                       "playerid2":  5,
+                                       "time":  76.8666534
+                                   }
+                   },
+                   {
+                       "eventId":  "9072345549:HERO_KILL:77:5",
+                       "type":  "HERO_KILL",
+                       "clockTime":  77,
+                       "team":  "dire",
+                       "payload":  {
+                                       "type":  "CHAT_MESSAGE_HERO_KILL",
+                                       "value":  320,
+                                       "playerid1":  5,
+                                       "playerid2":  0,
+                                       "playerid3":  -1,
+                                       "playerid4":  -1,
+                                       "playerid5":  -1,
+                                       "playerid6":  -1,
+                                       "value2":  52,
+                                       "value3":  1,
+                                       "time":  76.8666534
+                                   }
+                   }
+               ]
+}

@@ -154,13 +154,24 @@ Suspender mercados ante:
 
 La suspensión debe ser visible en la UI con motivo y hora.
 
+## Partida propia (GSI)
+
+- El colector envía snapshots a 1 Hz y eventos deduplicados por `matchId:tipo:clock:playerIds`.
+- `clock_time` es el reloj canónico de la partida; `game_time` solo es referencia.
+- Espectador: `playersScope=FULL`, 10 jugadores y Roshan disponible.
+- Bots: `playersScope=LOCAL`, solo el jugador local, sin edificios rivales ni Roshan.
+- La partida GSI se fusiona en el lobby con `source=GSI` y gana sobre OpenDota si coincide `match_id`.
+- `POST_GAME` deja de ser `live` y genera `match_results` con `source=GSI`.
+- Mercados `practice=true` (bots) tienen stake máximo reducido.
+
 ## Liquidación
 
 Fuente de verdad:
 
-- GSI para el estado final del partido espectado.
-- OpenDota para verificación cuando exista `match_id`.
+- GSI para el estado final de la partida propia (espectando o bots).
+- OpenDota para verificación cuando exista `match_id` y la partida no sea local.
 - Si hay discrepancia: `NEEDS_REVIEW` y decisión admin.
+- En partidas locales no hay verificación externa: se usa `match_results.source=GSI`.
 
 Resultado por mercado (`market_results`):
 
@@ -186,7 +197,9 @@ Reglas:
 - `bets` unique `(user_id, idempotency_key)`.
 - `settlements` unique `bet_id`.
 - `market_results` unique `(market_id)`.
+- `game_snapshots` unique `(snapshot_id)`.
 - `game_events` unique `(match_id, event_id)`.
+- `markets.source` en `OPENDOTA`/`GSI`; `markets.practice` solo para partidas locales.
 - `odds_history` append-only.
 - `audit_logs` append-only.
 

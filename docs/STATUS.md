@@ -6,7 +6,7 @@
 
 ## Hito actual
 
-**Pre-M5 — Resultados por mercado (V6).** Completado. Siguiente: cierre robusto de mercados y "Mi partida" (M2b). M5 no iniciado.
+**M2b — "Mi partida" (GSI).** Ingesta, lobby, mercados, pausa y resultado implementados. Siguiente: SSE por partido, mercados de eventos y suspensión por kill/torre. M5 no iniciado.
 
 Cerrados: M1 (identidad y wallet), M2a (catálogo OpenDota + SSE), M3a y M3b (cuatro mercados en vivo con cuotas), M4 (apuestas simples con holds). M0 cerrado con capturas GSI reales (DotaTV y bots); M2b (ingesta GSI) queda diferido. Detalle en `docs/milestones/`.
 
@@ -20,9 +20,15 @@ Cerrados: M1 (identidad y wallet), M2a (catálogo OpenDota + SSE), M3a y M3b (cu
 - Cuatro mercados por partida en vivo con margen propio, versión e historial append-only.
 - Apuestas con validación server-side, holds en el ledger, idempotencia y aislamiento por usuario.
 - Auth real con sesión HttpOnly, CSRF y roles; wallet demo con ledger de doble entrada.
-- Migraciones aplicadas: V1–V6.
+- Migraciones aplicadas: V1–V8.
 - `match_results` guarda el resultado final verificado de cada partida con mercados cerrados: ganador, scores, duración, `first_blood_time`, `league_id` y `objectives` (JSON) desde OpenDota `/matches/{id}`, con backoff e idempotencia.
 - `market_results` resuelve cada mercado una sola vez: `SETTLED` con selección ganadora o `VOID`. Mercado `MATCH_WINNER`, `TOTAL_KILLS`, `KILL_HANDICAP` y `DURATION` según reglas de ADR-028. El mercado pasa a `SETTLED`/`VOID` y no se reabre.
+- Colector definitivo: normaliza GSI, deduplica eventos, envía snapshots a 1 Hz, firma con HMAC y usa spool ante caídas.
+- `POST /internal/ingest` valida firma y ventana de 5 min; guarda `collector_sessions`, `game_snapshots`, `game_events` e `ingestion_health` con idempotencia.
+- La partida propia aparece en el lobby como `source=GSI` en la sección "Mi partida", con `playersScope=FULL|LOCAL`, pausa y disponibilidad de Roshan.
+- Mercados `source=GSI`: se crean aunque OpenDota esté caído o iniciando; una pausa los suspende con `MATCH_PAUSED`.
+- Partidas con bots: `practice=true`, stake máximo S/ 100 y etiqueta "Práctica". El resultado sale de GSI (`POST_GAME` + `win_team`).
+- Verificación de humo real: payload GSI → colector → backend → lobby con 1 partida GSI, 4 mercados, pausa con 4 mercados suspendidos y `match_results` READY/GSI 44-27.
 - Admin sembrado por configuración; en desarrollo `admin@betpulse.local` / `Admin123!`.
 - Colector Javalin compila y expone `/health` y `/gsi`; sin reenvío al backend (M2b diferido).
 - **No hay liquidación**: las apuestas quedan `PLACED` y el saldo retenido no se paga ni se libera.
@@ -31,11 +37,12 @@ Cerrados: M1 (identidad y wallet), M2a (catálogo OpenDota + SSE), M3a y M3b (cu
 
 ## Próxima acción
 
-1. Cierre robusto de mercados: ventana de gracia y confirmación con `/matches/{id}` antes de cerrar.
-2. M2b "Mi partida": ingesta GSI, snapshots/eventos, sección propia en el lobby, mercados y apuestas sobre la partida propia (espectando o bots).
-3. M5: liquidación exactly-once, payout/void y actualización de wallet para OpenDota y GSI.
-4. Panel admin de mercados (suspender/reanudar/override).
-5. M3c cuando exista una fuente pre-partida fiable.
+1. Completar M2b: SSE por partido, página con scoreboard/timeline y mercados de primera sangre, primera torre y siguiente Roshan.
+2. Suspensión de mercados GSI por kill/torre/Roshan además de pausa.
+3. Cierre robusto de mercados: ventana de gracia y confirmación con `/matches/{id}` antes de cerrar.
+4. M5: liquidación exactly-once, payout/void y actualización de wallet para OpenDota y GSI.
+5. Panel admin de mercados (suspender/reanudar/override).
+6. M3c cuando exista una fuente pre-partida fiable.
 
 ## Pendiente de entorno (no bloquea M5)
 
@@ -65,9 +72,10 @@ npm run build
 
 Resultados 2026-11-01:
 
-- Backend: 65/65 tests verdes (Bet 9, CatalogController 3, CatalogService 5, Auth 7, MarketService 8, MarketController 1, OddsEngine 7, Wallet 8, Health 1, MatchResultService 5, MatchResultFlow 2, MarketOutcomeResolver 6, MarketResultFlow 3).
-- Flyway: V1–V6 aplicadas en Testcontainers.
-- Frontend: sin cambios en este bloque; última verificación 2026-10-28 con lint y build verdes.
+- Backend: 73/73 tests verdes (Bet 10, CatalogController 3, CatalogService 5, Auth 7, MarketService 8, MarketController 1, OddsEngine 7, Wallet 8, Health 1, MatchResultService 5, MatchResultFlow 2, MarketOutcomeResolver 6, MarketResultFlow 3, IngestFlow 7).
+- Flyway: V1–V8 aplicadas en Testcontainers.
+- Frontend: lint y build verdes; rutas `/`, `/bets` y `/wallet` generadas.
+- Colector: 11/11 tests verdes y `package` con shade correcto.
 - CI anterior (2026-10-29, `60ea4c3`): backend, colector y frontend en verde.
 
 Verificación funcional anterior (2026-10-27): 24 mercados abiertos (4 por partida en 6 partidas en vivo); E2E registro → depósito S/ 100 → apuesta S/ 10 → `PLACED` con disponible S/ 90 y retenido S/ 10.

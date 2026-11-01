@@ -84,7 +84,7 @@ class CatalogControllerTest {
 		LobbyMatch match = new LobbyMatch("123", "dota2", "live", "", "pro", "", now.getEpochSecond(), 600,
 				new LobbyTeam("Team A", 12, "radiant", null),
 				new LobbyTeam("Team B", 8, "dire", null),
-				5_000, 1_000, 120);
+				5_000, 1_000, 120, "OPENDOTA", null, null, null);
 		return new LobbyResponse(List.of(match), List.of(), now,
 				new FeedHealth("OPENDOTA", "LIVE", now, now, now.plusSeconds(30), 0, null, false));
 	}

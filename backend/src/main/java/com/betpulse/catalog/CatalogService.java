@@ -3,8 +3,11 @@ package com.betpulse.catalog;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,6 +20,8 @@ import com.betpulse.catalog.LobbyDtos.LobbyResponse;
 import com.betpulse.catalog.LobbyDtos.LobbyTeam;
 import com.betpulse.catalog.OpenDotaDtos.LiveMatch;
 import com.betpulse.catalog.OpenDotaDtos.ProMatch;
+import com.betpulse.live.GsiLiveRegistry;
+import com.betpulse.live.IngestDtos.Batch;
 
 @Service
 public class CatalogService {
@@ -27,6 +32,7 @@ public class CatalogService {
 
 	private final OpenDotaClient openDotaClient;
 	private final LeagueNameCache leagueNames;
+	private final GsiLiveRegistry gsiLiveRegistry;
 	private final ApplicationEventPublisher eventPublisher;
 	private final OpenDotaProperties properties;
 	private final Clock clock;
@@ -40,9 +46,11 @@ public class CatalogService {
 	private volatile String lastError;
 
 	public CatalogService(OpenDotaClient openDotaClient, LeagueNameCache leagueNames,
-			ApplicationEventPublisher eventPublisher, OpenDotaProperties properties, Clock clock) {
+			GsiLiveRegistry gsiLiveRegistry, ApplicationEventPublisher eventPublisher, OpenDotaProperties properties,
+			Clock clock) {
 		this.openDotaClient = openDotaClient;
 		this.leagueNames = leagueNames;
+		this.gsiLiveRegistry = gsiLiveRegistry;
 		this.eventPublisher = eventPublisher;
 		this.properties = properties;
 		this.clock = clock;
@@ -91,11 +99,48 @@ public class CatalogService {
 	private LobbyResponse currentResponse() {
 		Instant now = clock.instant();
 		LobbySnapshot current = snapshot;
+		List<LobbyMatch> gsi = gsiLiveRegistry.live().stream()
+				.map(this::toGsiMatch)
+				.toList();
+		Set<String> gsiIds = gsi.stream().map(LobbyMatch::id).collect(Collectors.toSet());
+		List<LobbyMatch> live = new ArrayList<>(gsi);
+		if (current != null) {
+			current.live().stream()
+					.filter(match -> !gsiIds.contains(match.id()))
+					.forEach(live::add);
+		}
 		return new LobbyResponse(
-				current == null ? List.of() : current.live(),
+				live,
 				current == null ? List.of() : current.recent(),
 				current == null ? now : current.updatedAt(),
 				feedHealth(now));
+	}
+
+	private LobbyMatch toGsiMatch(GsiLiveRegistry.Entry entry) {
+		Batch batch = entry.batch();
+		int players = batch.players() == null ? 0 : batch.players().size();
+		boolean pro = batch.leagueId() != null && batch.leagueId() > 0;
+		String tournament = hasText(batch.leagueName()) ? batch.leagueName().trim()
+				: (players > 1 ? "Espectando" : "Práctica");
+		long startedAt = entry.receivedAt().getEpochSecond() - batch.clockTime();
+		return new LobbyMatch(
+				batch.matchId(),
+				"dota2",
+				"live",
+				tournament,
+				pro ? "pro" : "gsi",
+				"",
+				startedAt,
+				batch.clockTime(),
+				new LobbyTeam("Radiant", batch.radiantScore(), "radiant", null),
+				new LobbyTeam("Dire", batch.direScore(), "dire", null),
+				null,
+				null,
+				null,
+				"GSI",
+				players > 1 ? "FULL" : "LOCAL",
+				batch.paused(),
+				batch.roshan() != null);
 	}
 
 	private FeedHealth feedHealth(Instant now) {
@@ -162,7 +207,11 @@ public class CatalogService {
 				new LobbyTeam(direName, value(match.direScore()), "dire", null),
 				positiveOrNull(match.averageMmr()),
 				positiveOrNull(match.spectators()),
-				delay > 0 ? delay : null);
+				delay > 0 ? delay : null,
+				"OPENDOTA",
+				null,
+				null,
+				null);
 	}
 
 	private LobbyMatch toRecentMatch(ProMatch match) {
@@ -178,6 +227,10 @@ public class CatalogService {
 				value(match.duration()),
 				new LobbyTeam(match.radiantName().trim(), value(match.radiantScore()), "radiant", radiantWinner),
 				new LobbyTeam(match.direName().trim(), value(match.direScore()), "dire", !radiantWinner),
+				null,
+				null,
+				null,
+				"OPENDOTA",
 				null,
 				null,
 				null);

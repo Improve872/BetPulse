@@ -7,6 +7,7 @@ public class BettingProperties {
 
 	private long minStakeCents = 100;
 	private long maxStakeCents = 100_000;
+	private long practiceMaxStakeCents = 10_000;
 	private long maxPayoutCents = 1_000_000;
 
 	public long getMinStakeCents() {
@@ -23,6 +24,14 @@ public class BettingProperties {
 
 	public void setMaxStakeCents(long maxStakeCents) {
 		this.maxStakeCents = maxStakeCents;
+	}
+
+	public long getPracticeMaxStakeCents() {
+		return practiceMaxStakeCents;
+	}
+
+	public void setPracticeMaxStakeCents(long practiceMaxStakeCents) {
+		this.practiceMaxStakeCents = practiceMaxStakeCents;
 	}
 
 	public long getMaxPayoutCents() {

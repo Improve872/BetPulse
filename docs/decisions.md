@@ -351,3 +351,22 @@ Formato: contexto → decisión → consecuencias. Actualizar cuando cambie una 
 - Un scheduler cada 30 s resuelve mercados pendientes; se puede desactivar con `betpulse.markets.resolution-scheduler-enabled=false`.
 
 **Consecuencias:** M5 ya tiene una entrada estable: apuestas sobre mercados `SETTLED`/`VOID` con ganador y detalles auditables. Queda para M5 el pago, el void de apuestas, la cola `NEEDS_REVIEW` y la administracion. Las apuestas existentes no se tocan todavia.
+
+## ADR-029 - Mi partida: ingesta GSI, modos de fuente y practica (M2b)
+
+**Estado:** aceptada (2026-11-01)
+
+**Contexto:** apostar en la partida propia (espectando o con bots) es una funcionalidad del producto, no solo una fuente de demo. GSI solo emite mientras se juega o se especta, y en partidas con bots OpenDota no existe. El catálogo ya mezcla torneos y ranked de OpenDota.
+
+**Decision:**
+
+- El colector normaliza GSI a un contrato JSON versionado, deduplica eventos por `matchId:tipo:clock:playerIds`, envia snapshots a 1 Hz y reenvia eventos criticos de inmediato.
+- El colector firma cada batch con HMAC-SHA256 (`X-BetPulse-Timestamp` + `X-BetPulse-Signature`) y guarda en spool los batches que el backend no acepta. El backend valida firma, ventana de 5 minutos e idempotencia (`snapshot_id`, `UNIQUE (match_id, event_id)`).
+- V7 agrega `collector_sessions`, `game_snapshots`, `game_events` e `ingestion_health`. V8 agrega `markets.source` y `markets.practice`.
+- El backend fusiona la partida GSI en el lobby con `source=GSI` y `playersScope=FULL|LOCAL`; si coincide un `match_id`, GSI gana y se elimina el duplicado de OpenDota. `POST_GAME` deja de ser `live`.
+- Los mercados de una partida GSI se crean aunque el feed de OpenDota este caido o iniciando; una pausa suspende con `MATCH_PAUSED` y se reabre al despausar.
+- `LOCAL` (bots) se marca `practice=true` y tiene stake maximo de S/ 100 via `betpulse.betting.practice-max-stake-cents`.
+- Al recibir `POST_GAME` con `win_team`, se guarda `match_results` con `source=GSI` y los eventos como `objectives`. M5 liquida desde ahi; en partidas locales no hay verificacion OpenDota.
+- La UI muestra una seccion "Mi partida" separada de torneos y ranked, con estado GSI, etiqueta de practica y pausa.
+
+**Consecuencias:** la demo puede apostar en una partida propia sin depender de OpenDota ni de espectar un torneo. Los bots son controlables pero el resultado no es verificable externamente, por eso se etiquetan y limitan. Quedan para M2b completo: SSE por partido con timeline, mercados de primera sangre/primera torre/Roshan, suspension por eventos en el backend y extraccion de fixtures al repo (ya hecha).

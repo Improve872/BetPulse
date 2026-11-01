@@ -18,7 +18,7 @@ export type LobbyMatch = {
   game: GameId;
   state: MatchState;
   tournament: string;
-  tournamentKind?: "pro" | "ranked";
+  tournamentKind?: "pro" | "ranked" | "gsi";
   format: string;
   startedAt: number;
   durationSeconds: number;
@@ -27,6 +27,10 @@ export type LobbyMatch = {
   averageMmr?: number;
   spectators?: number;
   delaySeconds?: number;
+  source?: "OPENDOTA" | "GSI";
+  playersScope?: "FULL" | "LOCAL";
+  paused?: boolean;
+  roshanAvailable?: boolean;
 };
 
 export type LobbyData = {

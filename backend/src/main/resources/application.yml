@@ -48,6 +48,9 @@ betpulse:
     stale-after: 3m
     result-scheduler-enabled: ${OPENDOTA_RESULT_SCHEDULER_ENABLED:true}
     result-max-attempts: ${OPENDOTA_RESULT_MAX_ATTEMPTS:20}
+  ingest:
+    secret: ${INGEST_SECRET:betpulse-dev-ingest-secret}
+    timestamp-window: 5m
   markets:
     resolution-scheduler-enabled: ${MARKET_RESULT_SCHEDULER_ENABLED:true}
   odds:
@@ -59,4 +62,5 @@ betpulse:
   betting:
     min-stake-cents: 100
     max-stake-cents: 100000
+    practice-max-stake-cents: ${BETTING_PRACTICE_MAX_STAKE_CENTS:10000}
     max-payout-cents: 1000000

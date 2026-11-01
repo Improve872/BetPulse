@@ -26,6 +26,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import com.betpulse.catalog.LobbyDtos.LobbyResponse;
 import com.betpulse.catalog.OpenDotaDtos.LiveMatch;
 import com.betpulse.catalog.OpenDotaDtos.ProMatch;
+import com.betpulse.live.GsiLiveRegistry;
 
 @ExtendWith(MockitoExtension.class)
 class CatalogServiceTest {
@@ -35,6 +36,9 @@ class CatalogServiceTest {
 
 	@Mock
 	private LeagueNameCache leagueNames;
+
+	@Mock
+	private GsiLiveRegistry gsiLiveRegistry;
 
 	@Mock
 	private ApplicationEventPublisher eventPublisher;
@@ -47,7 +51,7 @@ class CatalogServiceTest {
 	void setUp() {
 		clock = new MutableClock(Instant.parse("2026-10-26T12:00:00Z"));
 		properties = new OpenDotaProperties();
-		service = new CatalogService(openDotaClient, leagueNames, eventPublisher, properties, clock);
+		service = new CatalogService(openDotaClient, leagueNames, gsiLiveRegistry, eventPublisher, properties, clock);
 		lenient().when(leagueNames.name(anyLong())).thenAnswer(invocation -> "Liga " + invocation.getArgument(0));
 	}
 

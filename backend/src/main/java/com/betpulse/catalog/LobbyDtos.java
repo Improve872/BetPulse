@@ -17,7 +17,8 @@ public final class LobbyDtos {
 	@JsonInclude(JsonInclude.Include.NON_NULL)
 	public record LobbyMatch(String id, String game, String state, String tournament, String tournamentKind,
 			String format, long startedAt, long durationSeconds, LobbyTeam radiant, LobbyTeam dire,
-			Integer averageMmr, Integer spectators, Integer delaySeconds) {
+			Integer averageMmr, Integer spectators, Integer delaySeconds, String source, String playersScope,
+			Boolean paused, Boolean roshanAvailable) {
 	}
 
 	@JsonInclude(JsonInclude.Include.NON_NULL)

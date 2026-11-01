@@ -59,7 +59,14 @@ export function HomeLobby({ data: initialData, markets: initialMarkets }: HomeLo
     () => [...data.live, ...data.recent],
     [data.live, data.recent],
   );
-  const liveMatches = data.live;
+  const ownMatches = useMemo(
+    () => data.live.filter((match) => match.source === "GSI"),
+    [data.live],
+  );
+  const liveMatches = useMemo(
+    () => data.live.filter((match) => match.source !== "GSI"),
+    [data.live],
+  );
   const resultCount = data.recent.length;
   const marketByMatchId = useMemo(() => indexMarkets(markets), [markets]);
   const betTarget = useMemo<BetTarget | null>(() => {
@@ -100,6 +107,9 @@ export function HomeLobby({ data: initialData, markets: initialMarkets }: HomeLo
   const filteredMatches = useMemo(
     () =>
       allMatches.filter((match) => {
+        if (match.source === "GSI") {
+          return false;
+        }
         const matchesView =
           view === "all" ||
           (view === "live" && match.state === "live") ||
@@ -266,7 +276,7 @@ export function HomeLobby({ data: initialData, markets: initialMarkets }: HomeLo
               tournament={tournament}
               onTournamentChange={setTournament}
               tournaments={tournaments}
-              liveCount={liveMatches.length}
+              liveCount={liveMatches.length + ownMatches.length}
               resultCount={resultCount}
               visibleCount={filteredMatches.length}
               onClear={handleClear}
@@ -274,6 +284,43 @@ export function HomeLobby({ data: initialData, markets: initialMarkets }: HomeLo
           </div>
 
           <section id="matches" className="min-w-0 scroll-mt-20">
+            <div className="mb-4">
+              <div className="mb-2 flex items-center justify-between gap-2">
+                <h2 className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted">
+                  {t("own.title")}
+                </h2>
+                <span
+                  className={cn(
+                    "rounded-full px-2 py-0.5 text-[10px] font-semibold",
+                    ownMatches.length > 0
+                      ? "bg-live/10 text-live"
+                      : "bg-slate-100 text-muted",
+                  )}
+                >
+                  {ownMatches.length > 0
+                    ? t("own.connected")
+                    : t("own.disconnected")}
+                </span>
+              </div>
+              {ownMatches.length > 0 ? (
+                <div className="space-y-3">
+                  {ownMatches.map((match) => (
+                    <MatchCard
+                      key={match.id}
+                      match={match}
+                      markets={marketByMatchId.get(match.id)}
+                      onOpen={handleOpenMatch}
+                      onSelect={handleSelect}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <p className="rounded-xl border border-dashed border-line bg-surface px-4 py-3 text-xs text-muted">
+                  {t("own.hint")}
+                </p>
+              )}
+            </div>
+
             <div className="scrollbar-none mb-3 flex gap-2 overflow-x-auto lg:hidden">
               {mobileViews.map((item) => (
                 <button

@@ -215,7 +215,7 @@ class MarketServiceTest extends IntegrationTestBase {
 						now.getEpochSecond(), durationSeconds,
 						new LobbyTeam("Team Radiant", radiantKills, "radiant", null),
 						new LobbyTeam("Team Dire", direKills, "dire", null),
-						7000, 500, 120));
+						7000, 500, 120, "OPENDOTA", null, null, null));
 		return new LobbyResponse(live, List.of(), now,
 				new FeedHealth("OPENDOTA", feedStatus, now, now, now.plusSeconds(30), 0, null, stale));
 	}

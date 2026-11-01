@@ -51,7 +51,7 @@ En desarrollo, Next.js hace proxy de `/api` al backend para evitar CORS y compar
 |---|---|
 | `identity` | Registro, login, sesiones, roles |
 | `catalog` | Catálogo OpenDota, poller, caché y contrato del lobby |
-| `live` | SSE de lobby, salud del feed y resolución de resultados finales (`match_results`); ingesta GSI pendiente (M2b) |
+| `live` | Ingesta GSI, snapshots/eventos, SSE de lobby, salud del feed y resultados finales (`match_results`) |
 | `markets` | Mercados, selecciones, versiones, suspensiones y resultados por mercado (`market_results`) |
 | `odds` | Modelos, probabilidad, margen, historial |
 | `betting` | Bet slip, validación, holds, límites |
@@ -76,9 +76,9 @@ En desarrollo, Next.js hace proxy de `/api` al backend para evitar CORS y compar
 
 ## Flujo de datos
 
-1. Dota 2 en modo espectador envía GSI al colector local (M2b, pendiente de fixtures).
-2. El colector valida token, normaliza, batchea y envía al backend con HMAC.
-3. El backend guarda snapshot/eventos, actualiza el estado del partido y detecta eventos relevantes.
+1. Dota 2 (espectando o jugando) envía GSI al colector local.
+2. El colector valida token, normaliza, deduplica eventos, envía snapshots a 1 Hz y firma con HMAC; si el backend cae, guarda en spool.
+3. El backend valida firma, guarda `game_snapshots`/`game_events`, actualiza `GsiLiveRegistry` y fusiona la partida en el lobby con `source=GSI`. Al terminar, guarda `match_results` con `source=GSI`.
 4. El poller OpenDota refresca el catálogo cada 30 s; `CatalogService` publica un evento interno y `LiveFeedService` lo difunde por SSE (`lobby`).
 5. El motor de cuotas recalcula los mercados `MATCH_WINNER`, `TOTAL_KILLS`, `KILL_HANDICAP` y `DURATION` en cada refresco del catálogo, aplica margen, versiona si cambian las cuotas y publica por SSE (M3a/M3b).
 6. OpenDota se consulta periódicamente para catálogo, partidos secundarios, pre-partida y verificación.
@@ -92,7 +92,7 @@ En desarrollo, Next.js hace proxy de `/api` al backend para evitar CORS y compar
 
 | Fuente | Uso | Frecuencia | Calidad |
 |---|---|---|---|
-| GSI | Partido espectado | ~10/s | Alta, evento por evento |
+| GSI | Partido propio (espectando o bots) | 1 Hz al backend | Alta; en bots solo datos locales |
 | OpenDota `/live` | Partidos secundarios | 30–60 s | Media, con delay |
 | OpenDota histórico | Ratings, calibración, verificación | Bajo demanda | Alta para histórico |
 | GSI League | Series, streams, torneo | Con el feed | Alta |
@@ -109,14 +109,18 @@ Reglas:
 
 > Implementación del feed competitivo (2026-11-01): las partidas con `league_id > 0` de OpenDota `/live` se priorizan sobre las ranked y muestran el nombre de liga resuelto con `/leagues/{id}` (caché de 6 h). No hace falta espectar ni abrir Dota 2: las cuotas se mueven con marcador y tiempo. Steam `GetLiveLeagueGames` queda como enriquecimiento opcional cuando exista API key. Al cerrarse los mercados de un partido, `MatchResultService` persiste el resultado final en `match_results` para M5.
 
+> Implementación "Mi partida" (2026-11-01): el colector definitivo normaliza GSI, deduplica eventos, envía a 1 Hz, firma con HMAC y usa spool ante caídas. El backend expone `POST /internal/ingest`, guarda snapshots/eventos e incorpora la partida al lobby con `source=GSI`. La UI la muestra en una sección separada; en modo bots se etiqueta "Práctica" y el stake se limita a S/ 100. Al recibir `POST_GAME`, el resultado se guarda con `source=GSI` para M5.
+
 ## Modelo de datos (alto nivel)
 
 - `users`, `roles`
 - `wallets`, `ledger_accounts`, `ledger_transactions`, `ledger_entries`
 - `idempotency_keys`
 - `matches`, `tournaments`, `teams`, `players`, `match_participants`
+- `collector_sessions`, `game_snapshots`, `game_events`, `ingestion_health`
 - `match_results` (resultado final verificado y objetivos de la partida)
 - `market_results` (resultado por mercado: ganador o void)
+- `markets.source` (`OPENDOTA`/`GSI`) y `markets.practice` (partida local)
 - `game_snapshots`, `game_events`, `match_state`
 - `markets`, `selections`, `odds_history`, `market_suspensions`
 - `bets`, `bet_selections`, `bet_status_history`

@@ -45,7 +45,6 @@ public class BetService {
 		String key = normalizeKey(idempotencyKey);
 		String selectionKey = request.selectionKey().trim().toUpperCase(Locale.ROOT);
 		long stakeCents = request.stakeCents();
-		validateStake(stakeCents);
 		String normalizedOdds = request.expectedOdds().setScale(3, RoundingMode.HALF_UP).toPlainString();
 		String requestHash = hash(request.marketId() + "|" + selectionKey + "|" + stakeCents + "|"
 				+ normalizedOdds + "|" + request.marketVersion());
@@ -56,6 +55,7 @@ public class BetService {
 		}
 
 		MarketSelection market = lockMarketSelection(request.marketId(), selectionKey);
+		validateStake(stakeCents, market.practice());
 		validateMarket(market, request);
 		long potentialPayoutCents = potentialPayout(stakeCents, market.odds());
 		if (potentialPayoutCents > properties.getMaxPayoutCents()) {
@@ -142,7 +142,7 @@ public class BetService {
 		try {
 			return jdbcTemplate.queryForObject("""
 					SELECT m.id AS market_id, m.match_id, m.market_type, m.title AS market_title, m.line,
-					       m.status, m.version, s.selection_key, s.label AS selection_label, s.odds
+					       m.status, m.version, m.practice, s.selection_key, s.label AS selection_label, s.odds
 					FROM markets m
 					JOIN selections s ON s.market_id = m.id
 					WHERE m.id = ? AND s.selection_key = ?
@@ -155,6 +155,7 @@ public class BetService {
 					resultSet.getBigDecimal("line"),
 					resultSet.getString("status"),
 					resultSet.getInt("version"),
+					resultSet.getBoolean("practice"),
 					resultSet.getString("selection_key"),
 					resultSet.getString("selection_label"),
 					resultSet.getBigDecimal("odds")), marketId, selectionKey);
@@ -188,10 +189,13 @@ public class BetService {
 		}
 	}
 
-	private void validateStake(long stakeCents) {
-		if (stakeCents < properties.getMinStakeCents() || stakeCents > properties.getMaxStakeCents()) {
-			throw ApiException.badRequest("INVALID_STAKE",
-					"El stake debe estar entre S/ 1.00 y S/ 1,000.00.");
+	private void validateStake(long stakeCents, boolean practice) {
+		long maxStake = practice ? properties.getPracticeMaxStakeCents() : properties.getMaxStakeCents();
+		if (stakeCents < properties.getMinStakeCents() || stakeCents > maxStake) {
+			String message = practice
+					? "En partidas de práctica el stake debe estar entre S/ 1.00 y S/ 100.00."
+					: "El stake debe estar entre S/ 1.00 y S/ 1,000.00.";
+			throw ApiException.badRequest("INVALID_STAKE", message);
 		}
 	}
 
@@ -244,7 +248,8 @@ public class BetService {
 	}
 
 	private record MarketSelection(UUID marketId, String matchId, String marketType, String marketTitle,
-			BigDecimal line, String status, int version, String selectionKey, String selectionLabel, BigDecimal odds) {
+			BigDecimal line, String status, int version, boolean practice, String selectionKey, String selectionLabel,
+			BigDecimal odds) {
 	}
 
 	private record BetRecord(UUID id, UUID marketId, String matchId, String marketType, String marketTitle,
