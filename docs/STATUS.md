@@ -1,14 +1,14 @@
 # Estado del proyecto
 
-Última actualización: 2026-10-28
+Última actualización: 2026-11-01
 
 > Estado vigente únicamente. El histórico de hitos cerrados vive en `docs/milestones/`.
 
 ## Hito actual
 
-**M5 — Liquidación exactly-once.** No iniciado.
+**Pre-M5 — Feed competitivo y resultados finales.** Completado. M5 (liquidación exactly-once) no iniciado.
 
-Cerrados: M1 (identidad y wallet), M2a (catálogo OpenDota + SSE), M3a y M3b (cuatro mercados en vivo con cuotas), M4 (apuestas simples con holds). Detalle en `docs/milestones/`.
+Cerrados: M1 (identidad y wallet), M2a (catálogo OpenDota + SSE), M3a y M3b (cuatro mercados en vivo con cuotas), M4 (apuestas simples con holds). M0 cerrado con capturas GSI reales (DotaTV y bots); M2b (ingesta GSI) queda diferido. Detalle en `docs/milestones/`.
 
 ## Estado del sistema
 
@@ -16,20 +16,25 @@ Cerrados: M1 (identidad y wallet), M2a (catálogo OpenDota + SSE), M3a y M3b (cu
 - Frontend Next.js 15.5.28 + React 19.1 + Tailwind 4; lint y build verdes. Rutas `/`, `/wallet` y `/bets`.
 - Lobby responsive con cards, filtros, modal de partida con mercados múltiples, bet slip y página de apuestas.
 - Catálogo con datos reales de OpenDota; sin fixtures ni datos inventados en el producto.
+- Las partidas con `league_id > 0` se priorizan sobre las ranked y muestran el nombre de liga resuelto con `/leagues/{id}` (caché 6 h).
 - Cuatro mercados por partida en vivo con margen propio, versión e historial append-only.
 - Apuestas con validación server-side, holds en el ledger, idempotencia y aislamiento por usuario.
 - Auth real con sesión HttpOnly, CSRF y roles; wallet demo con ledger de doble entrada.
-- Migraciones aplicadas: V1–V4.
+- Migraciones aplicadas: V1–V5.
+- `match_results` guarda el resultado final verificado de cada partida con mercados cerrados: ganador, scores, duración, `first_blood_time`, `league_id` y `objectives` (JSON) desde OpenDota `/matches/{id}`, con backoff e idempotencia.
 - Admin sembrado por configuración; en desarrollo `admin@betpulse.local` / `Admin123!`.
-- Colector Javalin compila y expone `/health` y `/gsi`.
+- Colector Javalin compila y expone `/health` y `/gsi`; sin reenvío al backend (M2b diferido).
 - **No hay liquidación**: las apuestas quedan `PLACED` y el saldo retenido no se paga ni se libera.
-- CI verde en `60ea4c3`: backend (49 tests con Testcontainers), colector y frontend (lint + build).
+- Steam `GetLiveLeagueGames` no integrado: falta `STEAM_API_KEY` (rate limit de generación).
+- CI: backend 56 tests verdes; frontend lint/build verdes (última verificación local).
 
 ## Próxima acción
 
-1. Implementar M5: liquidación exactly-once, payout/void y actualización de wallet.
-2. Añadir el panel admin de mercados (suspender/reanudar/override).
-3. M3c cuando exista una fuente pre-partida fiable.
+1. V6: `market_results` (resultado por mercado) y reglas de settlement por tipo en un ADR.
+2. Cierre robusto de mercados: ventana de gracia y confirmación con `/matches/{id}` antes de cerrar.
+3. M5: liquidación exactly-once, payout/void y actualización de wallet.
+4. Panel admin de mercados (suspender/reanudar/override).
+5. M3c cuando exista una fuente pre-partida fiable.
 
 ## Pendiente de entorno (no bloquea M5)
 
@@ -37,8 +42,9 @@ Cerrados: M1 (identidad y wallet), M2a (catálogo OpenDota + SSE), M3a y M3b (cu
 
 ## Bloqueos
 
-- Sin fixtures GSI reales, M2b y los mercados basados en eventos no avanzan. `AGENTS.md` prohíbe simularlos.
+- M2b (ingesta GSI) sigue diferido: hay capturas reales, pero el producto ya no depende de GSI para la demo; los mercados de eventos al segundo esperan a M2b.
 - OpenDota no ofrece calendario futuro fiable para M3c.
+- Sin `STEAM_API_KEY` no hay draft, torres ni Roshan en vivo; el feed pro funciona con OpenDota.
 - `npm audit` reporta 2 vulnerabilidades transitivas de Next.js/PostCSS; se resolverán en M7 o con una actualización mayor planificada.
 
 ## Restricción de diseño para M5
@@ -56,12 +62,12 @@ npm run lint
 npm run build
 ```
 
-Resultados 2026-10-28:
+Resultados 2026-11-01:
 
-- Backend: 49/49 tests verdes (Bet 9, CatalogController 3, CatalogService 5, Auth 7, MarketService 8, MarketController 1, OddsEngine 7, Wallet 8, Health 1).
-- Frontend: lint y build verdes; rutas `/`, `/bets` y `/wallet` generadas.
-- Flyway: V1–V4 aplicadas en Testcontainers.
-- CI (2026-10-29, `60ea4c3`): backend, colector y frontend en verde.
+- Backend: 56/56 tests verdes (Bet 9, CatalogController 3, CatalogService 5, Auth 7, MarketService 8, MarketController 1, OddsEngine 7, Wallet 8, Health 1, MatchResultService 5, MatchResultFlow 2).
+- Flyway: V1–V5 aplicadas en Testcontainers.
+- Frontend: sin cambios en este bloque; última verificación 2026-10-28 con lint y build verdes.
+- CI anterior (2026-10-29, `60ea4c3`): backend, colector y frontend en verde.
 
 Verificación funcional anterior (2026-10-27): 24 mercados abiertos (4 por partida en 6 partidas en vivo); E2E registro → depósito S/ 100 → apuesta S/ 10 → `PLACED` con disponible S/ 90 y retenido S/ 10.
 
