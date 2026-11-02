@@ -21,6 +21,7 @@ Partida `9072282669`, final de partida:
 | Archivo | `game_time` | Contenido |
 |---|---|---|
 | `spectator-post-game.json` | 2642 | `POST_GAME`, 44-27, `win_team=radiant` |
+| `spectator-midgame.json` | 2100 | Partida en curso, 10 jugadores, edificios y Roshan |
 
 ## Jugando con bots (modo local)
 

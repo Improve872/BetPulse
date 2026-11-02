@@ -83,6 +83,7 @@ Resultados 2026-11-01:
 - Flyway: V1–V9 aplicadas en Testcontainers.
 - Frontend: lint y build verdes; rutas `/`, `/admin`, `/admin/markets`, `/bets`, `/match/[id]` y `/wallet` generadas.
 - Colector: 11/11 tests verdes y `package` con shade correcto.
+- E2E real (2026-11-01): GSI mid-game → 4 mercados base + torre/Roshan → apuesta de S/ 10 a ganador → `POST_GAME` → `WON` con payout S/ 10.96; wallet disponible S/ 100.96 y retenido S/ 0. Liquidación en menos de un minuto.
 - CI anterior (2026-10-29, `60ea4c3`): backend, colector y frontend en verde.
 
 Verificación funcional anterior (2026-10-27): 24 mercados abiertos (4 por partida en 6 partidas en vivo); E2E registro → depósito S/ 100 → apuesta S/ 10 → `PLACED` con disponible S/ 90 y retenido S/ 10.

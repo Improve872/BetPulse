@@ -2,114 +2,88 @@
 
 ## Objetivo
 
-Demostrar en clase, en una sola laptop, el flujo completo: partido real de Dota 2 → eventos GSI → cuotas propias actualizándose → apuesta → suspensión/control admin → liquidación → wallet → auditoría.
+Demostrar en una sola laptop el ciclo completo: partida real de Dota 2 →
+GSI → cuotas propias → apuesta → liquidación → wallet → auditoría, más el
+feed de torneos/ranked de OpenDota y el panel admin.
 
-## Matriz de pruebas de fuentes
+## Fuentes (decisión M0)
 
-| Fuente | Qué evaluar | Riesgo |
+| Fuente | Uso | Estado |
 |---|---|---|
-| DotaTV partido pro | disponibilidad a la hora de clase, ticket, `delay`, datos completos, fin de partida | Depende del calendario |
-| Partida de amigo | Dota Plus, delay, estabilidad | Depende de un amigo |
-| Lobby local + espectador | segunda cuenta/PC, datos de los 10, duración, poder terminarlo | Setup más complejo |
-| Replay GSI real | reproducción acelerada, liquidación | No es en vivo; solo respaldo |
+| DotaTV en vivo | Partida espectada completa: 10 jugadores, Roshan, torneos | Probada |
+| Bots en local | Partida controlable para primera sangre/torre y final rápido | Probada |
+| OpenDota `/live` | Torneos y ranked sin espectar; cuotas que fluctúan | Implementada |
+| OpenDota `/matches/{id}` | Verificación y objetivos post-partida | Implementada |
+| Replay | Descartado por producto | No se usa |
 
-Criterios de decisión:
+**Demo principal:** una partida con bots o un torneo en vivo. Si no hay torneo,
+los bots dan el control total y permiten terminar la partida a voluntad.
 
-- Datos completos de los 10 jugadores.
-- Estabilidad durante 30 minutos.
-- Posibilidad de mostrar una liquidación.
-- Tiempo de setup razonable.
-- Disponibilidad a la hora de la presentación.
+## Setup
 
-OpenDota `/live` puede informar `is_watch_eligible` y `delay`; usar esos campos para elegir el partido a espectar.
+```powershell
+docker compose -f infra/docker-compose.yml up -d postgres
+cd backend; .\mvnw.cmd spring-boot:run
+cd ..\collector; java -jar target\collector-0.1.0-SNAPSHOT-shaded.jar
+cd ..\frontend; npm run dev
+```
 
-## Decisión
+Dota 2: `-gamestateintegration` y el `.cfg` instalado con
+`scripts/install-gsi-config.ps1`.
 
-- **Fuente principal:** por definir en M0.
-- **Respaldo:** por definir en M0.
-- **Contingencia final:** replay de GSI real capturado (no simulación sintética), claramente etiquetado.
+Abrir dos perfiles del navegador:
 
-## Setup en una sola laptop
+- usuario demo;
+- admin (`admin@betpulse.local` / `Admin123!`).
 
-1. PostgreSQL en Docker o nativo.
-2. Backend, frontend y colector nativos.
-3. Dota 2 en modo espectador.
-4. Colector escuchando en `localhost`.
-5. Navegador con dos perfiles:
-   - usuario demo;
-   - admin.
-6. Segundo monitor si está disponible; si no, alt-tab ensayado.
-
-## Empaquetado para la laptop de presentación
-
-- Probar Docker Compose o stack nativo portable.
-- Verificar RAM y arranque.
-- Verificar GSI, SSE y persistencia.
-- No compilar en vivo.
-- Tener el video de respaldo descargado.
-
-## Datos sembrados
-
-- Usuario demo con saldo `S/ 10,000.00`.
-- Admin con acceso al panel.
-- Trader para suspender mercados.
-- Equipos y ratings desde OpenDota.
-- Partido en vivo o replay real seleccionado.
-
-## Guion de demo (20–30 min)
+## Guion (15–20 min)
 
 | Minuto | Acción |
 |---|---|
-| 0–3 | Presentar BetPulse, alcance y arquitectura en una diapositiva |
-| 3–5 | Login como usuario demo; mostrar wallet en S/ |
-| 5–8 | Abrir partido en vivo; mostrar marcador, stream y mercados |
-| 8–12 | Mostrar cómo un kill o el tiempo de juego mueve las cuotas y cómo se suspende el feed |
-| 12–15 | Apostar; mostrar hold, saldo retenido y apuesta en `/bets` |
-| 15–18 | Mostrar la arquitectura del motor de cuotas y el estado de las apuestas |
-| 18–22 | Mostrar liquidación de una apuesta (partido terminado o cerca del final) |
-| 22–25 | Mostrar wallet actualizada, ledger y auditoría |
-| 25–30 | Cerrar con arquitectura, seguridad, límites y trabajo futuro |
+| 0–2 | Presentar BetPulse: apuestas simuladas, saldo ficticio, datos reales |
+| 2–4 | Login, wallet en S/ y aviso de modo demo |
+| 4–6 | Lobby: torneos/ranked de OpenDota y cuotas que se mueven |
+| 6–9 | "Mi partida": iniciar partida con bots en Dota 2 o entrar a DotaTV |
+| 9–12 | Mostrar `/match/[id]`: marcador, jugadores, timeline, Roshan, SSE |
+| 12–14 | Apostar a primera sangre o primera torre; ver hold y `/bets` |
+| 14–16 | Provocar el evento en la partida; el mercado se cierra |
+| 16–18 | Terminar la partida o esperar `POST_GAME`; liquidación automática |
+| 18–19 | Wallet actualizada, pago, estado `WON/LOST/VOID`, auditoría |
+| 19–20 | Admin: suspender/reanudar/override de cuota con motivo |
 
-## Estrategia de liquidación
+## Liquidación
 
-Es difícil que un partido en vivo termine dentro de la demo. Opciones:
+- La partida con bots se puede terminar cuando quieras: al llegar `POST_GAME`
+  el backend guarda `match_results` y los schedulers resuelven y pagan en menos
+  de un minuto.
+- En DotaTV, elegir un partido cerca del final o mostrar la liquidación de uno
+  ya terminado, claramente etiquetado.
+- No usar resultados inventados.
 
-1. Elegir un partido que ya esté cerca del final.
-2. Mostrar la liquidación de un partido real ya finalizado, cargado desde OpenDota/GSI replay, claramente etiquetado como “partido real finalizado”.
-3. Dejar la liquidación preparada y explicarla con capturas si el partido no termina.
+## Verificación real ya realizada
 
-No usar resultados inventados.
+- Payload GSI → colector → backend → lobby con 1 partida GSI y 6 mercados.
+- Pausa → 6 mercados `SUSPENDED` con `MATCH_PAUSED`.
+- Apuesta S/ 10 a ganador en una partida GSI → `POST_GAME` → liquidación `WON`
+  con payout S/ 10.96 y wallet actualizada.
+- Admin: suspender, reanudar y override auditados.
 
-## Ensayo
-
-- Ensayar 3 veces con la misma laptop y el mismo setup.
-- Medir tiempo de arranque.
-- Probar reconexión de SSE.
-- Probar caída y recuperación del colector.
-- Probar el fallback de replay.
-- Grabar video de respaldo de 10–15 minutos.
-
-## Riesgos de demo
+## Riesgos
 
 | Riesgo | Mitigación |
 |---|---|
-| No hay partido espectable | Replay real + video de respaldo |
-| GSI no envía datos | Verificar `.cfg`, launch option y modo espectador |
-| Docker consume RAM | PostgreSQL en Docker, resto nativo |
-| SSE no actualiza | Verificar proxy, cookies y reconexión |
-| Stream sin internet | Ocultar player y continuar |
-| La laptop no rinde | Probar empaquetado nativo; cerrar apps |
+| No hay torneo en vivo | Bots o ranked de OpenDota |
+| GSI no envía | Revisar `.cfg`, launch option y modo espectador |
+| Dota 2 no arranca en la laptop | Probar el setup con antelación |
+| El partido no termina | Usar bots y cerrar la partida |
+| SSE no actualiza | Verificar proxy y reconexión |
+| Steam key ausente | No hace falta para la demo con OpenDota/GSI |
 
-## Checklist previo
+## Checklist
 
-- [ ] GSI configurado y probado.
-- [ ] Fuente principal elegida.
-- [ ] Respaldo probado.
-- [ ] Usuarios y saldos sembrados.
-- [ ] Partido seleccionado.
-- [ ] Backend/frontend/colector arrancan sin errores.
-- [ ] SSE funciona.
-- [ ] Apuesta y liquidación probadas.
-- [ ] Admin y auditoría probados.
-- [ ] Video de respaldo descargado.
-- [ ] Demo ensayada 3 veces.
+- [x] GSI configurado y probado.
+- [x] Fuente principal y respaldo definidos.
+- [x] Apuesta y liquidación probadas de punta a punta.
+- [x] Admin de mercados y auditoría probados.
+- [ ] Ensayo completo en la laptop de presentación.
+- [ ] Video de respaldo (opcional).
