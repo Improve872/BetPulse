@@ -25,8 +25,9 @@ public class JdbcMarketResultStore implements MarketResultStore {
 	@Override
 	public List<ResolvableMarket> findResolvable(int limit) {
 		return jdbcTemplate.query("""
-				SELECT m.id, m.match_id, m.market_key, m.line,
-				       r.status AS match_status, r.radiant_win, r.radiant_score, r.dire_score, r.duration_seconds
+				SELECT m.id, m.match_id, m.market_key, m.line, m.opened_at,
+				       r.status AS match_status, r.radiant_win, r.radiant_score, r.dire_score, r.duration_seconds,
+				       r.objectives::text AS objectives_json
 				FROM markets m
 				JOIN match_results r ON r.match_id = m.match_id
 				LEFT JOIN market_results mr ON mr.market_id = m.id
@@ -85,7 +86,10 @@ public class JdbcMarketResultStore implements MarketResultStore {
 				resultSet.getObject("radiant_win", Boolean.class),
 				resultSet.getObject("radiant_score", Integer.class),
 				resultSet.getObject("dire_score", Integer.class),
-				resultSet.getObject("duration_seconds", Integer.class));
+				resultSet.getObject("duration_seconds", Integer.class),
+				resultSet.getTimestamp("opened_at") == null ? null
+						: resultSet.getTimestamp("opened_at").toInstant(),
+				resultSet.getString("objectives_json"));
 	}
 
 }

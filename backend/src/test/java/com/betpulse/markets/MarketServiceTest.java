@@ -165,6 +165,63 @@ class MarketServiceTest extends IntegrationTestBase {
 
 	@Test
 	@Transactional
+	void createsAndClosesEventMarketsForGsiMatch() {
+		String matchId = uniqueMatchId();
+
+		marketService.sync(gsiLobby(matchId, 0, 0));
+		assertThat(marketCount(matchId)).isEqualTo(7);
+		assertThat(marketStatus(matchId, "FIRST_BLOOD")).isEqualTo("OPEN");
+		assertThat(marketStatus(matchId, "FIRST_TOWER")).isEqualTo("OPEN");
+		assertThat(marketStatus(matchId, "NEXT_ROSHAN")).isEqualTo("OPEN");
+
+		jdbcTemplate.update("""
+				INSERT INTO game_events (match_id, event_id, event_type, clock_time, team)
+				VALUES (?, ?, 'FIRST_BLOOD', 80, 'radiant')
+				""", matchId, matchId + ":FIRST_BLOOD:80:0");
+
+		marketService.sync(gsiLobby(matchId, 0, 0));
+
+		assertThat(marketStatus(matchId, "FIRST_BLOOD")).isEqualTo("CLOSED");
+		assertThat(marketStatus(matchId, "FIRST_TOWER")).isEqualTo("OPEN");
+	}
+
+	@Test
+	@Transactional
+	void doesNotCreateFirstBloodWhenKillsAlreadyHappened() {
+		String matchId = uniqueMatchId();
+
+		marketService.sync(gsiLobby(matchId, 3, 1));
+
+		assertThat(marketCount(matchId)).isEqualTo(6);
+		assertThat(jdbcTemplate.queryForObject("""
+				SELECT count(*) FROM markets WHERE match_id = ? AND market_key = 'FIRST_BLOOD'
+				""", Integer.class, matchId)).isZero();
+	}
+
+	private Integer marketCount(String matchId) {
+		return jdbcTemplate.queryForObject("SELECT count(*) FROM markets WHERE match_id = ?", Integer.class,
+				matchId);
+	}
+
+	private String marketStatus(String matchId, String marketKey) {
+		return jdbcTemplate.queryForObject("""
+				SELECT status FROM markets WHERE match_id = ? AND market_key = ?
+				""", String.class, matchId, marketKey);
+	}
+
+	private static LobbyResponse gsiLobby(String matchId, int radiantKills, int direKills) {
+		Instant now = Instant.parse("2026-11-01T12:00:00Z");
+		List<LobbyMatch> live = List.of(new LobbyMatch(matchId, "dota2", "live", "Práctica", "gsi", "",
+				now.getEpochSecond(), 300,
+				new LobbyTeam("Radiant", radiantKills, "radiant", null),
+				new LobbyTeam("Dire", direKills, "dire", null),
+				null, null, null, "GSI", "FULL", false, true));
+		return new LobbyResponse(live, List.of(), now,
+				new FeedHealth("OPENDOTA", "STARTING", null, now, now, 0, null, true));
+	}
+
+	@Test
+	@Transactional
 	void doesNotReopenSettledMarket() {
 		String matchId = uniqueMatchId();
 		marketService.sync(lobby(matchId, 12, 8, 1200, "LIVE", false));

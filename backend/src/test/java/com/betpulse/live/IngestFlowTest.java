@@ -95,7 +95,7 @@ class IngestFlowTest extends IntegrationTestBase {
 					assertThat(match.dire().score()).isZero();
 					assertThat(match.tournamentKind()).isEqualTo("gsi");
 				});
-		assertThat(count("markets", "match_id = '" + batch.matchId() + "'")).isEqualTo(4);
+		assertThat(count("markets", "match_id = '" + batch.matchId() + "'")).isEqualTo(6);
 	}
 
 	@Test
@@ -109,7 +109,7 @@ class IngestFlowTest extends IntegrationTestBase {
 				SELECT count(*) FROM markets
 				WHERE match_id = ? AND status = 'SUSPENDED' AND suspension_reason = 'MATCH_PAUSED'
 				""", Integer.class, batch.matchId());
-		assertThat(suspended).isEqualTo(4);
+		assertThat(suspended).isEqualTo(6);
 	}
 
 	@Test

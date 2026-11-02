@@ -5,7 +5,10 @@ public enum MarketKind {
 	MATCH_WINNER("Ganador del mapa", false),
 	TOTAL_KILLS("Total de kills", true),
 	KILL_HANDICAP("Hándicap de kills", true),
-	DURATION("Duración", true);
+	DURATION("Duración", true),
+	FIRST_BLOOD("Primera sangre", false),
+	FIRST_TOWER("Primera torre", false),
+	NEXT_ROSHAN("Siguiente Roshan", false);
 
 	private final String title;
 	private final boolean lineRequired;

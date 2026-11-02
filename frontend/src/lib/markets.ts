@@ -109,6 +109,12 @@ export function marketTitleForType(
       return t("market.title.KILL_HANDICAP");
     case "DURATION":
       return t("market.title.DURATION");
+    case "FIRST_BLOOD":
+      return t("market.title.FIRST_BLOOD");
+    case "FIRST_TOWER":
+      return t("market.title.FIRST_TOWER");
+    case "NEXT_ROSHAN":
+      return t("market.title.NEXT_ROSHAN");
     default:
       return fallback;
   }
@@ -138,6 +144,9 @@ export function selectionLabelForType(
 
   switch (marketType) {
     case "MATCH_WINNER":
+    case "FIRST_BLOOD":
+    case "FIRST_TOWER":
+    case "NEXT_ROSHAN":
       return selectionKey === "RADIANT" ? t("market.radiant") : t("market.dire");
     case "TOTAL_KILLS":
       return selectionKey === "OVER"

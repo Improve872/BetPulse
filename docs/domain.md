@@ -91,6 +91,8 @@ Reglas:
 
 > M3b: las líneas de `TOTAL_KILLS`, `KILL_HANDICAP` y `DURATION` se fijan al crear el mercado y se guardan en `markets.line`. Las fórmulas y límites están en ADR-024.
 
+> M2b: `FIRST_BLOOD`, `FIRST_TOWER` y `NEXT_ROSHAN` solo existen en partidas GSI. Usan cuotas fijas 50/50 con margen del 6% y se cierran cuando llega el evento. Roshan solo está disponible en modo espectador (ADR-031).
+
 ## Ciclo de vida de una apuesta
 
 Estados:

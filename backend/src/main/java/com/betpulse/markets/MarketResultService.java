@@ -39,7 +39,8 @@ public class MarketResultService {
 		int resolved = 0;
 		for (ResolvableMarket market : markets) {
 			Resolution resolution = resolver.resolve(market.marketKey(), market.line(), market.matchStatus(),
-					market.radiantWin(), market.radiantScore(), market.direScore(), market.durationSeconds());
+					market.radiantWin(), market.radiantScore(), market.direScore(), market.durationSeconds(),
+					market.objectivesJson(), market.openedAt());
 			String outcome = resolution.voided() ? "VOID" : "SETTLED";
 			store.save(new ResolvedMarket(market.marketId(), market.matchId(), outcome,
 					resolution.winningSelectionKey(), detailsJson(market, resolution)));

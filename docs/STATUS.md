@@ -6,7 +6,7 @@
 
 ## Hito actual
 
-**M5 — Liquidación exactly-once.** Completado. Siguiente: cerrar M2b (SSE por partido, mercados de eventos y suspensión por kill/torre/Roshan).
+**M2b — Partida propia (GSI).** Mercados de eventos implementados. Siguiente: SSE por partido, suspensión por kill/torre/Roshan y cierre robusto. M5 está cerrado.
 
 Cerrados: M0 (capturas GSI reales), M1 (identidad y wallet), M2a (catálogo OpenDota + SSE), M3a y M3b (cuatro mercados en vivo con cuotas), M4 (apuestas simples con holds), M5 (liquidación, payout/void, admin y auditoría). M2b "Mi partida" está implementado en su núcleo; faltan los mercados de eventos y el SSE por partido. Detalle en `docs/milestones/`.
 
@@ -32,6 +32,8 @@ Cerrados: M0 (capturas GSI reales), M1 (identidad y wallet), M2a (catálogo Open
 - M5: `settlements` garantiza una liquidación por apuesta. Gana/pierde/void mueven el ledger con suma cero; `bets` pasa a `WON`/`LOST`/`VOID`; `audit_logs` registra liquidaciones y anulaciones.
 - Admin: `POST /api/admin/bets/{id}/void` con rol `ADMIN`, motivo obligatorio, reembolso y auditoría. `/admin` lista apuestas en revisión/pendientes.
 - `/bets` muestra estado, pago y fecha de liquidación.
+- Mercados GSI de eventos: `FIRST_BLOOD`, `FIRST_TOWER` y `NEXT_ROSHAN` con cuotas fijas 50/50; se crean según el estado (0-0, sin torre, Roshan disponible) y se cierran al llegar el evento.
+- Al terminar una partida GSI, `match_results.objectives` se construye desde todos los `game_events`; el resolver acepta formatos GSI y OpenDota.
 - Admin sembrado por configuración; en desarrollo `admin@betpulse.local` / `Admin123!`.
 - Colector Javalin compila y expone `/health` y `/gsi`; sin reenvío al backend (M2b diferido).
 - **No hay liquidación**: las apuestas quedan `PLACED` y el saldo retenido no se paga ni se libera.
@@ -40,7 +42,7 @@ Cerrados: M0 (capturas GSI reales), M1 (identidad y wallet), M2a (catálogo Open
 
 ## Próxima acción
 
-1. Completar M2b: SSE por partido, página con scoreboard/timeline y mercados de primera sangre, primera torre y siguiente Roshan.
+1. Completar M2b: SSE por partido y página con scoreboard/timeline.
 2. Suspensión de mercados GSI por kill/torre/Roshan además de pausa.
 3. Cierre robusto de mercados: ventana de gracia y confirmación con `/matches/{id}` antes de cerrar.
 4. Panel admin de mercados (suspender/reanudar/override) y ajustes manuales de cuota.
@@ -74,7 +76,7 @@ npm run build
 
 Resultados 2026-11-01:
 
-- Backend: 80/80 tests verdes (Bet 10, CatalogController 3, CatalogService 5, Auth 7, MarketService 8, MarketController 1, OddsEngine 7, Wallet 8, Health 1, MatchResultService 5, MatchResultFlow 2, MarketOutcomeResolver 6, MarketResultFlow 3, IngestFlow 7, SettlementFlow 7).
+- Backend: 86/86 tests verdes (Bet 10, CatalogController 3, CatalogService 5, Auth 7, MarketService 10, MarketController 1, OddsEngine 7, Wallet 8, Health 1, MatchResultService 5, MatchResultFlow 2, MarketOutcomeResolver 10, MarketResultFlow 3, IngestFlow 7, SettlementFlow 7).
 - Flyway: V1–V9 aplicadas en Testcontainers.
 - Frontend: lint y build verdes; rutas `/`, `/admin`, `/bets` y `/wallet` generadas.
 - Colector: 11/11 tests verdes y `package` con shade correcto.

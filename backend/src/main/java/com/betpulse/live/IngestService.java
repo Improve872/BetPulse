@@ -117,9 +117,27 @@ public class IngestService {
 				VALUES (?, 'READY', ?, ?, ?, ?, ?, ?, CAST(? AS jsonb), 'GSI', now())
 				ON CONFLICT (match_id) DO NOTHING
 				""", batch.matchId(), radiantWin, batch.radiantScore(), batch.direScore(), batch.clockTime(),
-				firstBlood, batch.leagueId(), json(batch.events(), "[]"));
+				firstBlood, batch.leagueId(), objectivesJson(batch.matchId()));
 		log.info("Resultado GSI guardado para {}: {}-{}, ganador {}", batch.matchId(), batch.radiantScore(),
 				batch.direScore(), winTeam);
+	}
+
+	private String objectivesJson(String matchId) {
+		List<java.util.Map<String, Object>> events = jdbcTemplate.query("""
+				SELECT event_type, clock_time, team, payload::text AS payload, received_at
+				FROM game_events
+				WHERE match_id = ?
+				ORDER BY clock_time, id
+				""", (resultSet, rowNumber) -> {
+			java.util.Map<String, Object> event = new java.util.LinkedHashMap<>();
+			event.put("type", resultSet.getString("event_type"));
+			event.put("clockTime", resultSet.getInt("clock_time"));
+			event.put("team", resultSet.getString("team"));
+			event.put("payload", resultSet.getString("payload"));
+			event.put("receivedAt", resultSet.getTimestamp("received_at").toInstant().toString());
+			return event;
+		}, matchId);
+		return json(events, "[]");
 	}
 
 	private static Integer firstBloodTime(List<Event> events) {

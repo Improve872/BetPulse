@@ -101,7 +101,10 @@ public class MarketService {
 				             WHEN 'TOTAL_KILLS' THEN 1
 				             WHEN 'KILL_HANDICAP' THEN 2
 				             WHEN 'DURATION' THEN 3
-				             ELSE 4
+				             WHEN 'FIRST_BLOOD' THEN 4
+				             WHEN 'FIRST_TOWER' THEN 5
+				             WHEN 'NEXT_ROSHAN' THEN 6
+				             ELSE 7
 				         END,
 				         CASE s.selection_key WHEN 'RADIANT' THEN 0 WHEN 'OVER' THEN 0 WHEN 'DIRE' THEN 1
 				             WHEN 'UNDER' THEN 1 ELSE 2 END
@@ -127,27 +130,28 @@ public class MarketService {
 		int radiantKills = match.radiant().score();
 		int direKills = match.dire().score();
 		long gameTimeSeconds = match.durationSeconds();
-		BigDecimal initialLine = oddsEngine.initialLine(kind, radiantKills, direKills, gameTimeSeconds);
-
-		boolean practice = "LOCAL".equals(match.playersScope());
-		String source = match.source() == null ? "OPENDOTA" : match.source();
-		jdbcTemplate.update("""
-				INSERT INTO markets (match_id, market_key, market_type, title, line, status, source, practice,
-				    opened_at)
-				VALUES (?, ?, ?, ?, CAST(? AS NUMERIC), ?, ?, ?, now())
-				ON CONFLICT (match_id, market_key) DO NOTHING
-				""", match.id(), kind.name(), kind.name(), kind.title(), initialLine, OPEN, source, practice);
-
-		MarketState market = jdbcTemplate.queryForObject("""
-				SELECT id, status, version, line
-				FROM markets
-				WHERE match_id = ? AND market_key = ?
-				""", (resultSet, rowNumber) -> new MarketState(
-				resultSet.getObject("id", UUID.class),
-				resultSet.getString("status"),
-				resultSet.getInt("version"),
-				resultSet.getBigDecimal("line")), match.id(), kind.name());
+		MarketState market = findMarket(match.id(), kind);
+		if (market == null) {
+			if (!shouldCreate(match, kind, radiantKills + direKills)) {
+				return;
+			}
+			BigDecimal initialLine = oddsEngine.initialLine(kind, radiantKills, direKills, gameTimeSeconds);
+			boolean practice = "LOCAL".equals(match.playersScope());
+			String source = match.source() == null ? "OPENDOTA" : match.source();
+			jdbcTemplate.update("""
+					INSERT INTO markets (match_id, market_key, market_type, title, line, status, source, practice,
+					    opened_at)
+					VALUES (?, ?, ?, ?, CAST(? AS NUMERIC), ?, ?, ?, now())
+					ON CONFLICT (match_id, market_key) DO NOTHING
+					""", match.id(), kind.name(), kind.name(), kind.title(), initialLine, OPEN, source, practice);
+			market = findMarket(match.id(), kind);
+		}
 		if (market == null || isTerminal(market.status())) {
+			return;
+		}
+
+		if (eventResolved(match.id(), kind, market.openedAt())) {
+			closeMarket(market.id());
 			return;
 		}
 
@@ -187,6 +191,21 @@ public class MarketService {
 		}
 	}
 
+	private MarketState findMarket(String matchId, MarketKind kind) {
+		List<MarketState> rows = jdbcTemplate.query("""
+				SELECT id, status, version, line, opened_at
+				FROM markets
+				WHERE match_id = ? AND market_key = ?
+				""", (resultSet, rowNumber) -> new MarketState(
+				resultSet.getObject("id", UUID.class),
+				resultSet.getString("status"),
+				resultSet.getInt("version"),
+				resultSet.getBigDecimal("line"),
+				resultSet.getTimestamp("opened_at") == null ? null
+						: resultSet.getTimestamp("opened_at").toInstant()), matchId, kind.name());
+		return rows.stream().findFirst().orElse(null);
+	}
+
 	private boolean isDeterministic(MarketKind kind, BigDecimal line, int totalKills, long gameTimeSeconds) {
 		if (line == null) {
 			return false;
@@ -194,8 +213,42 @@ public class MarketService {
 		return switch (kind) {
 			case TOTAL_KILLS -> totalKills > line.doubleValue();
 			case DURATION -> gameTimeSeconds / 60.0 > line.doubleValue();
-			case MATCH_WINNER, KILL_HANDICAP -> false;
+			case MATCH_WINNER, KILL_HANDICAP, FIRST_BLOOD, FIRST_TOWER, NEXT_ROSHAN -> false;
 		};
+	}
+
+	private boolean shouldCreate(LobbyMatch match, MarketKind kind, int totalKills) {
+		boolean gsi = "GSI".equals(match.source());
+		return switch (kind) {
+			case FIRST_BLOOD -> gsi && totalKills == 0 && !hasEvent(match.id(), "FIRST_BLOOD", null);
+			case FIRST_TOWER -> gsi && !hasEvent(match.id(), "TOWER_KILL", null);
+			case NEXT_ROSHAN -> gsi && Boolean.TRUE.equals(match.roshanAvailable());
+			default -> true;
+		};
+	}
+
+	private boolean eventResolved(String matchId, MarketKind kind, java.time.Instant openedAt) {
+		return switch (kind) {
+			case FIRST_BLOOD -> hasEvent(matchId, "FIRST_BLOOD", null);
+			case FIRST_TOWER -> hasEvent(matchId, "TOWER_KILL", null);
+			case NEXT_ROSHAN -> openedAt != null && hasEvent(matchId, "ROSHAN_KILL", openedAt);
+			default -> false;
+		};
+	}
+
+	private boolean hasEvent(String matchId, String eventType, java.time.Instant since) {
+		Integer count;
+		if (since == null) {
+			count = jdbcTemplate.queryForObject("""
+					SELECT count(*) FROM game_events WHERE match_id = ? AND event_type = ?
+					""", Integer.class, matchId, eventType);
+		} else {
+			count = jdbcTemplate.queryForObject("""
+					SELECT count(*) FROM game_events
+					WHERE match_id = ? AND event_type = ? AND received_at >= ?
+					""", Integer.class, matchId, eventType, java.sql.Timestamp.from(since));
+		}
+		return count != null && count > 0;
 	}
 
 	private void upsertSelection(UUID marketId, Quote quote) {
@@ -350,7 +403,7 @@ public class MarketService {
 				resultSet.getBigDecimal("odds"));
 	}
 
-	private record MarketState(UUID id, String status, int version, BigDecimal line) {
+	private record MarketState(UUID id, String status, int version, BigDecimal line, java.time.Instant openedAt) {
 	}
 
 	private record MarketRow(UUID id, String matchId, String marketKey, String marketType, String title, String status,

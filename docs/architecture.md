@@ -112,6 +112,8 @@ Reglas:
 
 > Implementación "Mi partida" (2026-11-01): el colector definitivo normaliza GSI, deduplica eventos, envía a 1 Hz, firma con HMAC y usa spool ante caídas. El backend expone `POST /internal/ingest`, guarda snapshots/eventos e incorpora la partida al lobby con `source=GSI`. La UI la muestra en una sección separada; en modo bots se etiqueta "Práctica" y el stake se limita a S/ 100. Al recibir `POST_GAME`, el resultado se guarda con `source=GSI` para M5.
 
+> Mercados de eventos (2026-11-01): en partidas GSI se publican además `FIRST_BLOOD`, `FIRST_TOWER` y `NEXT_ROSHAN` con cuotas 50/50 (margen 6%). Se cierran al llegar el evento; Roshan solo en espectador. Al terminar, `match_results.objectives` se arma desde todos los `game_events`, y el resolver acepta formatos GSI y OpenDota.
+
 ## Modelo de datos (alto nivel)
 
 - `users`, `roles`

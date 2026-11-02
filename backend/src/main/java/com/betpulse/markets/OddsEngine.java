@@ -31,7 +31,8 @@ public class OddsEngine {
 			case TOTAL_KILLS -> totalKills + KILLS_PER_SECOND * remainingSeconds(gameTimeSeconds);
 			case KILL_HANDICAP -> radiantKills - direKills + 0.5;
 			case DURATION -> Math.max(40.5, currentMinute + 5.5);
-			case MATCH_WINNER -> throw new IllegalStateException("MATCH_WINNER no usa línea");
+			case MATCH_WINNER, FIRST_BLOOD, FIRST_TOWER, NEXT_ROSHAN ->
+				throw new IllegalStateException(kind + " no usa línea");
 		};
 		return halfLine(value);
 	}
@@ -43,6 +44,7 @@ public class OddsEngine {
 			case TOTAL_KILLS -> totalKills(radiantKills, direKills, gameTimeSeconds, line);
 			case KILL_HANDICAP -> killHandicap(radiantKills, direKills, gameTimeSeconds, line);
 			case DURATION -> duration(gameTimeSeconds, line);
+			case FIRST_BLOOD, FIRST_TOWER, NEXT_ROSHAN -> pair("RADIANT", "DIRE", 0.5);
 		};
 	}
 

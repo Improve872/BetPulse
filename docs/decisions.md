@@ -389,3 +389,23 @@ Formato: contexto → decisión → consecuencias. Actualizar cuando cambie una 
 - Un scheduler cada 5 s liquida pendientes; se desactiva con `betpulse.settlement.scheduler-enabled=false`.
 
 **Consecuencias:** el ciclo del dinero queda cerrado: apuesta, hold, resultado, liquidacion, wallet y auditoria. La UI de apuestas muestra estado, pago y fecha de liquidacion; `/admin` permite revisar y anular. Quedan fuera de M5 los ajustes manuales de cuota y la conciliacion automatica de discrepancias GSI/OpenDota.
+
+## ADR-031 - Mercados de eventos GSI (primera sangre, primera torre, siguiente Roshan)
+
+**Estado:** aceptada (2026-11-01)
+
+**Contexto:** con la partida propia ya ingerida, faltaban los mercados que dependen de eventos y no de marcador/tiempo. OpenDota no entrega esos eventos en vivo; GSI si.
+
+**Decision:**
+
+- Solo se crean para partidas GSI (`markets.source=GSI`).
+- `FIRST_BLOOD`: se crea si el marcador sigue 0-0 y no existe evento `FIRST_BLOOD`.
+- `FIRST_TOWER`: se crea si no existe evento `TOWER_KILL`.
+- `NEXT_ROSHAN`: se crea solo si el snapshot trae Roshan (`playersScope=FULL`); en bots no existe.
+- Cuotas fijas 50/50 con el margen del 6% (`1.887`), como linea base transparente. No se simula movimiento.
+- El mercado se cierra cuando llega el evento correspondiente. `NEXT_ROSHAN` solo considera eventos posteriores a `markets.opened_at`.
+- Al recibir `POST_GAME`, `match_results.objectives` se construye desde **todos** los `game_events` de la partida, no desde el payload final (que solo trae eventos recientes).
+- El resolver entiende el formato GSI (`FIRST_BLOOD`, `TOWER_KILL`, `ROSHAN_KILL`) y el de OpenDota (`CHAT_MESSAGE_FIRSTBLOOD`, `building_kill`, `CHAT_MESSAGE_ROSHAN_KILL`), por si se habilitan en el feed pro.
+- Si no hay evento, el mercado queda `VOID` al liquidar.
+
+**Consecuencias:** se puede apostar a primera sangre, primera torre y siguiente Roshan en la partida propia. Las cuotas no pretenden precision; son un baseline. Quedan pendientes la suspension inmediata por kill/torre/Roshan (hoy solo pausa) y el SSE por partido con timeline.

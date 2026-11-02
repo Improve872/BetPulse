@@ -3,14 +3,16 @@ package com.betpulse.markets;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 
 import org.junit.jupiter.api.Test;
 
 import com.betpulse.markets.MarketOutcomeResolver.Resolution;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 class MarketOutcomeResolverTest {
 
-	private final MarketOutcomeResolver resolver = new MarketOutcomeResolver();
+	private final MarketOutcomeResolver resolver = new MarketOutcomeResolver(new ObjectMapper());
 
 	@Test
 	void matchWinnerFollowsFinalResult() {
@@ -45,6 +47,51 @@ class MarketOutcomeResolverTest {
 				.winningSelectionKey()).isEqualTo("OVER");
 		assertThat(resolve(MarketKind.DURATION, new BigDecimal("51.5"), true, 44, 37, 3078)
 				.winningSelectionKey()).isEqualTo("UNDER");
+	}
+
+	@Test
+	void resolvesFirstBloodFromGsiEvents() {
+		String events = """
+				[{"type":"FIRST_BLOOD","team":"dire","clockTime":76}]
+				""";
+
+		Resolution resolution = resolver.resolve(MarketKind.FIRST_BLOOD, null, true, 0, 1, 300,
+				events, null);
+
+		assertThat(resolution.winningSelectionKey()).isEqualTo("DIRE");
+	}
+
+	@Test
+	void resolvesFirstTowerFromOpenDotaObjectives() {
+		String objectives = """
+				[{"time":486,"type":"building_kill","key":"npc_dota_goodguys_tower1_top"}]
+				""";
+
+		Resolution resolution = resolver.resolve(MarketKind.FIRST_TOWER, null, true, 10, 8, 1200,
+				objectives, null);
+
+		assertThat(resolution.winningSelectionKey()).isEqualTo("DIRE");
+	}
+
+	@Test
+	void resolvesNextRoshanOnlyAfterMarketOpening() {
+		String events = """
+				[{"type":"ROSHAN_KILL","team":"radiant","receivedAt":"2026-11-01T18:00:00Z"},
+				 {"type":"ROSHAN_KILL","team":"dire","receivedAt":"2026-11-01T18:10:00Z"}]
+				""";
+
+		Resolution resolution = resolver.resolve(MarketKind.NEXT_ROSHAN, null, true, 20, 20, 1800,
+				events, Instant.parse("2026-11-01T18:05:00Z"));
+
+		assertThat(resolution.winningSelectionKey()).isEqualTo("DIRE");
+	}
+
+	@Test
+	void voidsEventMarketWithoutMatchingEvent() {
+		Resolution resolution = resolver.resolve(MarketKind.FIRST_BLOOD, null, true, 0, 0, 120,
+				"[]", null);
+
+		assertThat(resolution.voided()).isTrue();
 	}
 
 	@Test
