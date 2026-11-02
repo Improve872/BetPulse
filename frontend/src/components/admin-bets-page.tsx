@@ -100,14 +100,22 @@ export function AdminBetsPage() {
       />
 
       <main className="mx-auto max-w-[1100px] px-4 pb-16 pt-8 sm:px-6 lg:px-8">
-        <div>
-          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-accent-strong">
-            BetPulse
-          </p>
-          <h1 className="mt-1 font-display text-2xl font-semibold tracking-tight text-ink">
-            {t("admin.title")}
-          </h1>
-          <p className="mt-1 text-sm text-muted">{t("admin.subtitle")}</p>
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-accent-strong">
+              BetPulse
+            </p>
+            <h1 className="mt-1 font-display text-2xl font-semibold tracking-tight text-ink">
+              {t("admin.title")}
+            </h1>
+            <p className="mt-1 text-sm text-muted">{t("admin.subtitle")}</p>
+          </div>
+          <Link
+            href="/admin/markets"
+            className="text-xs font-semibold text-accent-strong hover:underline"
+          >
+            {t("admin.markets")}
+          </Link>
         </div>
 
         {!loading && !isAdmin ? (

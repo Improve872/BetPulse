@@ -37,6 +37,7 @@ Cerrados: M0 (capturas GSI reales), M1 (identidad y wallet), M2a (catálogo Open
 - `GET /api/matches/{id}` y `/api/matches/{id}/stream` exponen la partida propia; `/match/[id]` muestra marcador, jugadores, net worth, timeline y Roshan por SSE.
 - Eventos críticos suspenden mercados 3 s con `EVENT_SUSPENSION`; la pausa usa `MATCH_PAUSED`.
 - `close-grace` de 120 s evita cerrar mercados por una desaparición transitoria del feed.
+- Admin de mercados: `/admin/markets` permite suspender, reanudar y cambiar cuota; el override sube versión, inserta `odds_history` con `ADMIN_OVERRIDE` y audita con motivo.
 - Admin sembrado por configuración; en desarrollo `admin@betpulse.local` / `Admin123!`.
 - Colector Javalin compila y expone `/health` y `/gsi`; sin reenvío al backend (M2b diferido).
 - **No hay liquidación**: las apuestas quedan `PLACED` y el saldo retenido no se paga ni se libera.
@@ -45,10 +46,10 @@ Cerrados: M0 (capturas GSI reales), M1 (identidad y wallet), M2a (catálogo Open
 
 ## Próxima acción
 
-1. Panel admin de mercados (suspender/reanudar/override) y ajustes manuales de cuota.
-2. M3c cuando exista una fuente pre-partida fiable (calendario/Liquipedia).
-3. Preparar el guion de demo y probar el flujo completo en la laptop.
-4. Integrar Steam `GetLiveLeagueGames` si aparece la API key.
+1. M3c cuando exista una fuente pre-partida fiable (calendario/Liquipedia).
+2. Preparar el guion de demo y probar el flujo completo en la laptop.
+3. Integrar Steam `GetLiveLeagueGames` si aparece la API key.
+4. Pulir el panel admin (usuarios, exposición, salud del feed).
 
 ## Pendiente de entorno (no bloquea M5)
 
@@ -78,9 +79,9 @@ npm run build
 
 Resultados 2026-11-01:
 
-- Backend: 88/88 tests verdes (Bet 10, CatalogController 3, CatalogService 5, Auth 7, MarketService 11, MarketController 1, OddsEngine 7, Wallet 8, Health 1, MatchResultService 5, MatchResultFlow 2, MarketOutcomeResolver 10, MarketResultFlow 3, IngestFlow 8, SettlementFlow 7).
+- Backend: 90/90 tests verdes (Bet 10, CatalogController 3, CatalogService 5, Auth 7, MarketService 11, MarketController 1, OddsEngine 7, Wallet 8, Health 1, MatchResultService 5, MatchResultFlow 2, MarketOutcomeResolver 10, MarketResultFlow 3, IngestFlow 8, SettlementFlow 7, AdminMarketFlow 2).
 - Flyway: V1–V9 aplicadas en Testcontainers.
-- Frontend: lint y build verdes; rutas `/`, `/admin`, `/bets`, `/match/[id]` y `/wallet` generadas.
+- Frontend: lint y build verdes; rutas `/`, `/admin`, `/admin/markets`, `/bets`, `/match/[id]` y `/wallet` generadas.
 - Colector: 11/11 tests verdes y `package` con shade correcto.
 - CI anterior (2026-10-29, `60ea4c3`): backend, colector y frontend en verde.
 

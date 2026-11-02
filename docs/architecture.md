@@ -58,7 +58,7 @@ En desarrollo, Next.js hace proxy de `/api` al backend para evitar CORS y compar
 | `wallet` | Ledger, saldos, depósitos/retiros simulados |
 | `settlement` | Liquidación exactly-once, payout, void y anulación administrativa |
 | `payments` | Abstracción de proveedor simulado |
-| `admin` | Control de mercados, cuotas, usuarios, exposición |
+| `admin` | Suspender/reanudar mercados, override de cuota, anulación de apuestas y auditoría |
 | `audit` | Bitácora inmutable de acciones |
 | `shared` | Errores, dinero, eventos, utilidades |
 
@@ -75,6 +75,7 @@ En desarrollo, Next.js hace proxy de `/api` al backend para evitar CORS y compar
 - M4 implementado: bet slip y modal móvil permiten elegir cuota y stake; `lib/bets.ts` llama a `/api/bets` con idempotencia. `/bets` muestra el historial privado.
 - M5 implementado: `/bets` muestra estado, pago y fecha de liquidación; `/admin` lista apuestas en revisión/pendientes y permite anular con motivo (rol `ADMIN`).
 - M2b implementado: `/match/[id]` muestra la partida propia en vivo por SSE (marcador, jugadores, net worth, timeline y Roshan). El enlace aparece en la card de "Mi partida".
+- Admin de mercados implementado: `/admin/markets` lista mercados y permite suspender, reanudar o cambiar cuota; cada acción se audita y, en override, sube versión e inserta `odds_history`.
 
 ## Flujo de datos
 

@@ -424,3 +424,21 @@ Formato: contexto → decisión → consecuencias. Actualizar cuando cambie una 
 - Al desaparecer una partida del feed, sus mercados se cierran tras `betpulse.markets.close-grace` (120 s por defecto) en vez de inmediatamente. Si reaparece antes, no se cierra.
 
 **Consecuencias:** la partida propia tiene seguimiento en vivo sin recargar, los mercados se protegen ante eventos y un corte breve del feed no cierra mercados validos. Queda pendiente el panel admin de mercados y M3c.
+
+## ADR-033 - Panel admin de mercados
+
+**Estado:** aceptada (2026-11-01)
+
+**Contexto:** faltaba control administrativo sobre mercados y cuotas: suspender, reanudar y corregir una cuota con motivo y auditoria.
+
+**Decision:**
+
+- `GET /api/admin/markets` lista mercados `OPEN`/`SUSPENDED`.
+- `POST /api/admin/markets/{id}/suspend` exige motivo, deja el mercado `SUSPENDED` y audita `MARKET_SUSPENDED`.
+- `POST /api/admin/markets/{id}/resume` vuelve a `OPEN`, limpia la suspension y audita `MARKET_RESUMED`.
+- `POST /api/admin/markets/{id}/override` cambia la cuota de una seleccion (minimo 1.001), sube `markets.version` e inserta `odds_history` con `source=ADMIN_OVERRIDE`; audita `MARKET_OVERRIDE` con cuota, version previa y motivo.
+- Solo se admiten cambios en mercados `OPEN`/`SUSPENDED`; un mercado `CLOSED`/`SETTLED`/`VOID` no se toca.
+- Todos los endpoints requieren `ROLE_ADMIN` y escriben en `audit_logs`.
+- UI: `/admin/markets` lista mercados, muestra selecciones y permite suspender, reanudar o cambiar cuota con prompts simples.
+
+**Consecuencias:** la operacion puede corregir una cuota o detener un mercado sin tocar la base; cada accion queda auditada y versionada. La UI es funcional, no pulida; el bet slip sigue validando `marketVersion` y `expectedOdds` en el servidor.

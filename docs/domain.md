@@ -93,6 +93,8 @@ Reglas:
 
 > M2b: `FIRST_BLOOD`, `FIRST_TOWER` y `NEXT_ROSHAN` solo existen en partidas GSI. Usan cuotas fijas 50/50 con margen del 6% y se cierran cuando llega el evento. Roshan solo está disponible en modo espectador (ADR-031).
 
+> Admin: suspender/reanudar exige motivo y se audita. Un override de cuota sube `markets.version`, inserta `odds_history` con `source=ADMIN_OVERRIDE` y audita `MARKET_OVERRIDE` (ADR-033).
+
 ## Ciclo de vida de una apuesta
 
 Estados:
