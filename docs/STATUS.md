@@ -6,18 +6,18 @@
 
 ## Hito actual
 
-**M2b — Partida propia (GSI).** Completado: ingesta, lobby, mercados, eventos, SSE por partido, suspensión y cierre con gracia.
+**MVP cerrado (M0–M5 + M2b).** Siguiente: M6 (producto) y M7 (hardening/demo). M3c sigue bloqueado por falta de calendario pre-partida.
 
 Cerrados: M0 (capturas GSI reales), M1 (identidad y wallet), M2a (catálogo OpenDota + SSE), M2b (partida propia GSI), M3a y M3b (cuatro mercados en vivo con cuotas), M4 (apuestas simples con holds), M5 (liquidación, payout/void, admin y auditoría). Detalle en `docs/milestones/`.
 
 ## Estado del sistema
 
 - Backend Spring Boot 3.5.16 / Java 21 en `8081`; compila y arranca con PostgreSQL real.
-- Frontend Next.js 15.5.28 + React 19.1 + Tailwind 4; lint y build verdes. Rutas `/`, `/wallet` y `/bets`.
+- Frontend Next.js 15.5.28 + React 19.1 + Tailwind 4; lint y build verdes. Rutas `/`, `/wallet`, `/bets`, `/admin`, `/admin/markets` y `/match/[id]`.
 - Lobby responsive con cards, filtros, modal de partida con mercados múltiples, bet slip y página de apuestas.
 - Catálogo con datos reales de OpenDota; sin fixtures ni datos inventados en el producto.
 - Las partidas con `league_id > 0` se priorizan sobre las ranked y muestran el nombre de liga resuelto con `/leagues/{id}` (caché 6 h).
-- Cuatro mercados por partida en vivo con margen propio, versión e historial append-only.
+- Cuatro mercados base por partida en vivo (ganador, total de kills, handicap y duración) más tres de eventos GSI (primera sangre, primera torre y siguiente Roshan), con versión e historial append-only.
 - Apuestas con validación server-side, holds en el ledger, idempotencia y aislamiento por usuario.
 - Auth real con sesión HttpOnly, CSRF y roles; wallet demo con ledger de doble entrada.
 - Migraciones aplicadas: V1–V9.
@@ -28,7 +28,7 @@ Cerrados: M0 (capturas GSI reales), M1 (identidad y wallet), M2a (catálogo Open
 - La partida propia aparece en el lobby como `source=GSI` en la sección "Mi partida", con `playersScope=FULL|LOCAL`, pausa y disponibilidad de Roshan.
 - Mercados `source=GSI`: se crean aunque OpenDota esté caído o iniciando; una pausa los suspende con `MATCH_PAUSED`.
 - Partidas con bots: `practice=true`, stake máximo S/ 100 y etiqueta "Práctica". El resultado sale de GSI (`POST_GAME` + `win_team`).
-- Verificación de humo real: payload GSI → colector → backend → lobby con 1 partida GSI, 4 mercados, pausa con 4 mercados suspendidos y `match_results` READY/GSI 44-27.
+- Verificación de humo real: payload GSI → colector → backend → lobby con 1 partida GSI, 6 mercados, pausa con 6 mercados suspendidos y `match_results` READY/GSI 44-27.
 - M5: `settlements` garantiza una liquidación por apuesta. Gana/pierde/void mueven el ledger con suma cero; `bets` pasa a `WON`/`LOST`/`VOID`; `audit_logs` registra liquidaciones y anulaciones.
 - Admin: `POST /api/admin/bets/{id}/void` con rol `ADMIN`, motivo obligatorio, reembolso y auditoría. `/admin` lista apuestas en revisión/pendientes.
 - `/bets` muestra estado, pago y fecha de liquidación.
@@ -39,10 +39,10 @@ Cerrados: M0 (capturas GSI reales), M1 (identidad y wallet), M2a (catálogo Open
 - `close-grace` de 120 s evita cerrar mercados por una desaparición transitoria del feed.
 - Admin de mercados: `/admin/markets` permite suspender, reanudar y cambiar cuota; el override sube versión, inserta `odds_history` con `ADMIN_OVERRIDE` y audita con motivo.
 - Admin sembrado por configuración; en desarrollo `admin@betpulse.local` / `Admin123!`.
-- Colector Javalin compila y expone `/health` y `/gsi`; sin reenvío al backend (M2b diferido).
-- **No hay liquidación**: las apuestas quedan `PLACED` y el saldo retenido no se paga ni se libera.
-- Steam `GetLiveLeagueGames` no integrado: falta `STEAM_API_KEY` (rate limit de generación).
-- CI: backend 56 tests verdes; frontend lint/build verdes (última verificación local).
+- Colector Javalin definitivo: expone `/health` y `/`, recibe `/gsi`, normaliza, deduplica, firma con HMAC y reenvía al backend con spool ante caídas.
+- Liquidación implementada: `settlements` único por apuesta, payout/void, ledger y auditoría. Las apuestas ya no quedan abiertas para siempre.
+- Steam `GetLiveLeagueGames` no integrado: falta `STEAM_API_KEY` (rate limit de generación). No bloquea la demo.
+- CI: 90 tests backend, 11 del colector y frontend lint/build verdes; última ejecución en `627149a`.
 
 ## Próxima acción
 
@@ -51,20 +51,20 @@ Cerrados: M0 (capturas GSI reales), M1 (identidad y wallet), M2a (catálogo Open
 3. Integrar Steam `GetLiveLeagueGames` si aparece la API key.
 4. Pulir el panel admin (usuarios, exposición, salud del feed).
 
-## Pendiente de entorno (no bloquea M5)
+## Pendiente de entorno (opcional)
 
-- Activar `-gamestateintegration` en Dota 2 y capturar payloads reales. Desbloquea M0, M2b y los mercados de primera sangre, primera torre y siguiente Roshan. Requiere abrir el juego, no una sesión de código.
+- `STEAM_API_KEY` para enriquecer el feed pro con draft, torres y Roshan. No bloquea la demo.
+- Laptop de presentación: confirmar RAM/OS y probar el empaquetado.
 
 ## Bloqueos
 
-- M2b (ingesta GSI) sigue diferido: hay capturas reales, pero el producto ya no depende de GSI para la demo; los mercados de eventos al segundo esperan a M2b.
 - OpenDota no ofrece calendario futuro fiable para M3c.
 - Sin `STEAM_API_KEY` no hay draft, torres ni Roshan en vivo; el feed pro funciona con OpenDota.
 - `npm audit` reporta 2 vulnerabilidades transitivas de Next.js/PostCSS; se resolverán en M7 o con una actualización mayor planificada.
 
-## Restricción de diseño para M5
+## Restricción de diseño vigente
 
-Los cuatro mercados actuales se resuelven con OpenDota, pero primera sangre, primera torre y siguiente Roshan dependerán de GSI. El settlement debe ser **agnóstico al tipo de mercado**: consume un resultado ya resuelto, no consulta la fuente. Así M2b solo añade un resolvedor sin tocar el núcleo.
+El settlement es **agnóstico a la fuente**: consume `market_results` ya resuelto y no consulta OpenDota ni GSI. OpenDota y GSI solo alimentan `match_results`; agregar una fuente nueva no toca el núcleo de pagos.
 
 ## Verificación
 
@@ -84,7 +84,8 @@ Resultados 2026-11-01:
 - Frontend: lint y build verdes; rutas `/`, `/admin`, `/admin/markets`, `/bets`, `/match/[id]` y `/wallet` generadas.
 - Colector: 11/11 tests verdes y `package` con shade correcto.
 - E2E real (2026-11-01): GSI mid-game → 4 mercados base + torre/Roshan → apuesta de S/ 10 a ganador → `POST_GAME` → `WON` con payout S/ 10.96; wallet disponible S/ 100.96 y retenido S/ 0. Liquidación en menos de un minuto.
-- CI anterior (2026-10-29, `60ea4c3`): backend, colector y frontend en verde.
+- CI actual (`627149a`, 2026-11-01): backend, colector y frontend en verde.
+  `https://github.com/Improve872/BetPulse/actions/runs/41372983395`
 
 Verificación funcional anterior (2026-10-27): 24 mercados abiertos (4 por partida en 6 partidas en vivo); E2E registro → depósito S/ 100 → apuesta S/ 10 → `PLACED` con disponible S/ 90 y retenido S/ 10.
 
@@ -101,8 +102,8 @@ Verificación funcional anterior (2026-10-27): 24 mercados abiertos (4 por parti
 ## Preguntas abiertas
 
 - RAM/OS exactos de la laptop de presentación.
-- Fuente principal de demo.
 - ¿Segundo monitor para la demo?
+- ¿Se intentará integrar Steam `GetLiveLeagueGames` antes de la demo?
 
 ## Cómo retomar en una sesión nueva
 
