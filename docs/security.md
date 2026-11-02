@@ -15,6 +15,27 @@ Proteger cuentas, saldos, apuestas, cuotas, panel administrativo, datos personal
 - Infraestructura (PostgreSQL, colector, API).
 - Integridad del juego y reputación del proyecto.
 
+## Estado implementado (2026-11-01)
+
+| Control | Estado | Evidencia |
+|---|---|---|
+| Auth con BCrypt 12, sesión HttpOnly y CSRF | Implementado | `AuthFlowTest`, `SecurityConfig` |
+| RBAC admin con `@EnableMethodSecurity` | Implementado | `AdminBetController`, `AdminMarketController` |
+| Ingest GSI con HMAC-SHA256 y ventana de 5 min | Implementado | `IngestSignature`, `IngestFlowTest` |
+| Idempotencia de snapshots y eventos | Implementado | `snapshot_id` único y `UNIQUE (match_id, event_id)` |
+| Ledger de doble entrada y saldos no negativos | Implementado | `WalletFlowTest`, constraints V2 |
+| Liquidación exactly-once | Implementado | `settlements` PK `bet_id`, `SettlementFlowTest` |
+| Auditoría append-only | Implementado | `audit_logs`, ADR-030/ADR-033 |
+| Suspensión por feed, pausa y eventos | Implementado | `FEED_STALE`, `MATCH_PAUSED`, `EVENT_SUSPENSION` |
+| Límite de stake en práctica | Implementado | S/ 100 vía `practice-max-stake-cents` |
+| Rate limiting | **No implementado** | Pendiente M7 |
+| MFA para admin | **No implementado** | Pendiente M7 |
+| CSP y headers de seguridad | **No implementado** | Pendiente M7 |
+| Rol `TRADER` operativo | **No implementado** | El rol existe; no hay endpoints/UI |
+| Rol `AUDITOR` operativo | **No implementado** | El rol existe; no hay endpoints/UI |
+| Backups y restauración probados | **No implementado** | Pendiente de entorno |
+| Escaneo de dependencias | Parcial | `npm audit` reporta 2 transitivas |
+
 ## Roles y permisos
 
 | Rol | Permisos |
@@ -97,24 +118,29 @@ Reglas:
 - Locks/optimistic locking en wallet.
 - Holds al apostar.
 - Idempotencia en apuestas, depósitos y retiros.
-- Unique `settlement.bet_id` para exactly-once.
+- `settlements` con `bet_id` como clave primaria para exactly-once.
 - Validación de `market_version` y cuota aceptada.
-- Suspensión por evento, lag o pausa.
-- Límites de stake, payout y exposición.
-- Historial de cuotas con features y versión de modelo.
-- Auditoría de ajustes manuales y anulaciones.
-- Conciliación periódica ledger vs saldos.
+- Suspensión por evento, lag o pausa (`EVENT_SUSPENSION`, `MATCH_PAUSED`, `FEED_STALE`).
+- Límites de stake, payout y exposición; S/ 100 en partidas de práctica.
+- Historial de cuotas con features y versión de modelo; override admin en `odds_history` con `ADMIN_OVERRIDE`.
+- Auditoría de ajustes manuales, anulaciones y liquidaciones.
+- Liquidación: gana `USER_HELD -stake`, `USER_AVAILABLE +payout`, `HOUSE -(payout-stake)`; pierde `USER_HELD -stake`, `HOUSE +stake`; void devuelve el stake.
+- Conciliación periódica ledger vs saldos (pendiente de automatizar).
 
 ## Seguridad de integraciones
 
 ### GSI
 
-- Colector escuchando solo en localhost.
-- Token de autenticación en el `.cfg`.
-- HMAC/timestamp/nonce al backend.
-- Validación de esquema y tamaño.
-- Replay protection.
-- Spool local si el backend cae.
+- Colector escuchando solo en `127.0.0.1:3001`.
+- Token de autenticación en el `.cfg` (`GSI_TOKEN`).
+- HMAC-SHA256 sobre `timestamp + "." + body`; cabeceras `X-BetPulse-Timestamp` y `X-BetPulse-Signature`.
+- Ventana de 5 minutos para rechazar firmas viejas.
+- `/internal/**` queda fuera de CSRF pero exige firma; no hay sesión de usuario.
+- Validación de esquema, tamaño máximo (10 MB) y campos obligatorios.
+- Replay protection: `snapshot_id` único y `UNIQUE (match_id, event_id)`.
+- Spool local en `INGEST_SPOOL_DIR` si el backend cae; los batches no se versionan.
+- El secreto (`INGEST_SECRET`) va por entorno; los valores por defecto son solo de desarrollo.
+- Los eventos no se consideran confiables hasta validar firma, ventana e idempotencia.
 
 ### OpenDota
 
@@ -143,6 +169,8 @@ Reglas:
 ## Secretos y configuración
 
 - Variables de entorno, nunca en el repo.
+- Variables usadas: `INGEST_SECRET`, `GSI_TOKEN`, `ADMIN_PASSWORD`, `OPENDOTA_API_KEY`, `SESSION_COOKIE_SECURE`; `STEAM_API_KEY` cuando exista.
+- Valores por defecto (`betpulse-dev-ingest-secret`, `betpulse-dev-token`, `Admin123!`) son solo para desarrollo.
 - `.env.example` sin valores reales.
 - Rotación de secretos.
 - Sin secretos en logs.
