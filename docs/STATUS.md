@@ -6,9 +6,9 @@
 
 ## Hito actual
 
-**M2b — Partida propia (GSI).** Mercados de eventos implementados. Siguiente: SSE por partido, suspensión por kill/torre/Roshan y cierre robusto. M5 está cerrado.
+**M2b — Partida propia (GSI).** Completado: ingesta, lobby, mercados, eventos, SSE por partido, suspensión y cierre con gracia.
 
-Cerrados: M0 (capturas GSI reales), M1 (identidad y wallet), M2a (catálogo OpenDota + SSE), M3a y M3b (cuatro mercados en vivo con cuotas), M4 (apuestas simples con holds), M5 (liquidación, payout/void, admin y auditoría). M2b "Mi partida" está implementado en su núcleo; faltan los mercados de eventos y el SSE por partido. Detalle en `docs/milestones/`.
+Cerrados: M0 (capturas GSI reales), M1 (identidad y wallet), M2a (catálogo OpenDota + SSE), M2b (partida propia GSI), M3a y M3b (cuatro mercados en vivo con cuotas), M4 (apuestas simples con holds), M5 (liquidación, payout/void, admin y auditoría). Detalle en `docs/milestones/`.
 
 ## Estado del sistema
 
@@ -34,6 +34,9 @@ Cerrados: M0 (capturas GSI reales), M1 (identidad y wallet), M2a (catálogo Open
 - `/bets` muestra estado, pago y fecha de liquidación.
 - Mercados GSI de eventos: `FIRST_BLOOD`, `FIRST_TOWER` y `NEXT_ROSHAN` con cuotas fijas 50/50; se crean según el estado (0-0, sin torre, Roshan disponible) y se cierran al llegar el evento.
 - Al terminar una partida GSI, `match_results.objectives` se construye desde todos los `game_events`; el resolver acepta formatos GSI y OpenDota.
+- `GET /api/matches/{id}` y `/api/matches/{id}/stream` exponen la partida propia; `/match/[id]` muestra marcador, jugadores, net worth, timeline y Roshan por SSE.
+- Eventos críticos suspenden mercados 3 s con `EVENT_SUSPENSION`; la pausa usa `MATCH_PAUSED`.
+- `close-grace` de 120 s evita cerrar mercados por una desaparición transitoria del feed.
 - Admin sembrado por configuración; en desarrollo `admin@betpulse.local` / `Admin123!`.
 - Colector Javalin compila y expone `/health` y `/gsi`; sin reenvío al backend (M2b diferido).
 - **No hay liquidación**: las apuestas quedan `PLACED` y el saldo retenido no se paga ni se libera.
@@ -42,11 +45,10 @@ Cerrados: M0 (capturas GSI reales), M1 (identidad y wallet), M2a (catálogo Open
 
 ## Próxima acción
 
-1. Completar M2b: SSE por partido y página con scoreboard/timeline.
-2. Suspensión de mercados GSI por kill/torre/Roshan además de pausa.
-3. Cierre robusto de mercados: ventana de gracia y confirmación con `/matches/{id}` antes de cerrar.
-4. Panel admin de mercados (suspender/reanudar/override) y ajustes manuales de cuota.
-5. M3c cuando exista una fuente pre-partida fiable.
+1. Panel admin de mercados (suspender/reanudar/override) y ajustes manuales de cuota.
+2. M3c cuando exista una fuente pre-partida fiable (calendario/Liquipedia).
+3. Preparar el guion de demo y probar el flujo completo en la laptop.
+4. Integrar Steam `GetLiveLeagueGames` si aparece la API key.
 
 ## Pendiente de entorno (no bloquea M5)
 
@@ -76,9 +78,9 @@ npm run build
 
 Resultados 2026-11-01:
 
-- Backend: 86/86 tests verdes (Bet 10, CatalogController 3, CatalogService 5, Auth 7, MarketService 10, MarketController 1, OddsEngine 7, Wallet 8, Health 1, MatchResultService 5, MatchResultFlow 2, MarketOutcomeResolver 10, MarketResultFlow 3, IngestFlow 7, SettlementFlow 7).
+- Backend: 88/88 tests verdes (Bet 10, CatalogController 3, CatalogService 5, Auth 7, MarketService 11, MarketController 1, OddsEngine 7, Wallet 8, Health 1, MatchResultService 5, MatchResultFlow 2, MarketOutcomeResolver 10, MarketResultFlow 3, IngestFlow 8, SettlementFlow 7).
 - Flyway: V1–V9 aplicadas en Testcontainers.
-- Frontend: lint y build verdes; rutas `/`, `/admin`, `/bets` y `/wallet` generadas.
+- Frontend: lint y build verdes; rutas `/`, `/admin`, `/bets`, `/match/[id]` y `/wallet` generadas.
 - Colector: 11/11 tests verdes y `package` con shade correcto.
 - CI anterior (2026-10-29, `60ea4c3`): backend, colector y frontend en verde.
 

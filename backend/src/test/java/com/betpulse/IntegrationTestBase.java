@@ -13,6 +13,7 @@ import org.testcontainers.containers.PostgreSQLContainer;
 		"betpulse.opendota.scheduler-enabled=false",
 		"betpulse.opendota.result-scheduler-enabled=false",
 		"betpulse.markets.resolution-scheduler-enabled=false",
+		"betpulse.markets.close-grace=0s",
 		"betpulse.settlement.scheduler-enabled=false"
 })
 public abstract class IntegrationTestBase {

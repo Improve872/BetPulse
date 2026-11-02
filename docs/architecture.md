@@ -51,7 +51,7 @@ En desarrollo, Next.js hace proxy de `/api` al backend para evitar CORS y compar
 |---|---|
 | `identity` | Registro, login, sesiones, roles |
 | `catalog` | Catálogo OpenDota, poller, caché y contrato del lobby |
-| `live` | Ingesta GSI, snapshots/eventos, SSE de lobby, salud del feed y resultados finales (`match_results`) |
+| `live` | Ingesta GSI, snapshots/eventos, SSE de lobby y por partido, salud del feed y resultados finales (`match_results`) |
 | `markets` | Mercados, selecciones, versiones, suspensiones y resultados por mercado (`market_results`) |
 | `odds` | Modelos, probabilidad, margen, historial |
 | `betting` | Bet slip, validación, holds, límites |
@@ -74,6 +74,7 @@ En desarrollo, Next.js hace proxy de `/api` al backend para evitar CORS y compar
 - M3a/M3b implementados: `lib/markets.ts` obtiene `GET /api/markets/live`; cards y modal muestran cuatro mercados por partida, línea, versión y estado de suspensión.
 - M4 implementado: bet slip y modal móvil permiten elegir cuota y stake; `lib/bets.ts` llama a `/api/bets` con idempotencia. `/bets` muestra el historial privado.
 - M5 implementado: `/bets` muestra estado, pago y fecha de liquidación; `/admin` lista apuestas en revisión/pendientes y permite anular con motivo (rol `ADMIN`).
+- M2b implementado: `/match/[id]` muestra la partida propia en vivo por SSE (marcador, jugadores, net worth, timeline y Roshan). El enlace aparece en la card de "Mi partida".
 
 ## Flujo de datos
 
@@ -113,6 +114,8 @@ Reglas:
 > Implementación "Mi partida" (2026-11-01): el colector definitivo normaliza GSI, deduplica eventos, envía a 1 Hz, firma con HMAC y usa spool ante caídas. El backend expone `POST /internal/ingest`, guarda snapshots/eventos e incorpora la partida al lobby con `source=GSI`. La UI la muestra en una sección separada; en modo bots se etiqueta "Práctica" y el stake se limita a S/ 100. Al recibir `POST_GAME`, el resultado se guarda con `source=GSI` para M5.
 
 > Mercados de eventos (2026-11-01): en partidas GSI se publican además `FIRST_BLOOD`, `FIRST_TOWER` y `NEXT_ROSHAN` con cuotas 50/50 (margen 6%). Se cierran al llegar el evento; Roshan solo en espectador. Al terminar, `match_results.objectives` se arma desde todos los `game_events`, y el resolver acepta formatos GSI y OpenDota.
+
+> SSE por partido y cierre con gracia (2026-11-01): `GET /api/matches/{id}` y `/api/matches/{id}/stream` exponen la partida propia completa; `IngestService` publica cada snapshot. Los eventos críticos suspenden mercados 3 s (`EVENT_SUSPENSION`) y la pausa usa `MATCH_PAUSED`. `close-grace` (120 s) evita cerrar mercados por una desaparición transitoria del feed.
 
 ## Modelo de datos (alto nivel)
 

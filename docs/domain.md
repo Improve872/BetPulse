@@ -165,6 +165,9 @@ La suspensión debe ser visible en la UI con motivo y hora.
 - La partida GSI se fusiona en el lobby con `source=GSI` y gana sobre OpenDota si coincide `match_id`.
 - `POST_GAME` deja de ser `live` y genera `match_results` con `source=GSI`.
 - Mercados `practice=true` (bots) tienen stake máximo reducido.
+- `GET /api/matches/{id}/stream` emite `match` en cada snapshot y `heartbeat` cada 15 s.
+- Los eventos críticos suspenden mercados 3 s con `EVENT_SUSPENSION`; la pausa usa `MATCH_PAUSED`.
+- Si una partida desaparece del feed, sus mercados se cierran tras `close-grace` (120 s).
 
 ## Liquidación
 

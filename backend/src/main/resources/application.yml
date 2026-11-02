@@ -52,6 +52,7 @@ betpulse:
     secret: ${INGEST_SECRET:betpulse-dev-ingest-secret}
     timestamp-window: 5m
   markets:
+    close-grace: ${MARKET_CLOSE_GRACE:120s}
     resolution-scheduler-enabled: ${MARKET_RESULT_SCHEDULER_ENABLED:true}
   settlement:
     scheduler-enabled: ${SETTLEMENT_SCHEDULER_ENABLED:true}

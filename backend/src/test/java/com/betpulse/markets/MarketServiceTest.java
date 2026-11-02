@@ -178,11 +178,40 @@ class MarketServiceTest extends IntegrationTestBase {
 				INSERT INTO game_events (match_id, event_id, event_type, clock_time, team)
 				VALUES (?, ?, 'FIRST_BLOOD', 80, 'radiant')
 				""", matchId, matchId + ":FIRST_BLOOD:80:0");
+		jdbcTemplate.update("""
+				UPDATE game_events SET received_at = now() - interval '10 seconds' WHERE match_id = ?
+				""", matchId);
 
 		marketService.sync(gsiLobby(matchId, 0, 0));
 
 		assertThat(marketStatus(matchId, "FIRST_BLOOD")).isEqualTo("CLOSED");
 		assertThat(marketStatus(matchId, "FIRST_TOWER")).isEqualTo("OPEN");
+	}
+
+	@Test
+	@Transactional
+	void suspendsOnCriticalEventAndReopensAfterDebounce() {
+		String matchId = uniqueMatchId();
+		marketService.sync(gsiLobby(matchId, 3, 1));
+		assertThat(marketStatus(matchId, "MATCH_WINNER")).isEqualTo("OPEN");
+
+		jdbcTemplate.update("""
+				INSERT INTO game_events (match_id, event_id, event_type, clock_time, team)
+				VALUES (?, ?, 'HERO_KILL', 300, 'radiant')
+				""", matchId, matchId + ":HERO_KILL:300:0");
+
+		marketService.sync(gsiLobby(matchId, 3, 1));
+		assertThat(marketStatus(matchId, "MATCH_WINNER")).isEqualTo("SUSPENDED");
+		assertThat(jdbcTemplate.queryForObject("""
+				SELECT suspension_reason FROM markets WHERE match_id = ? AND market_key = 'MATCH_WINNER'
+				""", String.class, matchId)).isEqualTo("EVENT_SUSPENSION");
+
+		jdbcTemplate.update("""
+				UPDATE game_events SET received_at = now() - interval '10 seconds' WHERE match_id = ?
+				""", matchId);
+		marketService.sync(gsiLobby(matchId, 3, 1));
+
+		assertThat(marketStatus(matchId, "MATCH_WINNER")).isEqualTo("OPEN");
 	}
 
 	@Test

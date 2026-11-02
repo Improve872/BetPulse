@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import {
   ArrowRightIcon,
   ClockIcon,
@@ -117,6 +118,14 @@ export function MatchCard({
             <span className="shrink-0 rounded bg-accent/10 px-1.5 py-0.5 text-[10px] font-semibold text-accent-strong">
               {gsiLabel}
             </span>
+          ) : null}
+          {match.source === "GSI" ? (
+            <Link
+              href={`/match/${match.id}`}
+              className="shrink-0 text-[10px] font-semibold text-accent-strong underline-offset-2 hover:underline"
+            >
+              {t("match.detail")}
+            </Link>
           ) : null}
         </div>
 

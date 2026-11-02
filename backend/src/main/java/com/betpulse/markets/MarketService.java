@@ -46,14 +46,17 @@ public class MarketService {
 
 	private final JdbcTemplate jdbcTemplate;
 	private final OddsEngine oddsEngine;
+	private final MarketProperties properties;
 	private final Clock clock;
 	private final ApplicationEventPublisher eventPublisher;
 	private final TransactionTemplate transactionTemplate;
+	private final Map<String, java.time.Instant> lastSeen = new HashMap<>();
 
-	public MarketService(JdbcTemplate jdbcTemplate, OddsEngine oddsEngine, Clock clock,
+	public MarketService(JdbcTemplate jdbcTemplate, OddsEngine oddsEngine, MarketProperties properties, Clock clock,
 			ApplicationEventPublisher eventPublisher, PlatformTransactionManager transactionManager) {
 		this.jdbcTemplate = jdbcTemplate;
 		this.oddsEngine = oddsEngine;
+		this.properties = properties;
 		this.clock = clock;
 		this.eventPublisher = eventPublisher;
 		this.transactionTemplate = new TransactionTemplate(transactionManager);
@@ -76,8 +79,12 @@ public class MarketService {
 				.map(LobbyMatch::id)
 				.collect(Collectors.toSet());
 		for (LobbyMatch match : lobby.live()) {
+			lastSeen.put(match.id(), clock.instant());
 			if ("GSI".equals(match.source()) || trusted) {
 				syncMatch(match);
+				if (!Boolean.TRUE.equals(match.paused()) && hasRecentCriticalEvent(match.id())) {
+					suspendMatches(match.id(), "EVENT_SUSPENSION");
+				}
 			} else {
 				suspendMatches(match.id(), reason(feed));
 			}
@@ -236,6 +243,16 @@ public class MarketService {
 		};
 	}
 
+	private boolean hasRecentCriticalEvent(String matchId) {
+		Integer count = jdbcTemplate.queryForObject("""
+				SELECT count(*) FROM game_events
+				WHERE match_id = ? AND received_at >= ?
+				  AND event_type IN ('FIRST_BLOOD', 'HERO_KILL', 'TOWER_KILL', 'ROSHAN_KILL')
+				""", Integer.class, matchId,
+				java.sql.Timestamp.from(clock.instant().minusSeconds(3)));
+		return count != null && count > 0;
+	}
+
 	private boolean hasEvent(String matchId, String eventType, java.time.Instant since) {
 		Integer count;
 		if (since == null) {
@@ -304,28 +321,40 @@ public class MarketService {
 	}
 
 	private void closeMissing(Set<String> liveMatchIds) {
-		int updated;
-		if (liveMatchIds.isEmpty()) {
-			updated = jdbcTemplate.update("""
-					UPDATE markets
-					SET status = ?, suspension_reason = NULL, suspended_at = NULL, closed_at = now(),
-					    updated_at = now()
-					WHERE status IN (?, ?)
-					""", CLOSED, OPEN, SUSPENDED);
-		} else {
-			String placeholders = liveMatchIds.stream().map(ignored -> "?").collect(Collectors.joining(", "));
-			List<Object> arguments = new ArrayList<>();
-			arguments.add(CLOSED);
-			arguments.add(OPEN);
-			arguments.add(SUSPENDED);
-			arguments.addAll(liveMatchIds);
-			updated = jdbcTemplate.update("""
-					UPDATE markets
-					SET status = ?, suspension_reason = NULL, suspended_at = NULL, closed_at = now(),
-					    updated_at = now()
-					WHERE status IN (?, ?) AND match_id NOT IN (%s)
-					""".formatted(placeholders), arguments.toArray());
+		java.time.Instant now = clock.instant();
+		List<String> tracked = jdbcTemplate.queryForList("""
+				SELECT DISTINCT match_id FROM markets WHERE status IN (?, ?)
+				""", String.class, OPEN, SUSPENDED);
+		List<String> expired = new ArrayList<>();
+		for (String matchId : tracked) {
+			if (liveMatchIds.contains(matchId)) {
+				continue;
+			}
+			java.time.Instant seen = lastSeen.get(matchId);
+			if (seen == null) {
+				lastSeen.put(matchId, now);
+				continue;
+			}
+			if (!seen.plus(properties.getCloseGrace()).isAfter(now)) {
+				expired.add(matchId);
+			}
 		}
+		if (expired.isEmpty()) {
+			return;
+		}
+		String placeholders = expired.stream().map(ignored -> "?").collect(Collectors.joining(", "));
+		List<Object> arguments = new ArrayList<>();
+		arguments.add(CLOSED);
+		arguments.add(OPEN);
+		arguments.add(SUSPENDED);
+		arguments.addAll(expired);
+		int updated = jdbcTemplate.update("""
+				UPDATE markets
+				SET status = ?, suspension_reason = NULL, suspended_at = NULL, closed_at = now(),
+				    updated_at = now()
+				WHERE status IN (?, ?) AND match_id IN (%s)
+				""".formatted(placeholders), arguments.toArray());
+		expired.forEach(lastSeen::remove);
 		if (updated > 0) {
 			log.info("Mercados cerrados para partidas que ya no están en vivo: {}", updated);
 		}

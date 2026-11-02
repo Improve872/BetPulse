@@ -29,14 +29,17 @@ public class IngestService {
 	private final ObjectMapper objectMapper;
 	private final GsiLiveRegistry gsiLiveRegistry;
 	private final CatalogService catalogService;
+	private final MatchStreamService matchStreamService;
 	private final ApplicationEventPublisher eventPublisher;
 
 	public IngestService(JdbcTemplate jdbcTemplate, ObjectMapper objectMapper, GsiLiveRegistry gsiLiveRegistry,
-			CatalogService catalogService, ApplicationEventPublisher eventPublisher) {
+			CatalogService catalogService, MatchStreamService matchStreamService,
+			ApplicationEventPublisher eventPublisher) {
 		this.jdbcTemplate = jdbcTemplate;
 		this.objectMapper = objectMapper;
 		this.gsiLiveRegistry = gsiLiveRegistry;
 		this.catalogService = catalogService;
+		this.matchStreamService = matchStreamService;
 		this.eventPublisher = eventPublisher;
 	}
 
@@ -94,6 +97,7 @@ public class IngestService {
 		gsiLiveRegistry.update(batch);
 		storeGsiResultIfFinished(batch);
 		eventPublisher.publishEvent(new CatalogUpdatedEvent(catalogService.getLobby()));
+		matchStreamService.publish(batch.matchId());
 
 		if (snapshots > 0) {
 			log.debug("GSI snapshot {} de {} aceptado ({} eventos)", batch.matchId(), batch.snapshotId(), events);

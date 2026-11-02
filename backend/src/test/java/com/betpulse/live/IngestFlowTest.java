@@ -1,7 +1,9 @@
 package com.betpulse.live;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.io.IOException;
@@ -126,6 +128,18 @@ class IngestFlowTest extends IntegrationTestBase {
 				.isEqualTo("READY/GSI/true/44-27");
 		assertThat(catalogService.getLobby().live())
 				.noneMatch(match -> match.id().equals(postGameBatch.matchId()));
+	}
+
+	@Test
+	void exposesMatchDetailWithPlayersAndEvents() throws Exception {
+		postSigned(body).andExpect(status().isAccepted());
+
+		mockMvc.perform(get("/api/matches/{matchId}", batch.matchId()))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.match.source").value("GSI"))
+				.andExpect(jsonPath("$.match.playersScope").value("FULL"))
+				.andExpect(jsonPath("$.players.length()").value(10))
+				.andExpect(jsonPath("$.events.length()").value(batch.events().size()));
 	}
 
 	@Test

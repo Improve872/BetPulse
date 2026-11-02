@@ -409,3 +409,18 @@ Formato: contexto → decisión → consecuencias. Actualizar cuando cambie una 
 - Si no hay evento, el mercado queda `VOID` al liquidar.
 
 **Consecuencias:** se puede apostar a primera sangre, primera torre y siguiente Roshan en la partida propia. Las cuotas no pretenden precision; son un baseline. Quedan pendientes la suspension inmediata por kill/torre/Roshan (hoy solo pausa) y el SSE por partido con timeline.
+
+## ADR-032 - SSE por partido, suspension por eventos y cierre con gracia
+
+**Estado:** aceptada (2026-11-01)
+
+**Contexto:** la partida propia necesitaba una vista con timeline en vivo, suspender mercados ante kills/torres/Roshan y no cerrar mercados por una desaparicion transitoria del feed.
+
+**Decision:**
+
+- `GET /api/matches/{id}` devuelve `match`, `events`, `players`, `buildings` y `roshan`. `GET /api/matches/{id}/stream` emite SSE `match` en cada snapshot y `heartbeat` cada 15 s.
+- La vista `/match/[id]` consume el SSE, muestra marcador, net worth por equipo, tabla de jugadores, timeline y estado de Roshan. Las apuestas siguen en el lobby.
+- Los eventos criticos (`FIRST_BLOOD`, `HERO_KILL`, `TOWER_KILL`, `ROSHAN_KILL`) suspenden los mercados 3 s con `EVENT_SUSPENSION`; una pausa usa `MATCH_PAUSED` y tiene prioridad.
+- Al desaparecer una partida del feed, sus mercados se cierran tras `betpulse.markets.close-grace` (120 s por defecto) en vez de inmediatamente. Si reaparece antes, no se cierra.
+
+**Consecuencias:** la partida propia tiene seguimiento en vivo sin recargar, los mercados se protegen ante eventos y un corte breve del feed no cierra mercados validos. Queda pendiente el panel admin de mercados y M3c.
