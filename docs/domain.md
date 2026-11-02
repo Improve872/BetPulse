@@ -182,12 +182,16 @@ Resultado por mercado (`market_results`):
 
 Reglas:
 
-- Una sola liquidación por apuesta (`UNIQUE (bet_id)`).
+- Una sola liquidación por apuesta (`settlements.bet_id` es clave primaria).
 - Payout calculado con la cuota aceptada, no con la cuota final.
+- Gana: `USER_HELD -stake`, `USER_AVAILABLE +payout`, `HOUSE -(payout - stake)`.
+- Pierde: `USER_HELD -stake`, `HOUSE +stake`.
+- Void: `USER_HELD -stake`, `USER_AVAILABLE +stake`.
 - Si el partido se abandona o no hay resultado válido: void y reembolso.
 - Si no hay primera sangre, primera torre o próximo Roshan: void.
 - Si el feed se corta antes del final: `NEEDS_REVIEW` o void según evidencia.
-- Auditoría de cada liquidación y ajuste.
+- El admin puede anular una apuesta `PLACED` o `NEEDS_REVIEW` con motivo; se reembolsa y se audita.
+- Auditoría de cada liquidación y ajuste en `audit_logs` (append-only).
 
 ## Invariantes
 

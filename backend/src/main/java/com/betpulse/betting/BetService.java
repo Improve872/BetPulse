@@ -99,12 +99,14 @@ public class BetService {
 	public List<BetView> list(UUID userId, int limit) {
 		int safeLimit = Math.max(1, Math.min(limit, 100));
 		return jdbcTemplate.query("""
-				SELECT id, market_id, match_id, market_type, market_title, line, selection_key, selection_label,
-				       market_version, odds, stake_cents, potential_payout_cents, status, idempotency_key,
-				       request_hash, created_at
-				FROM bets
-				WHERE user_id = ?
-				ORDER BY created_at DESC, id DESC
+				SELECT b.id, b.market_id, b.match_id, b.market_type, b.market_title, b.line, b.selection_key,
+				       b.selection_label, b.market_version, b.odds, b.stake_cents, b.potential_payout_cents,
+				       b.status, b.idempotency_key, b.request_hash, b.created_at,
+				       s.payout_cents, s.resolved_at
+				FROM bets b
+				LEFT JOIN settlements s ON s.bet_id = b.id
+				WHERE b.user_id = ?
+				ORDER BY b.created_at DESC, b.id DESC
 				LIMIT ?
 				""", (resultSet, rowNumber) -> mapBet(resultSet).view(false), userId, safeLimit);
 	}
@@ -118,22 +120,26 @@ public class BetService {
 
 	private Optional<BetRecord> findById(UUID betId, UUID userId) {
 		List<BetRecord> rows = jdbcTemplate.query("""
-				SELECT id, market_id, match_id, market_type, market_title, line, selection_key, selection_label,
-				       market_version, odds, stake_cents, potential_payout_cents, status, idempotency_key,
-				       request_hash, created_at
-				FROM bets
-				WHERE id = ? AND user_id = ?
+				SELECT b.id, b.market_id, b.match_id, b.market_type, b.market_title, b.line, b.selection_key,
+				       b.selection_label, b.market_version, b.odds, b.stake_cents, b.potential_payout_cents,
+				       b.status, b.idempotency_key, b.request_hash, b.created_at,
+				       s.payout_cents, s.resolved_at
+				FROM bets b
+				LEFT JOIN settlements s ON s.bet_id = b.id
+				WHERE b.id = ? AND b.user_id = ?
 				""", (resultSet, rowNumber) -> mapBet(resultSet), betId, userId);
 		return rows.stream().findFirst();
 	}
 
 	private Optional<BetRecord> findReplay(UUID userId, String key) {
 		List<BetRecord> rows = jdbcTemplate.query("""
-				SELECT id, market_id, match_id, market_type, market_title, line, selection_key, selection_label,
-				       market_version, odds, stake_cents, potential_payout_cents, status, idempotency_key,
-				       request_hash, created_at
-				FROM bets
-				WHERE user_id = ? AND idempotency_key = ?
+				SELECT b.id, b.market_id, b.match_id, b.market_type, b.market_title, b.line, b.selection_key,
+				       b.selection_label, b.market_version, b.odds, b.stake_cents, b.potential_payout_cents,
+				       b.status, b.idempotency_key, b.request_hash, b.created_at,
+				       s.payout_cents, s.resolved_at
+				FROM bets b
+				LEFT JOIN settlements s ON s.bet_id = b.id
+				WHERE b.user_id = ? AND b.idempotency_key = ?
 				""", (resultSet, rowNumber) -> mapBet(resultSet), userId, key);
 		return rows.stream().findFirst();
 	}
@@ -244,7 +250,10 @@ public class BetService {
 				resultSet.getLong("potential_payout_cents"),
 				resultSet.getString("status"),
 				resultSet.getString("request_hash"),
-				resultSet.getTimestamp("created_at").toInstant());
+				resultSet.getTimestamp("created_at").toInstant(),
+				resultSet.getObject("payout_cents", Long.class),
+				resultSet.getTimestamp("resolved_at") == null ? null
+						: resultSet.getTimestamp("resolved_at").toInstant());
 	}
 
 	private record MarketSelection(UUID marketId, String matchId, String marketType, String marketTitle,
@@ -254,11 +263,13 @@ public class BetService {
 
 	private record BetRecord(UUID id, UUID marketId, String matchId, String marketType, String marketTitle,
 			BigDecimal line, String selectionKey, String selectionLabel, int marketVersion, BigDecimal odds,
-			long stakeCents, long potentialPayoutCents, String status, String requestHash, Instant createdAt) {
+			long stakeCents, long potentialPayoutCents, String status, String requestHash, Instant createdAt,
+			Long payoutCents, Instant settledAt) {
 
 		private BetView view(boolean replayed) {
 			return new BetView(id, marketId, matchId, marketType, marketTitle, line, selectionKey, selectionLabel,
-					marketVersion, odds, stakeCents, potentialPayoutCents, status, replayed, createdAt);
+					marketVersion, odds, stakeCents, potentialPayoutCents, status, replayed, createdAt,
+					payoutCents, settledAt);
 		}
 	}
 

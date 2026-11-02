@@ -26,6 +26,8 @@ export type Bet = {
   status: BetStatus;
   replayed: boolean;
   createdAt: string;
+  payoutCents?: number | null;
+  settledAt?: string | null;
 };
 
 export type PlaceBetInput = {

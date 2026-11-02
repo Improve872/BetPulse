@@ -27,7 +27,8 @@ public final class BetDtos {
 
 	public record BetView(UUID id, UUID marketId, String matchId, String marketType, String marketTitle,
 			BigDecimal line, String selectionKey, String selectionLabel, int marketVersion, BigDecimal odds,
-			long stakeCents, long potentialPayoutCents, String status, boolean replayed, Instant createdAt) {
+			long stakeCents, long potentialPayoutCents, String status, boolean replayed, Instant createdAt,
+			Long payoutCents, Instant settledAt) {
 	}
 
 }

@@ -26,6 +26,7 @@ public class WalletService {
 
 	static final String USER_AVAILABLE = "USER_AVAILABLE";
 	static final String USER_HELD = "USER_HELD";
+	static final String HOUSE = "HOUSE";
 	static final String EXTERNAL = "EXTERNAL";
 
 	static final String SCOPE_DEPOSIT = "WALLET_DEPOSIT";
@@ -176,6 +177,66 @@ public class WalletService {
 		insertTransaction(transactionId, "BET_RELEASE", reference, null, userId);
 		insertEntry(transactionId, accountId(USER_HELD, userId), -amountCents);
 		insertEntry(transactionId, accountId(USER_AVAILABLE, userId), amountCents);
+		return transactionId;
+	}
+
+	@Transactional
+	public UUID settleWin(UUID userId, long stakeCents, long payoutCents, String reference) {
+		if (stakeCents <= 0 || payoutCents < stakeCents) {
+			throw new IllegalArgumentException("Payout inválido para la liquidación");
+		}
+		WalletBalance balance = lockWallet(userId);
+		if (balance.heldCents() < stakeCents) {
+			throw ApiException.conflict("INSUFFICIENT_HELD_FUNDS", "Saldo retenido insuficiente.");
+		}
+		long newHeld = balance.heldCents() - stakeCents;
+		long newAvailable = Math.addExact(balance.availableCents(), payoutCents);
+		updateWallet(userId, newAvailable, newHeld);
+
+		UUID transactionId = UUID.randomUUID();
+		insertTransaction(transactionId, "BET_WIN", reference, null, userId);
+		insertEntry(transactionId, accountId(USER_HELD, userId), -stakeCents);
+		insertEntry(transactionId, accountId(USER_AVAILABLE, userId), payoutCents);
+		long houseShare = payoutCents - stakeCents;
+		if (houseShare != 0) {
+			insertEntry(transactionId, accountId(HOUSE, null), -houseShare);
+		}
+		return transactionId;
+	}
+
+	@Transactional
+	public UUID settleLoss(UUID userId, long stakeCents, String reference) {
+		if (stakeCents <= 0) {
+			throw new IllegalArgumentException("Stake inválido para la liquidación");
+		}
+		WalletBalance balance = lockWallet(userId);
+		if (balance.heldCents() < stakeCents) {
+			throw ApiException.conflict("INSUFFICIENT_HELD_FUNDS", "Saldo retenido insuficiente.");
+		}
+		updateWallet(userId, balance.availableCents(), balance.heldCents() - stakeCents);
+
+		UUID transactionId = UUID.randomUUID();
+		insertTransaction(transactionId, "BET_LOSS", reference, null, userId);
+		insertEntry(transactionId, accountId(USER_HELD, userId), -stakeCents);
+		insertEntry(transactionId, accountId(HOUSE, null), stakeCents);
+		return transactionId;
+	}
+
+	@Transactional
+	public UUID settleVoid(UUID userId, long stakeCents, String reference) {
+		if (stakeCents <= 0) {
+			throw new IllegalArgumentException("Stake inválido para la liquidación");
+		}
+		WalletBalance balance = lockWallet(userId);
+		if (balance.heldCents() < stakeCents) {
+			throw ApiException.conflict("INSUFFICIENT_HELD_FUNDS", "Saldo retenido insuficiente.");
+		}
+		updateWallet(userId, balance.availableCents() + stakeCents, balance.heldCents() - stakeCents);
+
+		UUID transactionId = UUID.randomUUID();
+		insertTransaction(transactionId, "BET_VOID", reference, null, userId);
+		insertEntry(transactionId, accountId(USER_HELD, userId), -stakeCents);
+		insertEntry(transactionId, accountId(USER_AVAILABLE, userId), stakeCents);
 		return transactionId;
 	}
 

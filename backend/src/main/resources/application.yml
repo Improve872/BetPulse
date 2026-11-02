@@ -53,6 +53,8 @@ betpulse:
     timestamp-window: 5m
   markets:
     resolution-scheduler-enabled: ${MARKET_RESULT_SCHEDULER_ENABLED:true}
+  settlement:
+    scheduler-enabled: ${SETTLEMENT_SCHEDULER_ENABLED:true}
   odds:
     margin: 0.06
     kill-weight: 0.20

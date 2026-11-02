@@ -56,7 +56,7 @@ En desarrollo, Next.js hace proxy de `/api` al backend para evitar CORS y compar
 | `odds` | Modelos, probabilidad, margen, historial |
 | `betting` | Bet slip, validación, holds, límites |
 | `wallet` | Ledger, saldos, depósitos/retiros simulados |
-| `settlement` | Liquidación, verificación, void, payouts |
+| `settlement` | Liquidación exactly-once, payout, void y anulación administrativa |
 | `payments` | Abstracción de proveedor simulado |
 | `admin` | Control de mercados, cuotas, usuarios, exposición |
 | `audit` | Bitácora inmutable de acciones |
@@ -73,6 +73,7 @@ En desarrollo, Next.js hace proxy de `/api` al backend para evitar CORS y compar
 - Auth y wallet implementados: modal de login/registro contra la API, sesión con cookie HttpOnly + CSRF, header autenticado y página `/wallet` con depósitos/retiros demo e historial.
 - M3a/M3b implementados: `lib/markets.ts` obtiene `GET /api/markets/live`; cards y modal muestran cuatro mercados por partida, línea, versión y estado de suspensión.
 - M4 implementado: bet slip y modal móvil permiten elegir cuota y stake; `lib/bets.ts` llama a `/api/bets` con idempotencia. `/bets` muestra el historial privado.
+- M5 implementado: `/bets` muestra estado, pago y fecha de liquidación; `/admin` lista apuestas en revisión/pendientes y permite anular con motivo (rol `ADMIN`).
 
 ## Flujo de datos
 
@@ -85,7 +86,7 @@ En desarrollo, Next.js hace proxy de `/api` al backend para evitar CORS y compar
 7. El usuario apuesta: el backend valida mercado, versión, cuota, límites y saldo; retiene fondos, registra la apuesta y su estado inicial `PLACED` (M4).
 8. Cuando los mercados de una partida se cierran, `MatchResultService` encola `match_results` y consulta OpenDota `/matches/{id}` con backoff hasta guardar el resultado final y los objetivos (primera sangre, torres, Roshan).
 9. `MarketResultService` convierte ese resultado en un resultado por mercado (`market_results`): `SETTLED` con selección ganadora o `VOID`, y cierra el mercado como `SETTLED`/`VOID`. Es idempotente.
-10. Al terminar el partido, el settlement liquida de forma idempotente, paga al ganador y audita (M5).
+10. `SettlementService` liquida cada apuesta una sola vez desde `market_results`: paga al ganador, mueve el stake a la casa o reembolsa el void, actualiza `bets` y escribe `audit_logs`. El admin puede anular con motivo.
 11. Depósitos/retiros simulados pasan por la abstracción de pagos y el ledger.
 
 ## Fuente híbrida
@@ -120,6 +121,8 @@ Reglas:
 - `collector_sessions`, `game_snapshots`, `game_events`, `ingestion_health`
 - `match_results` (resultado final verificado y objetivos de la partida)
 - `market_results` (resultado por mercado: ganador o void)
+- `settlements` (liquidación única por apuesta, con transacción de ledger)
+- `audit_logs` (append-only: liquidaciones y anulaciones)
 - `markets.source` (`OPENDOTA`/`GSI`) y `markets.practice` (partida local)
 - `game_snapshots`, `game_events`, `match_state`
 - `markets`, `selections`, `odds_history`, `market_suspensions`

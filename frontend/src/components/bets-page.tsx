@@ -208,10 +208,21 @@ export function BetsPage() {
                   </div>
                   <div>
                     <dt className="text-[9px] font-semibold uppercase tracking-[0.12em] text-muted">
-                      {t("bets.potentialPayout")}
+                      {bet.status === "VOID"
+                        ? t("bets.refund")
+                        : bet.status === "LOST"
+                          ? t("bets.result")
+                          : bet.payoutCents != null
+                            ? t("bets.payout")
+                            : t("bets.potentialPayout")}
                     </dt>
                     <dd className="mt-1 font-score text-sm font-semibold text-ink">
-                      {formatMoney(bet.potentialPayoutCents, language)}
+                      {formatMoney(
+                        bet.status === "LOST"
+                          ? 0
+                          : (bet.payoutCents ?? bet.potentialPayoutCents),
+                        language,
+                      )}
                     </dd>
                   </div>
                   <div>
@@ -231,6 +242,12 @@ export function BetsPage() {
                     </dd>
                   </div>
                 </dl>
+                {bet.settledAt ? (
+                  <p className="mt-2 text-[10px] font-medium text-muted">
+                    {t("bets.settledAt")}:{" "}
+                    {formatDateTime(bet.settledAt, language)}
+                  </p>
+                ) : null}
               </li>
             ))}
           </ul>

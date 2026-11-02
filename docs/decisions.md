@@ -370,3 +370,22 @@ Formato: contexto → decisión → consecuencias. Actualizar cuando cambie una 
 - La UI muestra una seccion "Mi partida" separada de torneos y ranked, con estado GSI, etiqueta de practica y pausa.
 
 **Consecuencias:** la demo puede apostar en una partida propia sin depender de OpenDota ni de espectar un torneo. Los bots son controlables pero el resultado no es verificable externamente, por eso se etiquetan y limitan. Quedan para M2b completo: SSE por partido con timeline, mercados de primera sangre/primera torre/Roshan, suspension por eventos en el backend y extraccion de fixtures al repo (ya hecha).
+
+## ADR-030 - Liquidacion exactly-once y anulacion administrativa (M5)
+
+**Estado:** aceptada (2026-11-01)
+
+**Contexto:** `market_results` ya deja un ganador o void por mercado. Faltaba convertir ese resultado en pagos sin duplicar movimientos ni permitir saldos negativos.
+
+**Decision:**
+
+- `settlements` tiene `bet_id` como clave primaria: una apuesta se liquida una sola vez. Si el insert no ocurre, no se mueve el wallet.
+- `SettlementService` consume solo `market_results`; no consulta OpenDota ni GSI. Gana si `bet.selection_key = winning_selection_key`; pierde si no; `VOID` reembolsa el stake.
+- Payout = `potential_payout_cents` calculado al apostar con la cuota aceptada.
+- Asientos: gana `USER_HELD -stake`, `USER_AVAILABLE +payout`, `HOUSE -(payout-stake)`; pierde `USER_HELD -stake`, `HOUSE +stake`; void `USER_HELD -stake`, `USER_AVAILABLE +stake`. Suma cero por transaccion.
+- `bets.status` pasa a `WON`/`LOST`/`VOID` y se agrega `bet_status_history`.
+- `audit_logs` es append-only y registra `BET_SETTLED` y `BET_VOIDED` con actor cuando aplica.
+- Admin puede anular apuestas `PLACED` o `NEEDS_REVIEW` con motivo obligatorio: reembolso, settlement `VOID` y auditoria. Endpoint `POST /api/admin/bets/{id}/void` con rol `ADMIN`.
+- Un scheduler cada 5 s liquida pendientes; se desactiva con `betpulse.settlement.scheduler-enabled=false`.
+
+**Consecuencias:** el ciclo del dinero queda cerrado: apuesta, hold, resultado, liquidacion, wallet y auditoria. La UI de apuestas muestra estado, pago y fecha de liquidacion; `/admin` permite revisar y anular. Quedan fuera de M5 los ajustes manuales de cuota y la conciliacion automatica de discrepancias GSI/OpenDota.
