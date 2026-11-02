@@ -108,20 +108,35 @@ Tareas:
 
 Aceptación: partido termina → apuestas liquidadas una sola vez → wallet acreditada → auditoría completa; void funciona.
 
-### M6 — Producto: i18n, streaming, pagos y pulido (2 semanas)
+### M6 — Producto: i18n, streaming, contenido y pulido (2 semanas)
 
-Objetivo: que se vea como una casa de apuestas seria.
+Objetivo: que la web dé ganas de usarse y que el partido se sienta como un
+evento, no como una fila de tabla.
 
 Tareas:
 
 - i18n ES/EN con español por defecto.
 - Formato `S/ 1,250.00`, aviso visible de saldo ficticio.
-- Streaming oficial Twitch/YouTube, administrable y con fallback offline.
+- Streaming oficial Twitch/YouTube, administrable y con fallback offline:
+  - `match_streams` con provider, canal/video, enabled y fallback.
+  - Admin para asignar stream por partido o torneo.
+  - Embed con `parent` de Twitch y iframe de YouTube.
+  - CSP `frame-src` limitado a `player.twitch.tv` y YouTube.
+  - Solo canales oficiales; nunca streams no oficiales.
+- Home con jerarquía de contenido:
+  - Hero con partido destacado, stream y mercado principal.
+  - “En vivo ahora” con miniaturas.
+  - Badges de liga/torneo y escudos cuando existan.
+  - Movimiento de cuota visible.
+  - Skeletons, estados vacíos y error.
+  - “Próximos” preparado para M8.
+- Detalle de partido con stream, marcador, timeline y mercados.
 - UI de depósitos/retiros simulados y métodos genéricos.
-- Pulido visual: home, live, pre-partida, partido, wallet, historial, admin.
+- Pulido visual: home, live, partido, wallet, historial y admin.
 - Responsive y legible en proyector.
 
-Aceptación: toggle ES/EN; soles bien formateados; stream carga; flujo de pago demo; UI completa.
+Aceptación: toggle ES/EN; soles bien formateados; stream carga o muestra
+fallback; home con hero y contenido; flujo de pago demo; UI completa.
 
 ### M7 — Hardening + demo + empaquetado laptop (2 semanas)
 
@@ -138,6 +153,35 @@ Tareas:
 
 Aceptación: checklist aprobado; demo de 30 min sin fallos críticos; respaldo listo.
 
+### M8 — Deportes pre-partida: fútbol y NBA (2–3 semanas)
+
+Objetivo: ampliar contenido sin depender de ver el partido en vivo.
+
+Se implementa **después de M6 y M7**. No incluye feed de eventos al segundo ni
+apuestas en vivo para estos deportes.
+
+Tareas:
+
+- Catálogo multi-deporte con `sport`, ligas, equipos y fixtures.
+- Fútbol primero:
+  - Ligas: Premier League, La Liga, Bundesliga, Serie A y Ligue 1.
+  - Fuente: ESPN (no oficial) y OpenLigaDB como respaldo de Bundesliga.
+  - Caché, backoff y fallback; documentar que no hay SLA.
+- Mercados de fútbol: `1X2` (local/empate/visitante) y `over/under` de goles.
+- Motor de cuotas pre-partida con modelo transparente tipo Poisson/Elo.
+- Liquidación con marcador final; empate posible; void si se postpona o abandona.
+- NBA después:
+  - Fuente: ESPN; balldontlie solo si hay API key.
+  - Mercados: ganador y over/under de puntos.
+  - Liquidación con overtime.
+- UI: selector de deporte, página de liga, próximos partidos con countdown,
+  equipos y forma reciente.
+- Streaming solo si existe canal oficial embebible; si no, se omite.
+
+Aceptación: fixtures de fútbol visibles con cuotas pre-partida; liquidación con
+resultado final; NBA equivalente; el producto no afirma tener eventos en vivo
+de fútbol/NBA.
+
 ## Programación referencial
 
 El estado de avance vive solo en `docs/STATUS.md`. Aquí únicamente el calendario previsto.
@@ -152,7 +196,8 @@ El estado de avance vive solo en `docs/STATUS.md`. Aquí únicamente el calendar
 | M5 | S10–S11 |
 | M6 | S12–S13 |
 | M7 | S14–S15 |
-| Buffer | S16 |
+| M8 | S16–S18 |
+| Buffer | S19 |
 
 Las semanas son relativas porque la fecha de inicio está por definir. Con 16 GB de RAM y Docker solo para PostgreSQL, el desarrollo es viable.
 

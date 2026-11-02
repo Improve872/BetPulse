@@ -442,3 +442,25 @@ Formato: contexto → decisión → consecuencias. Actualizar cuando cambie una 
 - UI: `/admin/markets` lista mercados, muestra selecciones y permite suspender, reanudar o cambiar cuota con prompts simples.
 
 **Consecuencias:** la operacion puede corregir una cuota o detener un mercado sin tocar la base; cada accion queda auditada y versionada. La UI es funcional, no pulida; el bet slip sigue validando `marketVersion` y `expectedOdds` en el servidor.
+
+## ADR-034 - Streaming oficial y deportes pre-partida (M6/M8)
+
+**Estado:** aceptada (2026-11-01)
+
+**Contexto:** la UI funciona pero se siente vacia: falta video, jerarquia y contenido alrededor del partido. Ademas se quiere ampliar a futbol y NBA sin depender de ver un partido en vivo durante la demo.
+
+**Decision:**
+
+- Streaming solo con embeds oficiales de Twitch y YouTube. Nada de streams no oficiales ni scraping.
+- Twitch requiere `parent` con el dominio que embebe (`localhost` en desarrollo); YouTube usa iframe oficial. Ambos se configuran por partido o torneo desde admin.
+- Se planea `match_streams` con `provider`, `channel_or_video`, `enabled` y `fallback_url`. CSP `frame-src` limitado a `player.twitch.tv` y YouTube. Si el embed falla, se muestra fallback.
+- M6 agrega streaming, hero de partido destacado, “en vivo ahora”, badges/escudos, movimiento de cuota y estados de carga/vacio/error. “Proximos” queda preparado.
+- Los deportes nuevos se implementan **despues de M6 y M7**, como M8, y solo **pre-partida**:
+  - Futbol primero (Premier League, La Liga, Bundesliga, Serie A, Ligue 1).
+  - Fuente: ESPN (no oficial, sin key) y OpenLigaDB para Bundesliga; cache, backoff y fallback.
+  - Mercados: `1X2` y `over/under` de goles; liquidacion con marcador final, empate posible, void si se postpona.
+  - NBA despues: ganador y `over/under` de puntos, liquidacion con overtime.
+  - Sin feed de eventos al segundo ni apuestas en vivo para futbol/NBA.
+- ESPN no ofrece SLA ni contrato: se documenta el riesgo y se usa solo como fuente de demo con cache.
+
+**Consecuencias:** la web gana video y contenido sin comprometer derechos de transmision; los deportes nuevos llenan “Proximos” y la pagina de liga sin exigir GSI. A cambio, M8 amplia el alcance y exige actualizar AGENTS.md, plan.md y el modelo de datos. El calendario futuro de Dota (M3c) sigue sin resolverse.

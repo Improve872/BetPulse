@@ -46,10 +46,10 @@ Cerrados: M0 (capturas GSI reales), M1 (identidad y wallet), M2a (catálogo Open
 
 ## Próxima acción
 
-1. M3c cuando exista una fuente pre-partida fiable (calendario/Liquipedia).
-2. Preparar el guion de demo y probar el flujo completo en la laptop.
-3. Integrar Steam `GetLiveLeagueGames` si aparece la API key.
-4. Pulir el panel admin (usuarios, exposición, salud del feed).
+1. M6: streaming Twitch/YouTube, home con hero/contenido y detalle de partido con video.
+2. M7: rate limiting, MFA, CSP, E2E, empaquetado y ensayo de demo.
+3. M8: fútbol pre-partida (ESPN/OpenLigaDB), luego NBA; sin eventos en vivo.
+4. Opcional: M3c si aparece calendario fiable; Steam `GetLiveLeagueGames` si hay API key; pulido admin (usuarios, exposición, salud).
 
 ## Pendiente de entorno (opcional)
 
