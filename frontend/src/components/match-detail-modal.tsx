@@ -3,20 +3,24 @@
 import { useEffect, useState } from "react";
 import { CloseIcon, LockIcon, TrophyIcon } from "@/components/icons";
 import { Modal } from "@/components/modal";
+import { OddsButton } from "@/components/odds-button";
+import { TeamCrest } from "@/components/team-crest";
 import {
   cn,
   formatDuration,
   formatGameTime,
   formatNumber,
-  formatOdds,
   formatStartTime,
-  getInitials,
 } from "@/lib/format";
 import { useLanguage } from "@/lib/i18n";
 import type { LobbyMatch, LobbyTeam } from "@/lib/lobby";
 import {
+  matchSelectionLabel,
+  matchSourceLabel,
+  matchTournamentLabel,
+} from "@/lib/match-labels";
+import {
   marketTitle,
-  selectionLabel,
   type Market,
   type Selection,
 } from "@/lib/markets";
@@ -44,26 +48,24 @@ function TeamPanel({
         align === "right" ? "items-end text-right" : "items-start text-left",
       )}
     >
-      <span
-        className={cn(
-          "grid h-11 w-11 place-items-center rounded-xl text-xs font-bold",
-          team.side === "radiant"
-            ? "bg-emerald-50 text-emerald-700"
-            : "bg-rose-50 text-rose-700",
-        )}
-      >
-        {getInitials(team.name)}
-      </span>
+      <TeamCrest team={team} size="lg" />
       <div className="min-w-0">
         <p
           className={cn(
             "truncate text-sm font-semibold",
-            finished && team.winner === false ? "text-muted" : "text-ink",
+            finished && team.winner === false
+              ? "text-arena-muted"
+              : "text-arena-ink",
           )}
         >
           {team.name}
         </p>
-        <p className="mt-0.5 flex items-center gap-1 text-[9px] font-semibold uppercase tracking-[0.12em] text-muted">
+        <p
+          className={cn(
+            "mt-0.5 flex items-center gap-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-arena-muted",
+            align === "right" && "justify-end",
+          )}
+        >
           {align === "right" ? null : (
             <span
               className={cn(
@@ -84,11 +86,13 @@ function TeamPanel({
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl border border-line bg-slate-50/70 p-3">
-      <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-muted">
+    <div className="rounded-xl border border-arena-line bg-arena-raised/45 p-3">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-arena-muted">
         {label}
       </p>
-      <p className="mt-1 truncate text-sm font-semibold text-ink">{value}</p>
+      <p className="mt-1 truncate text-sm font-semibold text-arena-ink">
+        {value}
+      </p>
     </div>
   );
 }
@@ -102,13 +106,8 @@ export function MatchDetailModal({
   const { t, language } = useLanguage();
   const [tab, setTab] = useState<"summary" | "markets">("summary");
   const finished = match.state === "finished";
-  const tournamentLabel =
-    match.tournament ||
-    (match.tournamentKind === "ranked"
-      ? t("match.ranked")
-      : match.tournamentKind === "gsi"
-        ? t("match.gsi")
-        : t("match.pro"));
+  const tournament = matchTournamentLabel(match, t);
+  const source = matchSourceLabel(match, t);
   const winnerName = match.radiant.winner
     ? match.radiant.name
     : match.dire.name;
@@ -123,51 +122,50 @@ export function MatchDetailModal({
       onClose={onClose}
       labelledBy="match-title"
       panelClassName="sm:max-w-2xl"
+      variant="dark"
     >
-      <div className="bg-navy px-5 py-4 text-white sm:px-6">
+      <div className="border-b border-arena-line bg-arena-soft px-5 py-4 sm:px-6">
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
-            <p className="truncate text-[10px] font-semibold uppercase tracking-[0.18em] text-accent">
-              {tournamentLabel}
+            <p className="truncate text-[11px] font-semibold uppercase tracking-[0.18em] text-accent">
+              {tournament}
             </p>
             <h2
               id="match-title"
-              className="mt-1 truncate font-display text-lg font-semibold tracking-tight"
+              className="mt-1 truncate font-display text-lg font-semibold tracking-tight text-arena-ink"
             >
               {match.radiant.name} vs {match.dire.name}
             </h2>
-            <p className="mt-1 text-xs text-white/50">
+            <p className="mt-1 text-xs text-arena-muted">
               {match.format ? `${match.format} · ` : ""}
               {finished
                 ? t("match.final")
                 : match.paused
                   ? t("match.paused")
                   : t("match.live")}
-              {match.source === "GSI"
-                ? ` · ${match.playersScope === "LOCAL" ? t("match.practice") : t("match.spectating")}`
-                : ""}
+              {source ? ` · ${source}` : ""}
             </p>
           </div>
           <button
             type="button"
             onClick={onClose}
             aria-label={t("match.close")}
-            className="grid h-9 w-9 shrink-0 place-items-center rounded-lg text-white/60 transition hover:bg-white/10 hover:text-white"
+            className="grid h-9 w-9 shrink-0 place-items-center rounded-lg text-arena-muted transition hover:bg-white/5 hover:text-arena-ink"
           >
             <CloseIcon className="h-5 w-5" />
           </button>
         </div>
       </div>
 
-      <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 border-b border-line px-5 py-5 sm:px-6">
+      <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 border-b border-arena-line px-5 py-5 sm:px-6">
         <TeamPanel team={match.radiant} align="left" finished={finished} />
         <div className="text-center">
-          <p className="font-score text-3xl font-semibold leading-none text-ink">
+          <p className="font-score text-3xl font-semibold leading-none tabular-nums text-arena-ink">
             {match.radiant.score}
-            <span className="mx-1 text-muted/40">:</span>
+            <span className="mx-1 text-arena-muted/40">:</span>
             {match.dire.score}
           </p>
-          <p className="mt-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted">
+          <p className="mt-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-arena-muted">
             {finished
               ? formatDuration(match.durationSeconds)
               : formatGameTime(match.durationSeconds)}
@@ -176,7 +174,7 @@ export function MatchDetailModal({
         <TeamPanel team={match.dire} align="right" finished={finished} />
       </div>
 
-      <div className="flex gap-1 border-b border-line px-5 sm:px-6">
+      <div className="flex gap-1 border-b border-arena-line px-5 sm:px-6">
         {(
           [
             { id: "summary", label: t("match.summary") },
@@ -191,8 +189,8 @@ export function MatchDetailModal({
             className={cn(
               "border-b-2 px-3 py-3 text-sm font-semibold transition",
               tab === item.id
-                ? "border-accent text-ink"
-                : "border-transparent text-muted hover:text-ink",
+                ? "border-accent text-arena-ink"
+                : "border-transparent text-arena-muted hover:text-arena-ink",
             )}
           >
             {item.label}
@@ -272,14 +270,14 @@ export function MatchDetailModal({
                 return (
                   <section
                     key={market.id}
-                    className="rounded-xl border border-line bg-white p-4 shadow-sm"
+                    className="rounded-xl border border-arena-line bg-arena-raised/40 p-4"
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div>
-                        <p className="text-sm font-semibold text-ink">
+                        <p className="text-sm font-semibold text-arena-ink">
                           {marketTitle(market, t)}
                         </p>
-                        <p className="mt-1 text-[11px] text-muted">
+                        <p className="mt-1 text-[11px] text-arena-muted">
                           {t("market.version", { version: market.version })}
                           {market.line != null
                             ? ` · ${t("market.line", { line: Number(market.line).toFixed(1) })}`
@@ -288,12 +286,12 @@ export function MatchDetailModal({
                       </div>
                       <span
                         className={cn(
-                          "shrink-0 rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide ring-1",
+                          "shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide ring-1",
                           market.status === "OPEN"
-                            ? "bg-emerald-50 text-emerald-700 ring-emerald-200"
+                            ? "bg-emerald-500/10 text-emerald-300 ring-emerald-400/25"
                             : market.status === "SUSPENDED"
-                              ? "bg-amber-50 text-amber-700 ring-amber-200"
-                              : "bg-slate-50 text-slate-500 ring-line",
+                              ? "bg-amber-400/10 text-amber-300 ring-amber-400/25"
+                              : "bg-white/5 text-arena-muted ring-arena-line",
                         )}
                       >
                         {statusLabel}
@@ -301,57 +299,45 @@ export function MatchDetailModal({
                     </div>
 
                     {market.status !== "OPEN" ? (
-                      <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-800">
+                      <p className="mt-3 rounded-lg border border-amber-400/25 bg-amber-400/10 px-3 py-2 text-xs font-medium text-amber-200">
                         {suspensionLabel ?? t("market.suspended")}
                       </p>
                     ) : null}
 
                     <div className="mt-3 grid grid-cols-2 gap-2">
                       {market.selections.map((selection) => (
-                        <button
+                        <OddsButton
                           key={selection.key}
-                          type="button"
-                          disabled={market.status !== "OPEN"}
-                          onClick={() => onSelect(match, market, selection)}
-                          className={cn(
-                            "rounded-lg border px-3 py-2.5 text-left transition",
-                            market.status === "OPEN"
-                              ? "border-line bg-white hover:border-accent/40 hover:bg-accent/5"
-                              : "cursor-not-allowed border-line bg-slate-50/70 opacity-70",
-                          )}
-                        >
-                          <span className="block truncate text-[10px] font-semibold text-muted">
-                            {selectionLabel(market, selection.key, t)}
-                          </span>
-                          <span className="mt-1 block font-score text-xl font-semibold text-ink">
-                            {formatOdds(selection.odds)}
-                          </span>
-                        </button>
+                          market={market}
+                          selection={selection}
+                          label={matchSelectionLabel(match, market, selection.key, t)}
+                          onSelect={() => onSelect(match, market, selection)}
+                        />
                       ))}
                     </div>
                   </section>
                 );
               })}
 
-              <p className="text-[10px] leading-4 text-muted">
+              <p className="text-[11px] leading-4 text-arena-muted">
                 {t("market.demoNote")}
               </p>
             </>
           ) : (
             <div className="py-6 text-center">
-              <span className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-slate-50 text-slate-400 ring-1 ring-line">
+              <span className="mx-auto grid h-12 w-12 place-items-center rounded-2xl border border-arena-line bg-arena-raised text-arena-muted">
                 <LockIcon className="h-6 w-6" />
               </span>
-              <h3 className="mt-4 text-sm font-semibold text-ink">
+              <h3 className="mt-4 text-sm font-semibold text-arena-ink">
                 {t("match.marketsEmptyTitle")}
               </h3>
-              <p className="mx-auto mt-1 max-w-sm text-xs leading-5 text-muted">
+              <p className="mx-auto mt-1 max-w-sm text-xs leading-5 text-arena-muted">
                 {t("match.marketsEmptyBody")}
               </p>
               <button
                 type="button"
                 onClick={onClose}
-                className="mt-5 rounded-lg border border-line px-4 py-2.5 text-sm font-semibold text-ink transition hover:bg-slate-50"
+                className="mt-5 rounded-lg border border-arena-line px-4 py-2.5 text-sm font-semibold text-arena-ink transition hover:bg-white/5"
               >
                 {t("match.close")}
               </button>

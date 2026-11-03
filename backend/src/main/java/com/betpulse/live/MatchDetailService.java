@@ -66,8 +66,8 @@ public class MatchDetailService {
 	private LobbyMatch fallbackMatch(Batch batch) {
 		return new LobbyMatch(batch.matchId(), "dota2", "live", "Mi partida", "gsi", "",
 				System.currentTimeMillis() / 1000 - batch.clockTime(), batch.clockTime(),
-				new com.betpulse.catalog.LobbyDtos.LobbyTeam("Radiant", batch.radiantScore(), "radiant", null),
-				new com.betpulse.catalog.LobbyDtos.LobbyTeam("Dire", batch.direScore(), "dire", null),
+				new com.betpulse.catalog.LobbyDtos.LobbyTeam("Radiant", batch.radiantScore(), "radiant", null, null),
+				new com.betpulse.catalog.LobbyDtos.LobbyTeam("Dire", batch.direScore(), "dire", null, null),
 				null, null, null, "GSI", "FULL", batch.paused(), batch.roshan() != null);
 	}
 

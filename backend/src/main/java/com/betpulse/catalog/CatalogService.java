@@ -132,8 +132,8 @@ public class CatalogService {
 				"",
 				startedAt,
 				batch.clockTime(),
-				new LobbyTeam("Radiant", batch.radiantScore(), "radiant", null),
-				new LobbyTeam("Dire", batch.direScore(), "dire", null),
+				new LobbyTeam("Radiant", batch.radiantScore(), "radiant", null, null),
+				new LobbyTeam("Dire", batch.direScore(), "dire", null, null),
 				null,
 				null,
 				null,
@@ -203,8 +203,10 @@ public class CatalogService {
 				"",
 				value(match.activateTime()),
 				value(match.gameTime()),
-				new LobbyTeam(radiantName, value(match.radiantScore()), "radiant", null),
-				new LobbyTeam(direName, value(match.direScore()), "dire", null),
+				new LobbyTeam(radiantName, value(match.radiantScore()), "radiant", null,
+						positiveId(match.teamIdRadiant())),
+				new LobbyTeam(direName, value(match.direScore()), "dire", null,
+						positiveId(match.teamIdDire())),
 				positiveOrNull(match.averageMmr()),
 				positiveOrNull(match.spectators()),
 				delay > 0 ? delay : null,
@@ -225,8 +227,10 @@ public class CatalogService {
 				seriesFormat(value(match.seriesType())),
 				value(match.startTime()),
 				value(match.duration()),
-				new LobbyTeam(match.radiantName().trim(), value(match.radiantScore()), "radiant", radiantWinner),
-				new LobbyTeam(match.direName().trim(), value(match.direScore()), "dire", !radiantWinner),
+				new LobbyTeam(match.radiantName().trim(), value(match.radiantScore()), "radiant", radiantWinner,
+						positiveId(match.radiantTeamId())),
+				new LobbyTeam(match.direName().trim(), value(match.direScore()), "dire", !radiantWinner,
+						positiveId(match.direTeamId())),
 				null,
 				null,
 				null,
@@ -256,6 +260,10 @@ public class CatalogService {
 
 	private static Integer positiveOrNull(Integer number) {
 		return number == null || number <= 0 ? null : number;
+	}
+
+	private static Long positiveId(Long value) {
+		return value == null || value <= 0 ? null : value;
 	}
 
 	private static boolean hasText(String value) {

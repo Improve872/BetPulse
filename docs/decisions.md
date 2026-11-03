@@ -204,6 +204,8 @@ Formato: contexto → decisión → consecuencias. Actualizar cuando cambie una 
 
 **Actualización (2026-10-27):** ADR-022 implementó el M3a; las partidas en vivo ya publican el mercado `MATCH_WINNER` con cuotas propias. Se mantiene la regla de no inventar partidas ni cuotas.
 
+**Actualización (2026-11-03):** ADR-035 sustituye el lobby light-first y la ausencia de chip DEMO para las rutas de arena. Wallet, apuestas y admin conservan superficies claras.
+
 ## ADR-020 — Identidad y wallet base de M1
 
 **Estado:** aceptada (2026-10-26)
@@ -454,7 +456,7 @@ Formato: contexto → decisión → consecuencias. Actualizar cuando cambie una 
 - Streaming solo con embeds oficiales de Twitch y YouTube. Nada de streams no oficiales ni scraping.
 - Twitch requiere `parent` con el dominio que embebe (`localhost` en desarrollo); YouTube usa iframe oficial. Ambos se configuran por partido o torneo desde admin.
 - Se planea `match_streams` con `provider`, `channel_or_video`, `enabled` y `fallback_url`. CSP `frame-src` limitado a `player.twitch.tv` y YouTube. Si el embed falla, se muestra fallback.
-- M6 agrega streaming, hero de partido destacado, “en vivo ahora”, badges/escudos, movimiento de cuota y estados de carga/vacio/error. “Proximos” queda preparado.
+- M6 agrega streaming, hero de partido destacado, “en vivo ahora”, badges/escudos, movimiento de cuota y estados de carga/vacio/error. “Proximos” queda preparado. La capa visual se concreta en ADR-035 (M6a); streaming y contenido quedan en M6b.
 - Los deportes nuevos se implementan **despues de M6 y M7**, como M8, y solo **pre-partida**:
   - Futbol primero (Premier League, La Liga, Bundesliga, Serie A, Ligue 1).
   - Fuente: ESPN (no oficial, sin key) y OpenLigaDB para Bundesliga; cache, backoff y fallback.
@@ -464,3 +466,29 @@ Formato: contexto → decisión → consecuencias. Actualizar cuando cambie una 
 - ESPN no ofrece SLA ni contrato: se documenta el riesgo y se usa solo como fuente de demo con cache.
 
 **Consecuencias:** la web gana video y contenido sin comprometer derechos de transmision; los deportes nuevos llenan “Proximos” y la pagina de liga sin exigir GSI. A cambio, M8 amplia el alcance y exige actualizar AGENTS.md, plan.md y el modelo de datos. El calendario futuro de Dota (M3c) sigue sin resolverse.
+
+## ADR-035 — Arena visual y sistema de diseño del lobby (M6a)
+
+**Estado:** aceptada (2026-11-03)
+**Sustituye parcialmente:** ADR-019 (lobby light-first y sin chip DEMO).
+
+**Contexto:** el lobby era funcional pero se percibía como un panel administrativo: tres columnas, cards uniformes, etiquetas de 9–10 px y ningún protagonista visual. La prioridad de M6a fue consolidar una capa visual propia sin inventar partidas, cuotas ni mercados.
+
+**Decisión:**
+
+- El lobby y `/match/[id]` usan el tema **arena nocturna**; wallet, apuestas y admin conservan el tema claro.
+- Paleta: `arena #070d18`, `arena-soft #0b1220`, `arena-surface #0f1a2c`, `arena-raised #142136`, `arena-line #223149`, texto `#f8fafc` y muted `#94a3b8`. El naranja `#f97316` se reserva para lo vivo y la acción principal; `#c2410c` queda para texto sobre fondos claros.
+- Header con chip **DEMO** visible, navegación “Arena” y “Mis apuestas”.
+- El primer bloque del lobby es una **partida destacada** con torneo, equipos, escudos, marcador, tiempo y mercado principal. Solo se muestra si hay una partida en vivo; no se inventa mapa ni contenido.
+- Tabs **En vivo / Resultados**; se retiran de la UI “Todos” y “Próximos”. El rail queda solo para torneos.
+- Cards con escudos, marcador grande, cuotas tipo price tile y estado “en tu boleto”. El boleto vacío es discreto; con selección pasa a ser el bloque principal.
+- Escudos reales: OpenDota `/live` y `/proMatches` entregan `team_id`; el backend expone `GET /api/catalog/teams/{teamId}/logo`, resuelve `/teams/{id}` con caché en memoria y redirige al CDN. Si falla o no hay equipo, la UI cae a monograma.
+- Movimiento de cuota sutil cuando el precio cambia de verdad; respeta `prefers-reduced-motion`. Sin hero con imágenes de héroes, neón ni dark mode completo del admin.
+- Sin cambios en el modelo de datos, cuotas, settlement, wallet ni reglas de apuesta.
+
+**Consecuencias:**
+
+- ADR-019 queda sustituida en lo relativo al lobby claro y a la ausencia de chip DEMO.
+- El catálogo añade `teamId` a `LobbyTeam`; el endpoint de escudos depende de `cdn.steamusercontent.com` y debe fallar de forma silenciosa.
+- La UI gana jerarquía y legibilidad; el coste es un tema oscuro específico de arena y un endpoint adicional de solo lectura.
+- La página de partido y el modal oscuro comparten la misma identidad visual. Wallet/apuestas/admin no cambian de tema.

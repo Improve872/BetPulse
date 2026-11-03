@@ -9,6 +9,7 @@ type ModalProps = {
   labelledBy: string;
   children: ReactNode;
   panelClassName?: string;
+  variant?: "light" | "dark";
 };
 
 export function Modal({
@@ -17,6 +18,7 @@ export function Modal({
   labelledBy,
   children,
   panelClassName,
+  variant = "light",
 }: ModalProps) {
   const panelRef = useRef<HTMLDivElement>(null);
   const closeRef = useRef(onClose);
@@ -100,7 +102,10 @@ export function Modal({
         aria-modal="true"
         aria-labelledby={labelledBy}
         className={cn(
-          "modal-panel max-h-[92vh] w-full overflow-y-auto rounded-t-3xl bg-surface shadow-2xl sm:rounded-3xl",
+          "modal-panel max-h-[92vh] w-full overflow-y-auto rounded-t-3xl shadow-2xl sm:rounded-3xl",
+          variant === "dark"
+            ? "border border-arena-line bg-arena-surface text-arena-ink"
+            : "bg-surface text-ink",
           panelClassName,
         )}
       >

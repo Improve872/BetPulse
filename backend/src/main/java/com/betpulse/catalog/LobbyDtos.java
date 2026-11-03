@@ -22,7 +22,11 @@ public final class LobbyDtos {
 	}
 
 	@JsonInclude(JsonInclude.Include.NON_NULL)
-	public record LobbyTeam(String name, int score, String side, Boolean winner) {
+	public record LobbyTeam(String name, int score, String side, Boolean winner, Long teamId) {
+
+		public LobbyTeam(String name, int score, String side, Boolean winner) {
+			this(name, score, side, winner, null);
+		}
 	}
 
 	@JsonInclude(JsonInclude.Include.NON_NULL)

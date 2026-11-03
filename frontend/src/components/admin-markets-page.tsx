@@ -101,7 +101,7 @@ export function AdminMarketsPage() {
       <main className="mx-auto max-w-[1100px] px-4 pb-16 pt-8 sm:px-6 lg:px-8">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-accent-strong">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-accent-strong">
               BetPulse
             </p>
             <h1 className="mt-1 font-display text-2xl font-semibold tracking-tight text-ink">
@@ -145,7 +145,7 @@ export function AdminMarketsPage() {
                 </div>
                 <span
                   className={cn(
-                    "rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide ring-1",
+                    "rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide ring-1",
                     market.status === "OPEN"
                       ? "bg-emerald-50 text-emerald-700 ring-emerald-200"
                       : "bg-amber-50 text-amber-700 ring-amber-200",

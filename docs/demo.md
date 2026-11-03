@@ -42,7 +42,7 @@ Abrir dos perfiles del navegador:
 |---|---|
 | 0–2 | Presentar BetPulse: apuestas simuladas, saldo ficticio, datos reales |
 | 2–4 | Login, wallet en S/ y aviso de modo demo |
-| 4–6 | Lobby: torneos/ranked de OpenDota y cuotas que se mueven |
+| 4–6 | Lobby: partido destacado con escudos y marcador, tabs En vivo/Resultados, cuotas que se mueven y boleto |
 | 6–9 | "Mi partida": iniciar partida con bots en Dota 2 o entrar a DotaTV |
 | 9–12 | Mostrar `/match/[id]`: marcador, jugadores, timeline, Roshan, SSE |
 | 12–14 | Apostar a primera sangre o primera torre; ver hold y `/bets` |
@@ -67,6 +67,8 @@ Abrir dos perfiles del navegador:
 - Apuesta S/ 10 a ganador en una partida GSI → `POST_GAME` → liquidación `WON`
   con payout S/ 10.96 y wallet actualizada.
 - Admin: suspender, reanudar y override auditados.
+- M6a: lobby con partido destacado, escudos reales, tabs y boleto revisado con
+  feed OpenDota a 1440 px y 390 px.
 
 ## Riesgos
 

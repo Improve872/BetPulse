@@ -10,3 +10,5 @@ El estado vigente está siempre en `docs/STATUS.md`.
 | M3a — Mercado ganador y motor base | `M3a-mercado-ganador.md` | 2026-10-27 |
 | M3b — Más mercados en vivo | `M3b-mercados-en-vivo.md` | 2026-10-27 |
 | M4 — Apuestas simples y holds | `M4-apuestas-holds.md` | 2026-10-27 |
+| M5 — Liquidación y admin | `M5-liquidacion.md` | 2026-11-01 |
+| M6a — Arena visual y sistema de diseño | `M6a-arena-visual.md` | 2026-11-03 |

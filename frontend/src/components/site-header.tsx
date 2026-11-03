@@ -22,7 +22,7 @@ type SiteHeaderProps = {
 };
 
 const navBase =
-  "inline-flex items-center justify-center whitespace-nowrap rounded-lg px-3 py-2 text-sm font-medium transition";
+  "inline-flex items-center justify-center whitespace-nowrap rounded-lg px-3 py-2 text-sm font-semibold transition";
 
 export function SiteHeader({
   game,
@@ -92,58 +92,43 @@ export function SiteHeader({
   };
 
   return (
-    <header ref={headerRef} className="sticky top-0 z-40 bg-navy text-white">
+    <header
+      ref={headerRef}
+      className="sticky top-0 z-40 border-b border-white/10 bg-arena-soft/95 text-white backdrop-blur"
+    >
       <div className="mx-auto flex h-16 max-w-[1320px] items-center gap-3 px-4 sm:px-6 lg:px-8">
         <Logo />
 
+        <span
+          title={t("demo.title")}
+          className="inline-flex items-center rounded-full border border-accent/30 bg-accent/10 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.14em] text-accent sm:px-2"
+        >
+          {t("demo.badge")}
+        </span>
+
         <div className="hidden h-6 w-px bg-white/10 lg:block" />
 
-        <div className="hidden lg:block">
+        <div className="hidden xl:block">
           <GameSwitcher value={game} onChange={onGameChange} />
         </div>
 
-        <nav className="hidden items-center gap-1 xl:flex" aria-label="Principal">
+        <nav className="hidden items-center gap-1 lg:flex" aria-label="Principal">
           <button
             type="button"
             onClick={() => handleNavigate("live")}
             className={cn(
               navBase,
               activeView === "live"
-                ? "bg-white/5 text-white"
-                : "text-white/65 hover:bg-white/5 hover:text-white",
+                ? "bg-white/10 text-white"
+                : "text-white/60 hover:bg-white/5 hover:text-white",
             )}
           >
-            {t("nav.live")}
-            <span className="live-dot ml-1.5" />
-          </button>
-          <button
-            type="button"
-            onClick={() => handleNavigate("upcoming")}
-            className={cn(
-              navBase,
-              activeView === "upcoming"
-                ? "bg-white/5 text-white"
-                : "text-white/65 hover:bg-white/5 hover:text-white",
-            )}
-          >
-            {t("nav.upcoming")}
-          </button>
-          <button
-            type="button"
-            onClick={() => handleNavigate("results")}
-            className={cn(
-              navBase,
-              activeView === "results"
-                ? "bg-white/5 text-white"
-                : "text-white/65 hover:bg-white/5 hover:text-white",
-            )}
-          >
-            {t("nav.results")}
+            {t("nav.arena")}
           </button>
           {user ? (
             <Link
               href="/bets"
-              className={cn(navBase, "text-white/65 hover:bg-white/5 hover:text-white")}
+              className={cn(navBase, "text-white/60 hover:bg-white/5 hover:text-white")}
             >
               {t("nav.myBets")}
             </Link>
@@ -151,7 +136,7 @@ export function SiteHeader({
             <button
               type="button"
               onClick={handleLogin}
-              className={cn(navBase, "text-white/65 hover:bg-white/5 hover:text-white")}
+              className={cn(navBase, "text-white/60 hover:bg-white/5 hover:text-white")}
             >
               {t("nav.myBets")}
             </button>
@@ -216,7 +201,7 @@ export function SiteHeader({
               <button
                 type="button"
                 onClick={handleRegister}
-                className="hidden whitespace-nowrap rounded-lg bg-accent px-3.5 py-2 text-sm font-semibold text-white shadow-[0_8px_18px_-10px_rgba(249,115,22,0.9)] transition hover:bg-accent-strong sm:inline-flex"
+                className="hidden whitespace-nowrap rounded-lg bg-accent px-3.5 py-2 text-sm font-semibold text-navy transition hover:bg-accent-bright sm:inline-flex"
               >
                 {t("header.register")}
               </button>
@@ -228,7 +213,7 @@ export function SiteHeader({
             onClick={() => setMenuOpen((currentOpen) => !currentOpen)}
             aria-expanded={menuOpen}
             aria-label={menuOpen ? t("header.closeMenu") : t("header.openMenu")}
-            className="grid h-9 w-9 place-items-center rounded-lg text-white/75 transition hover:bg-white/10 hover:text-white xl:hidden"
+            className="grid h-9 w-9 place-items-center rounded-lg text-white/75 transition hover:bg-white/10 hover:text-white lg:hidden"
           >
             {menuOpen ? (
               <CloseIcon className="h-5 w-5" />
@@ -240,10 +225,10 @@ export function SiteHeader({
       </div>
 
       {menuOpen ? (
-        <div className="border-t border-white/10 bg-surface px-4 pb-5 pt-4 text-ink shadow-xl xl:hidden">
+        <div className="border-t border-white/10 bg-arena-surface px-4 pb-5 pt-4 text-arena-ink shadow-xl lg:hidden">
           <div className="mx-auto max-w-[1320px] space-y-5">
             <div>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-arena-muted">
                 {t("games.label")}
               </p>
               <div className="mt-2 flex flex-wrap gap-2">
@@ -262,15 +247,15 @@ export function SiteHeader({
                     className={cn(
                       "inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition",
                       gameOption.available
-                        ? "border-accent/30 bg-accent/5 text-accent-strong"
-                        : "cursor-not-allowed border-line bg-slate-50 text-muted/60",
+                        ? "border-accent/30 bg-accent/10 text-accent"
+                        : "cursor-not-allowed border-arena-line bg-white/[0.03] text-arena-muted/60",
                       gameOption.id === game && "ring-1 ring-accent/30",
                     )}
                   >
                     <span className="text-[10px] font-bold">{gameOption.mark}</span>
                     {gameOption.name}
                     {!gameOption.available ? (
-                      <span className="rounded bg-slate-200 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-slate-500">
+                      <span className="rounded bg-white/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-arena-muted">
                         {t("games.soon")}
                       </span>
                     ) : null}
@@ -280,32 +265,23 @@ export function SiteHeader({
             </div>
 
             <div className="grid grid-cols-2 gap-2">
-              {(
-                [
-                  { view: "live", label: t("nav.live") },
-                  { view: "upcoming", label: t("nav.upcoming") },
-                  { view: "results", label: t("nav.results") },
-                ] as const
-              ).map((item) => (
-                <button
-                  key={item.view}
-                  type="button"
-                  onClick={() => handleNavigate(item.view)}
-                  className={cn(
-                    "rounded-lg border px-3 py-2.5 text-left text-sm font-medium transition",
-                    activeView === item.view
-                      ? "border-accent/30 bg-accent/5 text-accent-strong"
-                      : "border-line bg-white text-ink hover:bg-slate-50",
-                  )}
-                >
-                  {item.label}
-                </button>
-              ))}
+              <button
+                type="button"
+                onClick={() => handleNavigate("live")}
+                className={cn(
+                  "rounded-lg border px-3 py-2.5 text-left text-sm font-medium transition",
+                  activeView === "live"
+                    ? "border-accent/30 bg-accent/10 text-accent"
+                    : "border-arena-line bg-white/[0.03] text-arena-ink hover:bg-white/[0.06]",
+                )}
+              >
+                {t("nav.arena")}
+              </button>
               {user ? (
                 <Link
                   href="/bets"
                   onClick={() => setMenuOpen(false)}
-                  className="rounded-lg border border-line bg-white px-3 py-2.5 text-left text-sm font-medium text-ink transition hover:bg-slate-50"
+                  className="rounded-lg border border-arena-line bg-white/[0.03] px-3 py-2.5 text-left text-sm font-medium text-arena-ink transition hover:bg-white/[0.06]"
                 >
                   {t("nav.myBets")}
                 </Link>
@@ -313,25 +289,25 @@ export function SiteHeader({
                 <button
                   type="button"
                   onClick={handleLogin}
-                  className="rounded-lg border border-line bg-white px-3 py-2.5 text-left text-sm font-medium text-ink transition hover:bg-slate-50"
+                  className="rounded-lg border border-arena-line bg-white/[0.03] px-3 py-2.5 text-left text-sm font-medium text-arena-ink transition hover:bg-white/[0.06]"
                 >
                   {t("nav.myBets")}
                 </button>
               )}
             </div>
 
-            <div className="flex items-center justify-between gap-3 border-t border-line pt-4">
+            <div className="flex items-center justify-between gap-3 border-t border-arena-line pt-4">
               <div className="flex items-center gap-3">
-                <LanguageToggle variant="light" />
+                <LanguageToggle />
                 {user ? (
-                  <span className="max-w-[150px] truncate text-sm font-semibold text-ink">
+                  <span className="max-w-[150px] truncate text-sm font-semibold text-arena-ink">
                     {user.displayName}
                   </span>
                 ) : (
                   <button
                     type="button"
                     onClick={handleLogin}
-                    className="text-sm font-semibold text-accent-strong"
+                    className="text-sm font-semibold text-accent"
                   >
                     {t("header.login")}
                   </button>
@@ -342,7 +318,7 @@ export function SiteHeader({
                   type="button"
                   onClick={handleLogout}
                   disabled={signingOut}
-                  className="rounded-lg border border-line px-3.5 py-2 text-sm font-semibold text-ink transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="rounded-lg border border-arena-line px-3.5 py-2 text-sm font-semibold text-arena-ink transition hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {t("header.logout")}
                 </button>
@@ -350,7 +326,7 @@ export function SiteHeader({
                 <button
                   type="button"
                   onClick={handleRegister}
-                  className="rounded-lg bg-accent px-3.5 py-2 text-sm font-semibold text-white transition hover:bg-accent-strong sm:hidden"
+                  className="rounded-lg bg-accent px-3.5 py-2 text-sm font-semibold text-navy transition hover:bg-accent-bright"
                 >
                   {t("header.register")}
                 </button>

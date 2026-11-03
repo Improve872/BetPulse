@@ -102,7 +102,7 @@ export function AdminBetsPage() {
       <main className="mx-auto max-w-[1100px] px-4 pb-16 pt-8 sm:px-6 lg:px-8">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-accent-strong">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-accent-strong">
               BetPulse
             </p>
             <h1 className="mt-1 font-display text-2xl font-semibold tracking-tight text-ink">
@@ -123,7 +123,7 @@ export function AdminBetsPage() {
             <p className="text-sm text-muted">{t("admin.denied")}</p>
             <Link
               href="/"
-              className="mt-4 inline-flex rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white"
+              className="mt-4 inline-flex rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-navy"
             >
               {t("bets.back")}
             </Link>
@@ -168,7 +168,7 @@ export function AdminBetsPage() {
                 >
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted">
                         {t("admin.user")} · {bet.userEmail}
                       </p>
                       <h2 className="mt-1 text-sm font-semibold text-ink">
@@ -181,7 +181,7 @@ export function AdminBetsPage() {
                     </div>
                     <span
                       className={cn(
-                        "rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide ring-1",
+                        "rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide ring-1",
                         statusClasses[bet.status] ??
                           "bg-slate-50 text-slate-500 ring-line",
                       )}

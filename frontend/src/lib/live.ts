@@ -1,8 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { LobbyData } from "@/lib/lobby";
 import type { LiveMarketsData } from "@/lib/markets";
+
+export type FeedConnection = "connecting" | "connected" | "disconnected";
 
 export function useLobbyFeed(
   initialData: LobbyData,
@@ -10,7 +12,8 @@ export function useLobbyFeed(
 ) {
   const [data, setData] = useState(initialData);
   const [markets, setMarkets] = useState(initialMarkets);
-  const [connected, setConnected] = useState(false);
+  const [connection, setConnection] = useState<FeedConnection>("connecting");
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     setData(initialData);
@@ -22,6 +25,7 @@ export function useLobbyFeed(
 
   useEffect(() => {
     if (typeof window === "undefined" || typeof EventSource === "undefined") {
+      setConnection("disconnected");
       return;
     }
 
@@ -33,7 +37,7 @@ export function useLobbyFeed(
         const next = JSON.parse(message.data) as LobbyData;
         if (Array.isArray(next.live) && Array.isArray(next.recent)) {
           setData(next);
-          setConnected(true);
+          setConnection("connected");
         }
       } catch {
         // Ignore malformed events; the next snapshot or heartbeat will recover.
@@ -46,7 +50,7 @@ export function useLobbyFeed(
         const next = JSON.parse(message.data) as LiveMarketsData;
         if (Array.isArray(next.markets)) {
           setMarkets(next);
-          setConnected(true);
+          setConnection("connected");
         }
       } catch {
         // Ignore malformed events; the next snapshot or heartbeat will recover.
@@ -54,14 +58,14 @@ export function useLobbyFeed(
     };
 
     const handleHeartbeat = () => {
-      setConnected(true);
+      setConnection("connected");
     };
 
     source.addEventListener("lobby", handleLobby);
     source.addEventListener("markets", handleMarkets);
     source.addEventListener("heartbeat", handleHeartbeat);
-    source.onopen = () => setConnected(true);
-    source.onerror = () => setConnected(false);
+    source.onopen = () => setConnection("connected");
+    source.onerror = () => setConnection("disconnected");
 
     return () => {
       source.removeEventListener("lobby", handleLobby);
@@ -69,7 +73,12 @@ export function useLobbyFeed(
       source.removeEventListener("heartbeat", handleHeartbeat);
       source.close();
     };
+  }, [attempt]);
+
+  const retry = useCallback(() => {
+    setConnection("connecting");
+    setAttempt((current) => current + 1);
   }, []);
 
-  return { data, markets, connected };
+  return { data, markets, connection, retry };
 }

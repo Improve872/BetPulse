@@ -108,34 +108,55 @@ Tareas:
 
 Aceptación: partido termina → apuestas liquidadas una sola vez → wallet acreditada → auditoría completa; void funciona.
 
-### M6 — Producto: i18n, streaming, contenido y pulido (2 semanas)
+### M6 — Producto: arena visual, streaming y contenido (2 semanas)
 
-Objetivo: que la web dé ganas de usarse y que el partido se sienta como un
-evento, no como una fila de tabla.
+Objetivo: consolidar la capa visual del producto y la jerarquía de información
+del lobby, y después añadir streaming y contenido alrededor del partido.
 
-Tareas:
+#### M6a — Arena visual y sistema de diseño (1 semana)
 
-- i18n ES/EN con español por defecto.
-- Formato `S/ 1,250.00`, aviso visible de saldo ficticio.
+- ADR-035: tema arena nocturna en lobby y `/match/[id]`; wallet, apuestas y
+  admin siguen claros.
+- Sistema visual: tokens, tipografía, contraste AA, foco, radios, sombras y
+  movimiento.
+- Partido destacado con datos reales: torneo, equipos, escudos, marcador,
+  tiempo, formato y mercado principal.
+- Cards con escudos, marcador y cuotas; odds tiles con hover, suspendido y
+  estado “en tu boleto”.
+- Navegación: tabs “En vivo / Resultados”; rail solo de torneos; header
+  simplificado.
+- Boleto vacío/activo y barra móvil.
+- Escudos reales: `team_id` desde OpenDota, proxy cacheado
+  `/api/catalog/teams/{id}/logo` y fallback a monograma.
+- Movimiento de cuota sutil y respeto por `prefers-reduced-motion`.
+- Estados de carga, error, vacío y reconexión.
+- Detalle de partido oscuro.
+
+Aceptación M6a:
+
+- El primer viewport muestra partido destacado, tabs, lista y boleto.
+- Ningún texto funcional menor a 11 px; contraste mínimo 4.5:1.
+- Un solo CTA naranja por superficie; cero tabs/botones muertos.
+- Escudos con fallback y sin layout shift.
+- Responsive, `prefers-reduced-motion`, lint/build/tests verdes.
+- Wallet, apuestas y admin sin regresiones.
+
+#### M6b — Streaming, contenido y cierre de producto (1 semana)
+
 - Streaming oficial Twitch/YouTube, administrable y con fallback offline:
   - `match_streams` con provider, canal/video, enabled y fallback.
   - Admin para asignar stream por partido o torneo.
   - Embed con `parent` de Twitch y iframe de YouTube.
   - CSP `frame-src` limitado a `player.twitch.tv` y YouTube.
   - Solo canales oficiales; nunca streams no oficiales.
-- Home con jerarquía de contenido:
-  - Hero con partido destacado, stream y mercado principal.
-  - “En vivo ahora” con miniaturas.
-  - Badges de liga/torneo y escudos cuando existan.
-  - Movimiento de cuota visible.
-  - Skeletons, estados vacíos y error.
-  - “Próximos” preparado para M8.
-- Detalle de partido con stream, marcador, timeline y mercados.
+- Copy ES/EN nuevo de la arena.
+- “Próximos” preparado para M8.
 - UI de depósitos/retiros simulados y métodos genéricos.
-- Pulido visual: home, live, partido, wallet, historial y admin.
+- Detalle de partido con stream, timeline y mercados.
+- Pulido final: home, live, partido, wallet, historial y admin.
 - Responsive y legible en proyector.
 
-Aceptación: toggle ES/EN; soles bien formateados; stream carga o muestra
+Aceptación M6b: toggle ES/EN; soles bien formateados; stream carga o muestra
 fallback; home con hero y contenido; flujo de pago demo; UI completa.
 
 ### M7 — Hardening + demo + empaquetado laptop (2 semanas)
@@ -194,7 +215,8 @@ El estado de avance vive solo en `docs/STATUS.md`. Aquí únicamente el calendar
 | M3 | S6–S7 |
 | M4 | S8–S9 |
 | M5 | S10–S11 |
-| M6 | S12–S13 |
+| M6a | S12 |
+| M6b | S13 |
 | M7 | S14–S15 |
 | M8 | S16–S18 |
 | Buffer | S19 |
@@ -203,14 +225,16 @@ Las semanas son relativas porque la fecha de inicio está por definir. Con 16 GB
 
 ## MVP mínimo
 
-M0–M5 + UI básica + admin. Si falta tiempo, recortar M6 (streaming/inglés/secundarios) antes que M7 (seguridad/demo).
+M0–M5 + M6a (arena visual) + admin. Si falta tiempo, recortar M6b
+(streaming/secundarios) antes que M7 (seguridad/demo).
 
 ## Definition of Done
 
 - Código + tests + docs + CI verde + criterio de aceptación.
 - Para wallet/betting/settlement: tests de concurrencia e idempotencia.
 - Para APIs: OpenAPI actualizado.
-- Para UI: estados de carga, error, vacío y responsive.
+- Para UI: estados de carga, error, vacío y reconexión; responsive; contraste AA;
+  sin texto funcional menor a 11 px; `prefers-reduced-motion`.
 - Actualizar `docs/STATUS.md` y, si cambió una decisión, `docs/decisions.md`.
 
 ## Riesgos
@@ -222,6 +246,8 @@ M0–M5 + UI básica + admin. Si falta tiempo, recortar M6 (streaming/inglés/se
 | Red del aula aísla máquinas | No aplica en local-first; si se usa laptop, todo corre en ella |
 | Docker pesado en 16 GB | Docker solo PostgreSQL; backend/frontend/colector nativos |
 | OpenDota rate limit | Caché, backoff, API key |
+| CDN de escudos o `/teams/{id}` caído | Proxy cacheado + fallback a monograma |
+| Tema arena con contraste insuficiente | Tokens medidos y QA AA en navegador |
 | Scope creep | MVP cerrado; parlays/cashout fuera |
 | Concurrencia en wallet | Locks, constraints, tests de doble gasto |
 | Tiempo | Buffer de 2 semanas; priorizar M0–M5 |

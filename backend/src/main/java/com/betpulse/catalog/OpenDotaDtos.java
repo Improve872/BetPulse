@@ -24,7 +24,19 @@ public final class OpenDotaDtos {
 			@JsonProperty("dire_score") Integer direScore,
 			@JsonProperty("team_name_radiant") String teamNameRadiant,
 			@JsonProperty("team_name_dire") String teamNameDire,
+			@JsonProperty("team_id_radiant") Long teamIdRadiant,
+			@JsonProperty("team_id_dire") Long teamIdDire,
+			@JsonProperty("team_logo_radiant") String teamLogoRadiant,
+			@JsonProperty("team_logo_dire") String teamLogoDire,
 			@JsonProperty("is_watch_eligible") Boolean watchEligible) {
+	}
+
+	@JsonIgnoreProperties(ignoreUnknown = true)
+	public record Team(
+			@JsonProperty("team_id") Long teamId,
+			@JsonProperty("name") String name,
+			@JsonProperty("tag") String tag,
+			@JsonProperty("logo_url") String logoUrl) {
 	}
 
 	@JsonIgnoreProperties(ignoreUnknown = true)
@@ -65,6 +77,8 @@ public final class OpenDotaDtos {
 			@JsonProperty("start_time") Long startTime,
 			@JsonProperty("radiant_name") String radiantName,
 			@JsonProperty("dire_name") String direName,
+			@JsonProperty("radiant_team_id") Long radiantTeamId,
+			@JsonProperty("dire_team_id") Long direTeamId,
 			@JsonProperty("league_name") String leagueName,
 			@JsonProperty("series_type") Integer seriesType,
 			@JsonProperty("radiant_score") Integer radiantScore,

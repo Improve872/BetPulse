@@ -3,6 +3,7 @@ package com.betpulse.catalog;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.request;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -40,6 +41,9 @@ class CatalogControllerTest {
 	@MockitoBean
 	private LiveFeedService liveFeedService;
 
+	@MockitoBean
+	private TeamLogoCache teamLogoCache;
+
 	@Test
 	void returnsLobbySnapshot() throws Exception {
 		when(catalogService.getLobby()).thenReturn(sampleResponse());
@@ -51,6 +55,23 @@ class CatalogControllerTest {
 				.andExpect(jsonPath("$.recent").isEmpty())
 				.andExpect(jsonPath("$.feed.status").value("LIVE"))
 				.andExpect(jsonPath("$.feed.source").value("OPENDOTA"));
+	}
+
+	@Test
+	void redirectsToCachedTeamLogo() throws Exception {
+		when(teamLogoCache.logoUrl(101L)).thenReturn("https://cdn.example.com/team.png");
+
+		mockMvc.perform(get("/api/catalog/teams/101/logo"))
+				.andExpect(status().isFound())
+				.andExpect(header().string("Location", "https://cdn.example.com/team.png"));
+	}
+
+	@Test
+	void returnsNotFoundWhenTeamLogoIsMissing() throws Exception {
+		when(teamLogoCache.logoUrl(999L)).thenReturn("");
+
+		mockMvc.perform(get("/api/catalog/teams/999/logo"))
+				.andExpect(status().isNotFound());
 	}
 
 	@Test
@@ -82,8 +103,8 @@ class CatalogControllerTest {
 	private static LobbyResponse sampleResponse() {
 		Instant now = Instant.parse("2026-10-26T12:00:00Z");
 		LobbyMatch match = new LobbyMatch("123", "dota2", "live", "", "pro", "", now.getEpochSecond(), 600,
-				new LobbyTeam("Team A", 12, "radiant", null),
-				new LobbyTeam("Team B", 8, "dire", null),
+				new LobbyTeam("Team A", 12, "radiant", null, 101L),
+				new LobbyTeam("Team B", 8, "dire", null, 202L),
 				5_000, 1_000, 120, "OPENDOTA", null, null, null);
 		return new LobbyResponse(List.of(match), List.of(), now,
 				new FeedHealth("OPENDOTA", "LIVE", now, now, now.plusSeconds(30), 0, null, false));

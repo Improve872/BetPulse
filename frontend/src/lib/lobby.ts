@@ -11,6 +11,7 @@ export type LobbyTeam = {
   score: number;
   side: TeamSide;
   winner?: boolean;
+  teamId?: number | null;
 };
 
 export type LobbyMatch = {

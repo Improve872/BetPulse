@@ -133,7 +133,7 @@ export function WalletPage() {
       <main className="mx-auto max-w-[1100px] px-4 pb-16 pt-8 sm:px-6 lg:px-8">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-accent-strong">
+            <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-accent-strong">
               {t("wallet.subtitle")}
             </p>
             <h1 className="mt-1 font-display text-2xl font-semibold tracking-tight text-ink sm:text-[28px]">
@@ -178,7 +178,7 @@ export function WalletPage() {
               <button
                 type="button"
                 onClick={() => openLogin("login")}
-                className="rounded-lg bg-accent px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-accent-strong"
+                className="rounded-lg bg-accent px-5 py-2.5 text-sm font-semibold text-navy transition hover:bg-accent-bright"
               >
                 {t("wallet.loginAction")}
               </button>
@@ -195,7 +195,7 @@ export function WalletPage() {
           <>
             <div className="mt-6 grid gap-4 sm:grid-cols-2">
               <article className="rounded-2xl border border-line bg-surface p-5 shadow-card">
-                <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted">
+                <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted">
                   {t("wallet.available")}
                 </p>
                 <p className="mt-2 font-score text-3xl font-semibold text-ink">
@@ -203,7 +203,7 @@ export function WalletPage() {
                 </p>
               </article>
               <article className="rounded-2xl border border-line bg-surface p-5 shadow-card">
-                <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted">
+                <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted">
                   {t("wallet.held")}
                 </p>
                 <p className="mt-2 font-score text-3xl font-semibold text-muted">
@@ -268,7 +268,7 @@ export function WalletPage() {
                   </label>
 
                   <div>
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted">
                       {t("wallet.quick")}
                     </p>
                     <div className="mt-2 flex flex-wrap gap-2">
@@ -288,7 +288,7 @@ export function WalletPage() {
                   <button
                     type="submit"
                     disabled={submitting || dataLoading}
-                    className="w-full rounded-lg bg-accent px-4 py-3 text-sm font-semibold text-white transition hover:bg-accent-strong disabled:cursor-not-allowed disabled:opacity-60"
+                    className="w-full rounded-lg bg-accent px-4 py-3 text-sm font-semibold text-navy transition hover:bg-accent-bright disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {submitting
                       ? t("wallet.processing")

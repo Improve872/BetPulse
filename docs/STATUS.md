@@ -1,20 +1,23 @@
 # Estado del proyecto
 
-Última actualización: 2026-11-01
+Última actualización: 2026-11-03
 
 > Estado vigente únicamente. El histórico de hitos cerrados vive en `docs/milestones/`.
 
 ## Hito actual
 
-**MVP cerrado (M0–M5 + M2b).** Siguiente: M6 (producto) y M7 (hardening/demo). M3c sigue bloqueado por falta de calendario pre-partida.
+**M6a — Arena visual cerrado (2026-11-03).** Siguiente: M6b (streaming, contenido y cierre de producto) y M7 (hardening/demo). M3c sigue bloqueado por falta de calendario pre-partida.
 
-Cerrados: M0 (capturas GSI reales), M1 (identidad y wallet), M2a (catálogo OpenDota + SSE), M2b (partida propia GSI), M3a y M3b (cuatro mercados en vivo con cuotas), M4 (apuestas simples con holds), M5 (liquidación, payout/void, admin y auditoría). Detalle en `docs/milestones/`.
+Cerrados: M0 (capturas GSI reales), M1 (identidad y wallet), M2a (catálogo OpenDota + SSE), M2b (partida propia GSI), M3a y M3b (cuatro mercados en vivo con cuotas), M4 (apuestas simples con holds), M5 (liquidación, payout/void, admin y auditoría), M6a (arena visual y sistema de diseño). Detalle en `docs/milestones/`.
 
 ## Estado del sistema
 
 - Backend Spring Boot 3.5.16 / Java 21 en `8081`; compila y arranca con PostgreSQL real.
 - Frontend Next.js 15.5.28 + React 19.1 + Tailwind 4; lint y build verdes. Rutas `/`, `/wallet`, `/bets`, `/admin`, `/admin/markets` y `/match/[id]`.
 - Lobby responsive con cards, filtros, modal de partida con mercados múltiples, bet slip y página de apuestas.
+- M6a: lobby y `/match/[id]` usan el tema arena nocturna; wallet, apuestas y admin conservan superficies claras. Header con chip DEMO, tabs En vivo/Resultados, partido destacado, escudos reales, cuotas tipo price tile, estado “en tu boleto” y boleto vacío discreto.
+- Escudos: `LobbyTeam.teamId` desde OpenDota y proxy cacheado `GET /api/catalog/teams/{id}/logo`; fallback a monograma si el equipo o el CDN fallan.
+- Movimiento de cuota sutil mediante SSE; respeta `prefers-reduced-motion`. Sin cambios en cuotas, settlement ni wallet.
 - Catálogo con datos reales de OpenDota; sin fixtures ni datos inventados en el producto.
 - Las partidas con `league_id > 0` se priorizan sobre las ranked y muestran el nombre de liga resuelto con `/leagues/{id}` (caché 6 h).
 - Cuatro mercados base por partida en vivo (ganador, total de kills, handicap y duración) más tres de eventos GSI (primera sangre, primera torre y siguiente Roshan), con versión e historial append-only.
@@ -25,7 +28,7 @@ Cerrados: M0 (capturas GSI reales), M1 (identidad y wallet), M2a (catálogo Open
 - `market_results` resuelve cada mercado una sola vez: `SETTLED` con selección ganadora o `VOID`. Mercado `MATCH_WINNER`, `TOTAL_KILLS`, `KILL_HANDICAP` y `DURATION` según reglas de ADR-028. El mercado pasa a `SETTLED`/`VOID` y no se reabre.
 - Colector definitivo: normaliza GSI, deduplica eventos, envía snapshots a 1 Hz, firma con HMAC y usa spool ante caídas.
 - `POST /internal/ingest` valida firma y ventana de 5 min; guarda `collector_sessions`, `game_snapshots`, `game_events` e `ingestion_health` con idempotencia.
-- La partida propia aparece en el lobby como `source=GSI` en la sección "Mi partida", con `playersScope=FULL|LOCAL`, pausa y disponibilidad de Roshan.
+- La partida propia aparece en el lobby como `source=GSI`; si está activa se convierte en la partida destacada (“Tu partida”). Expone `playersScope=FULL|LOCAL`, pausa y disponibilidad de Roshan.
 - Mercados `source=GSI`: se crean aunque OpenDota esté caído o iniciando; una pausa los suspende con `MATCH_PAUSED`.
 - Partidas con bots: `practice=true`, stake máximo S/ 100 y etiqueta "Práctica". El resultado sale de GSI (`POST_GAME` + `win_team`).
 - Verificación de humo real: payload GSI → colector → backend → lobby con 1 partida GSI, 6 mercados, pausa con 6 mercados suspendidos y `match_results` READY/GSI 44-27.
@@ -42,11 +45,11 @@ Cerrados: M0 (capturas GSI reales), M1 (identidad y wallet), M2a (catálogo Open
 - Colector Javalin definitivo: expone `/health` y `/`, recibe `/gsi`, normaliza, deduplica, firma con HMAC y reenvía al backend con spool ante caídas.
 - Liquidación implementada: `settlements` único por apuesta, payout/void, ledger y auditoría. Las apuestas ya no quedan abiertas para siempre.
 - Steam `GetLiveLeagueGames` no integrado: falta `STEAM_API_KEY` (rate limit de generación). No bloquea la demo.
-- CI: 90 tests backend, 11 del colector y frontend lint/build verdes; última ejecución en `627149a`.
+- CI: última ejecución publicada en `627149a` con 90 tests backend, 11 del colector y frontend verde. M6a suma 5 tests backend y queda pendiente de push.
 
 ## Próxima acción
 
-1. M6: streaming Twitch/YouTube, home con hero/contenido y detalle de partido con video.
+1. M6b: streaming Twitch/YouTube con fallback, copy ES/EN nuevo, “Próximos” preparado y cierre de producto.
 2. M7: rate limiting, MFA, CSP, E2E, empaquetado y ensayo de demo.
 3. M8: fútbol pre-partida (ESPN/OpenLigaDB), luego NBA; sin eventos en vivo.
 4. Opcional: M3c si aparece calendario fiable; Steam `GetLiveLeagueGames` si hay API key; pulido admin (usuarios, exposición, salud).
@@ -66,6 +69,8 @@ Cerrados: M0 (capturas GSI reales), M1 (identidad y wallet), M2a (catálogo Open
 
 El settlement es **agnóstico a la fuente**: consume `market_results` ya resuelto y no consulta OpenDota ni GSI. OpenDota y GSI solo alimentan `match_results`; agregar una fuente nueva no toca el núcleo de pagos.
 
+La **arena** (lobby y detalle de partido) usa tema oscuro; **cuenta y admin** usan tema claro. Los tokens de ambos entornos no se mezclan sin revisar contraste.
+
 ## Verificación
 
 ```powershell
@@ -77,15 +82,17 @@ npm run lint
 npm run build
 ```
 
-Resultados 2026-11-01:
+Resultados 2026-11-03 (M6a):
 
-- Backend: 90/90 tests verdes (Bet 10, CatalogController 3, CatalogService 5, Auth 7, MarketService 11, MarketController 1, OddsEngine 7, Wallet 8, Health 1, MatchResultService 5, MatchResultFlow 2, MarketOutcomeResolver 10, MarketResultFlow 3, IngestFlow 8, SettlementFlow 7, AdminMarketFlow 2).
+- Backend: 95/95 tests verdes (se suman `CatalogControllerTest` 5 y `TeamLogoCacheTest` 3).
 - Flyway: V1–V9 aplicadas en Testcontainers.
 - Frontend: lint y build verdes; rutas `/`, `/admin`, `/admin/markets`, `/bets`, `/match/[id]` y `/wallet` generadas.
+- QA visual local con OpenDota real: 6 partidas en vivo y 8 resultados; partido destacado, escudos, tabs, odds tiles, boleto activo, modal oscuro y `/match/[id]` revisados a 1440 px y 390 px. Sin tests visuales automatizados todavía.
 - Colector: 11/11 tests verdes y `package` con shade correcto.
 - E2E real (2026-11-01): GSI mid-game → 4 mercados base + torre/Roshan → apuesta de S/ 10 a ganador → `POST_GAME` → `WON` con payout S/ 10.96; wallet disponible S/ 100.96 y retenido S/ 0. Liquidación en menos de un minuto.
 - CI actual (`627149a`, 2026-11-01): backend, colector y frontend en verde.
   `https://github.com/Improve872/BetPulse/actions/runs/41372983395`
+- Nota: la verificación de M6a es local; el CI se actualizará al hacer push del cierre.
 
 Verificación funcional anterior (2026-10-27): 24 mercados abiertos (4 por partida en 6 partidas en vivo); E2E registro → depósito S/ 100 → apuesta S/ 10 → `PLACED` con disponible S/ 90 y retenido S/ 10.
 

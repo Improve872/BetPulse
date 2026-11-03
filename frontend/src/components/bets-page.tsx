@@ -78,7 +78,7 @@ export function BetsPage() {
       <main className="mx-auto max-w-[1000px] px-4 pb-16 pt-8 sm:px-6 lg:px-8">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-accent-strong">
+            <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-accent-strong">
               {t("bets.subtitle")}
             </p>
             <h1 className="mt-1 font-display text-2xl font-semibold tracking-tight text-ink sm:text-[28px]">
@@ -123,7 +123,7 @@ export function BetsPage() {
             <button
               type="button"
               onClick={() => openLogin("login")}
-              className="mt-6 rounded-lg bg-accent px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-accent-strong"
+              className="mt-6 rounded-lg bg-accent px-5 py-2.5 text-sm font-semibold text-navy transition hover:bg-accent-bright"
             >
               {t("bets.loginAction")}
             </button>
@@ -151,7 +151,7 @@ export function BetsPage() {
             </h2>
             <Link
               href="/"
-              className="mt-6 inline-flex items-center gap-2 rounded-lg bg-accent px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-accent-strong"
+              className="mt-6 inline-flex items-center gap-2 rounded-lg bg-accent px-5 py-2.5 text-sm font-semibold text-navy transition hover:bg-accent-bright"
             >
               {t("bets.back")}
               <ArrowRightIcon className="h-4 w-4" />
@@ -166,7 +166,7 @@ export function BetsPage() {
               >
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted">
                       {t("bets.market")}
                     </p>
                     <h2 className="mt-1 text-sm font-semibold text-ink">
@@ -188,7 +188,7 @@ export function BetsPage() {
                   </div>
                   <span
                     className={cn(
-                      "rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide ring-1",
+                      "rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide ring-1",
                       statusClasses[bet.status] ??
                         "bg-slate-50 text-slate-500 ring-line",
                     )}
@@ -199,7 +199,7 @@ export function BetsPage() {
 
                 <dl className="mt-4 grid grid-cols-2 gap-3 border-t border-line pt-3 sm:grid-cols-4">
                   <div>
-                    <dt className="text-[9px] font-semibold uppercase tracking-[0.12em] text-muted">
+                    <dt className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted">
                       {t("bets.stake")}
                     </dt>
                     <dd className="mt-1 font-score text-sm font-semibold text-ink">
@@ -207,7 +207,7 @@ export function BetsPage() {
                     </dd>
                   </div>
                   <div>
-                    <dt className="text-[9px] font-semibold uppercase tracking-[0.12em] text-muted">
+                    <dt className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted">
                       {bet.status === "VOID"
                         ? t("bets.refund")
                         : bet.status === "LOST"
@@ -226,7 +226,7 @@ export function BetsPage() {
                     </dd>
                   </div>
                   <div>
-                    <dt className="text-[9px] font-semibold uppercase tracking-[0.12em] text-muted">
+                    <dt className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted">
                       {t("bets.odds")}
                     </dt>
                     <dd className="mt-1 font-score text-sm font-semibold text-ink">
@@ -234,7 +234,7 @@ export function BetsPage() {
                     </dd>
                   </div>
                   <div>
-                    <dt className="text-[9px] font-semibold uppercase tracking-[0.12em] text-muted">
+                    <dt className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted">
                       {t("bets.placedAt")}
                     </dt>
                     <dd className="mt-1 text-xs font-medium text-ink">
@@ -243,7 +243,7 @@ export function BetsPage() {
                   </div>
                 </dl>
                 {bet.settledAt ? (
-                  <p className="mt-2 text-[10px] font-medium text-muted">
+                  <p className="mt-2 text-[11px] font-medium text-muted">
                     {t("bets.settledAt")}:{" "}
                     {formatDateTime(bet.settledAt, language)}
                   </p>

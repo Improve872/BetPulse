@@ -66,10 +66,13 @@ En desarrollo, Next.js hace proxy de `/api` al backend para evitar CORS y compar
 
 - `app/page.tsx` es un server component dinámico; obtiene el lobby con `getLobbyData()`.
 - `lib/catalog.ts` consulta el backend en `BACKEND_URL` (por defecto `http://127.0.0.1:8081`) vía `GET /api/catalog/lobby`, con timeout de 7 s y `cache: "no-store"`. Si el backend no responde, devuelve lobby vacío con `feed.status=DOWN`.
-- `lib/live.ts` abre `EventSource("/api/live/stream")`, escucha `lobby` y `heartbeat`, y expone `data` + `connected` a `HomeLobby`.
-- `components/home-lobby.tsx` usa el snapshot inicial del servidor y lo reemplaza con cada evento SSE; muestra badge de feed (`feed.live`, `degraded`, `stale`, `reconnecting`, `down`, `starting`) en ES/EN, y orquesta filtros, lista, bet slip, modales y navegación.
-- Componentes: `site-header`, `live-ticker`, `filter-rail`, `match-card`, `bet-slip`, `login-modal`, `match-detail-modal`, `site-footer`, `game-switcher`, `modal`.
-- Tokens en `app/globals.css`: navy `#0B1220`, naranja `#F97316`, fondo `#F4F6F8`; tipografía local.
+- `lib/live.ts` abre `EventSource("/api/live/stream")`, escucha `lobby`, `markets` y `heartbeat`, y expone `data`, `markets`, `connection` (`connecting|connected|disconnected`) y `retry` a `HomeLobby`.
+- `components/home-lobby.tsx` usa el snapshot inicial del servidor y lo reemplaza con cada evento SSE; muestra estado de conexión/feed en ES/EN y orquesta partido destacado, tabs En vivo/Resultados, rail de torneos, lista, bet slip, modales y navegación.
+- Componentes de arena: `featured-match`, `match-card`, `odds-button`, `team-crest`, `lobby-tabs`, `filter-rail`, `live-ticker`, `bet-slip`, `match-detail-modal` y `match-detail-page`.
+- Tokens en `app/globals.css`: arena `#070D18`, superficies `#0F1A2C`/`#142136`, líneas `#223149`, texto `#F8FAFC`, muted `#94A3B8`, naranja `#F97316`; el tema claro de cuenta conserva `--color-paper` y `--color-surface`. Tipografía local con números tabulares.
+- Superficies: lobby y `/match/[id]` son “arena” oscura; `/wallet`, `/bets`, `/admin` y `/admin/markets` son “cuenta” claras.
+- Escudos: `LobbyTeam.teamId` viaja desde el catálogo; `TeamCrest` consume `GET /api/catalog/teams/{id}/logo`, que redirige al CDN cacheado por `TeamLogoCache`. Fallback a monograma.
+- `OddsButton` muestra etiqueta + cuota, estado suspendido, estado “en tu boleto” y flash breve cuando la cuota cambia; respeta `prefers-reduced-motion`.
 - Auth y wallet implementados: modal de login/registro contra la API, sesión con cookie HttpOnly + CSRF, header autenticado y página `/wallet` con depósitos/retiros demo e historial.
 - M3a/M3b implementados: `lib/markets.ts` obtiene `GET /api/markets/live`; cards y modal muestran cuatro mercados por partida, línea, versión y estado de suspensión.
 - M4 implementado: bet slip y modal móvil permiten elegir cuota y stake; `lib/bets.ts` llama a `/api/bets` con idempotencia. `/bets` muestra el historial privado.
@@ -156,7 +159,7 @@ Constraints clave:
 ## API y eventos
 
 - REST para auth, catálogo, mercados, apuestas, wallet, pagos y admin.
-- Catálogo actual: `GET /api/catalog/lobby` (público), `GET /api/markets/live` (público) y `GET /api/live/health`.
+- Catálogo actual: `GET /api/catalog/lobby` (público), `GET /api/catalog/teams/{teamId}/logo` (redirección cacheada al CDN de escudos), `GET /api/markets/live` (público) y `GET /api/live/health`.
 - Apuestas autenticadas: `POST /api/bets` con `Idempotency-Key`, `GET /api/bets` y `GET /api/bets/{id}`.
 - SSE actual: `GET /api/live/stream` con eventos `lobby`, `markets` y `heartbeat`. Los eventos de mercados se emiten después del commit de la sincronización.
 - Endpoint interno `/internal/ingest` con HMAC para el colector (M2b).

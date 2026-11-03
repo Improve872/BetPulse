@@ -96,6 +96,7 @@ class CatalogServiceTest {
 		assertThat(response.live()).extracting(match -> match.id())
 				.containsExactly("2", "7", "1", "8", "9", "6");
 		assertThat(response.live().getFirst().radiant().name()).isEqualTo("Radiant 2");
+		assertThat(response.live().getFirst().radiant().teamId()).isEqualTo(1_002L);
 		assertThat(response.live().getFirst().dire().score()).isEqualTo(7);
 		assertThat(response.live().getFirst().delaySeconds()).isEqualTo(120);
 		assertThat(response.live().getFirst().tournamentKind()).isEqualTo("pro");
@@ -107,6 +108,7 @@ class CatalogServiceTest {
 		assertThat(response.recent()).extracting(match -> match.id())
 				.containsExactly("109", "108", "107", "106", "105", "104", "103", "102");
 		assertThat(response.recent().getFirst().format()).isEqualTo("BO3");
+		assertThat(response.recent().getFirst().radiant().teamId()).isEqualTo(3_109L);
 		assertThat(response.recent().getFirst().radiant().winner()).isTrue();
 		assertThat(response.recent().getFirst().dire().winner()).isFalse();
 
@@ -171,13 +173,14 @@ class CatalogServiceTest {
 	private static LiveMatch liveMatch(long id, long leagueId, int spectators, int mmr, boolean eligible,
 			long gameTime, long deactivateTime) {
 		return new LiveMatch(id, leagueId, 1_000L, deactivateTime, gameTime, 120, spectators, mmr,
-				(int) id, (int) id + 5, "Radiant " + id, "Dire " + id, eligible);
+				(int) id, (int) id + 5, "Radiant " + id, "Dire " + id, 1_000 + id, 2_000 + id,
+				"logo-radiant-" + id, "logo-dire-" + id, eligible);
 	}
 
 	private static ProMatch proMatch(long id, long startTime, String radiantName, String direName,
 			boolean radiantWin) {
-		return new ProMatch(id, 2_400L, startTime, radiantName, direName, "League " + id,
-				(int) (id % 3), 20, 15, radiantWin);
+		return new ProMatch(id, 2_400L, startTime, radiantName, direName, 3_000 + id, 4_000 + id,
+				"League " + id, (int) (id % 3), 20, 15, radiantWin);
 	}
 
 	private static final class MutableClock extends Clock {

@@ -17,6 +17,7 @@ import com.betpulse.catalog.OpenDotaDtos.League;
 import com.betpulse.catalog.OpenDotaDtos.LiveMatch;
 import com.betpulse.catalog.OpenDotaDtos.MatchDetails;
 import com.betpulse.catalog.OpenDotaDtos.ProMatch;
+import com.betpulse.catalog.OpenDotaDtos.Team;
 
 @Component
 public class OpenDotaClient {
@@ -29,6 +30,8 @@ public class OpenDotaClient {
 	private static final ParameterizedTypeReference<League> LEAGUE_TYPE = new ParameterizedTypeReference<>() {
 	};
 	private static final ParameterizedTypeReference<MatchDetails> MATCH_TYPE = new ParameterizedTypeReference<>() {
+	};
+	private static final ParameterizedTypeReference<Team> TEAM_TYPE = new ParameterizedTypeReference<>() {
 	};
 
 	private final RestClient restClient;
@@ -53,6 +56,10 @@ public class OpenDotaClient {
 
 	public MatchDetails fetchMatch(long matchId) {
 		return get("/matches/" + matchId, MATCH_TYPE);
+	}
+
+	public Team fetchTeam(long teamId) {
+		return get("/teams/" + teamId, TEAM_TYPE);
 	}
 
 	private <T> T get(String path, ParameterizedTypeReference<T> type) {

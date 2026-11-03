@@ -1,13 +1,14 @@
 "use client";
 
 import { ClockIcon } from "@/components/icons";
+import { TeamCrest } from "@/components/team-crest";
 import { formatGameTime, formatUpdatedAt } from "@/lib/format";
 import { useLanguage } from "@/lib/i18n";
 import type { LobbyMatch } from "@/lib/lobby";
 
 type LiveTickerProps = {
   matches: LobbyMatch[];
-  updatedAt: string;
+  updatedAt?: string | null;
   onOpen: (match: LobbyMatch) => void;
 };
 
@@ -15,9 +16,9 @@ export function LiveTicker({ matches, updatedAt, onOpen }: LiveTickerProps) {
   const { t, language } = useLanguage();
 
   return (
-    <section className="border-b border-white/10 bg-navy-soft text-white">
+    <section className="border-b border-white/10 bg-arena-soft text-arena-ink">
       <div className="mx-auto flex max-w-[1320px] items-center gap-3 px-4 py-2.5 sm:px-6 lg:px-8">
-        <span className="flex shrink-0 items-center gap-2 text-[10px] font-bold uppercase tracking-[0.18em] text-accent">
+        <span className="flex shrink-0 items-center gap-2 text-[11px] font-bold uppercase tracking-[0.18em] text-accent">
           <span className="live-dot" />
           {t("ticker.live")}
         </span>
@@ -29,40 +30,44 @@ export function LiveTicker({ matches, updatedAt, onOpen }: LiveTickerProps) {
                 key={match.id}
                 type="button"
                 onClick={() => onOpen(match)}
-                className="group flex shrink-0 items-center gap-2.5 rounded-lg border border-white/10 bg-white/[0.04] px-3 py-1.5 text-left transition hover:border-white/20 hover:bg-white/[0.08]"
+                className="group flex shrink-0 items-center gap-2 rounded-lg border border-arena-line bg-white/[0.03] px-2.5 py-1.5 text-left transition hover:border-arena-muted/40 hover:bg-white/[0.07]"
               >
-                <span className="flex items-center gap-1.5 text-[10px] font-medium text-white/45">
+                <span className="flex items-center gap-1.5 text-[11px] font-medium text-arena-muted">
                   <ClockIcon className="h-3 w-3" />
                   {formatGameTime(match.durationSeconds)}
                 </span>
-                <span className="max-w-[110px] truncate text-xs font-semibold text-white/85">
+                <TeamCrest team={match.radiant} size="xs" />
+                <span className="max-w-[100px] truncate text-xs font-semibold text-arena-ink/85">
                   {match.radiant.name}
                 </span>
-                <span className="font-score text-sm font-semibold text-white">
+                <span className="font-score text-sm font-semibold tabular-nums text-arena-ink">
                   {match.radiant.score}
                 </span>
-                <span className="text-white/25">:</span>
-                <span className="font-score text-sm font-semibold text-white">
+                <span className="text-arena-muted/40">:</span>
+                <span className="font-score text-sm font-semibold tabular-nums text-arena-ink">
                   {match.dire.score}
                 </span>
-                <span className="max-w-[110px] truncate text-xs font-semibold text-white/85">
+                <span className="max-w-[100px] truncate text-xs font-semibold text-arena-ink/85">
                   {match.dire.name}
                 </span>
+                <TeamCrest team={match.dire} size="xs" />
               </button>
             ))}
           </div>
         ) : (
-          <div className="flex min-w-0 flex-1 items-center gap-2 text-xs text-white/45">
+          <div className="flex min-w-0 flex-1 items-center gap-2 text-xs text-arena-muted">
             <ClockIcon className="h-3.5 w-3.5" />
             {t("ticker.empty")}
           </div>
         )}
 
-        <span className="hidden shrink-0 text-[10px] font-medium text-white/35 lg:block">
-          {t("ticker.updated", {
-            time: formatUpdatedAt(updatedAt, language),
-          })}
-        </span>
+        {updatedAt ? (
+          <span className="hidden shrink-0 text-[11px] font-medium text-arena-muted lg:block">
+            {t("ticker.updated", {
+              time: formatUpdatedAt(updatedAt, language),
+            })}
+          </span>
+        ) : null}
       </div>
     </section>
   );

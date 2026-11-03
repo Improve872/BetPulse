@@ -245,7 +245,7 @@ export function LoginModal({
           <button
             type="submit"
             disabled={submitting}
-            className="w-full rounded-lg bg-accent px-4 py-3 text-sm font-semibold text-white shadow-[0_10px_22px_-14px_rgba(249,115,22,0.9)] transition hover:bg-accent-strong disabled:cursor-not-allowed disabled:opacity-60"
+            className="w-full rounded-lg bg-accent px-4 py-3 text-sm font-semibold text-navy shadow-[0_10px_22px_-14px_rgba(249,115,22,0.9)] transition hover:bg-accent-bright disabled:cursor-not-allowed disabled:opacity-60"
           >
             {submitting
               ? t("login.loading")
