@@ -32,6 +32,7 @@ public class CatalogService {
 
 	private final OpenDotaClient openDotaClient;
 	private final LeagueNameCache leagueNames;
+	private final StreamService streamService;
 	private final GsiLiveRegistry gsiLiveRegistry;
 	private final ApplicationEventPublisher eventPublisher;
 	private final OpenDotaProperties properties;
@@ -45,11 +46,12 @@ public class CatalogService {
 	private volatile int consecutiveFailures;
 	private volatile String lastError;
 
-	public CatalogService(OpenDotaClient openDotaClient, LeagueNameCache leagueNames,
+	public CatalogService(OpenDotaClient openDotaClient, LeagueNameCache leagueNames, StreamService streamService,
 			GsiLiveRegistry gsiLiveRegistry, ApplicationEventPublisher eventPublisher, OpenDotaProperties properties,
 			Clock clock) {
 		this.openDotaClient = openDotaClient;
 		this.leagueNames = leagueNames;
+		this.streamService = streamService;
 		this.gsiLiveRegistry = gsiLiveRegistry;
 		this.eventPublisher = eventPublisher;
 		this.properties = properties;
@@ -140,7 +142,8 @@ public class CatalogService {
 				"GSI",
 				players > 1 ? "FULL" : "LOCAL",
 				batch.paused(),
-				batch.roshan() != null);
+				batch.roshan() != null,
+				streamService.findRef(batch.matchId(), batch.leagueId()));
 	}
 
 	private FeedHealth feedHealth(Instant now) {
@@ -213,7 +216,8 @@ public class CatalogService {
 				"OPENDOTA",
 				null,
 				null,
-				null);
+				null,
+				streamService.findRef(String.valueOf(match.matchId()), match.leagueId()));
 	}
 
 	private LobbyMatch toRecentMatch(ProMatch match) {
@@ -237,7 +241,8 @@ public class CatalogService {
 				"OPENDOTA",
 				null,
 				null,
-				null);
+				null,
+				streamService.findRef(String.valueOf(match.matchId()), match.leagueId()));
 	}
 
 	private Duration backoff(int failures) {

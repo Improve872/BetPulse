@@ -465,7 +465,7 @@ Formato: contexto → decisión → consecuencias. Actualizar cuando cambie una 
   - Sin feed de eventos al segundo ni apuestas en vivo para futbol/NBA.
 - ESPN no ofrece SLA ni contrato: se documenta el riesgo y se usa solo como fuente de demo con cache.
 
-**Consecuencias:** la web gana video y contenido sin comprometer derechos de transmision; los deportes nuevos llenan “Proximos” y la pagina de liga sin exigir GSI. A cambio, M8 amplia el alcance y exige actualizar AGENTS.md, plan.md y el modelo de datos. El calendario futuro de Dota (M3c) sigue sin resolverse.
+**Consecuencias:** la web gana video y contenido sin comprometer derechos de transmision; los deportes nuevos llenan “Proximos” y la pagina de liga sin exigir GSI. A cambio, M8 amplia el alcance y exige actualizar AGENTS.md, plan.md y el modelo de datos. El calendario futuro de Dota (M3c) sigue sin resolverse. La ubicación concreta del player se define en ADR-036.
 
 ## ADR-035 — Arena visual y sistema de diseño del lobby (M6a)
 
@@ -492,3 +492,28 @@ Formato: contexto → decisión → consecuencias. Actualizar cuando cambie una 
 - El catálogo añade `teamId` a `LobbyTeam`; el endpoint de escudos depende de `cdn.steamusercontent.com` y debe fallar de forma silenciosa.
 - La UI gana jerarquía y legibilidad; el coste es un tema oscuro específico de arena y un endpoint adicional de solo lectura.
 - La página de partido y el modal oscuro comparten la misma identidad visual. Wallet/apuestas/admin no cambian de tema.
+
+## ADR-036 — Streaming oficial en el detalle, no en el lobby (M6b)
+
+**Estado:** aceptada (2026-11-03)
+
+**Contexto:** M6b incorpora streams oficiales de Twitch/YouTube. El lobby ya tiene un partido destacado y un boleto; incrustar video allí cargaría iframes de terceros en la primera visita y competiría con la cuota.
+
+**Decisión:**
+
+- El reproductor vive en `/match/[id]`, debajo del scoreboard y en la columna principal. La página es el “match center”: stream, mercados, timeline, Roshan y jugadores.
+- El lobby solo muestra un CTA **“Ver stream”** en la partida destacada, un badge **Stream** en las cards y un enlace en el modal de partido. No hay iframe en el lobby.
+- El player es **click-to-load**: no se carga ningún iframe hasta que el usuario pulsa “Reproducir stream oficial”. Sin autoplay.
+- `match_streams` permite asignar un stream a una **partida** o a una **liga** (exactamente uno), con `provider`, `channel_or_video`, `label`, `fallback_url` y `enabled`. La resolución prioriza partida > liga.
+- El admin asigna streams desde `/admin/streams`; cada cambio se audita en `audit_logs` con acciones `STREAM_SAVED`, `STREAM_TOGGLED` y `STREAM_DELETED`.
+- Twitch se construye con `player.twitch.tv` y `parent` del hostname actual; YouTube con `youtube.com/embed/{videoId}`. No se aceptan URLs arbitrarias de embed.
+- CSP `frame-src` se limita a `'self'`, `player.twitch.tv`, `youtube.com` y `youtube-nocookie.com`.
+- Si no hay stream, la partida GSI muestra “sin stream oficial” y el resto de la página sigue activo. Si el embed falla, se muestra `fallback_url`.
+- Solo canales oficiales asignados por admin; nada de scraping ni retransmisiones no oficiales.
+
+**Consecuencias:**
+
+- El lobby sigue rápido y enfocado en descubrir/apostar; la página de partido es el lugar de “ver y apostar”.
+- La configuración de streams requiere un admin y tarda hasta el siguiente refresco del catálogo (≤30 s) en reflejarse en el lobby.
+- Si Twitch/YouTube bloquea el embed o el canal está offline, el fallback evita una caja negra sin salida.
+- No se modifican cuotas, settlement, wallet ni reglas de apuesta.

@@ -110,6 +110,8 @@ Aceptación: partido termina → apuestas liquidadas una sola vez → wallet acr
 
 ### M6 — Producto: arena visual, streaming y contenido (2 semanas)
 
+**Estado:** cerrado 2026-11-03 (M6a + M6b).
+
 Objetivo: consolidar la capa visual del producto y la jerarquía de información
 del lobby, y después añadir streaming y contenido alrededor del partido.
 
@@ -144,13 +146,16 @@ Aceptación M6a:
 #### M6b — Streaming, contenido y cierre de producto (1 semana)
 
 - Streaming oficial Twitch/YouTube, administrable y con fallback offline:
-  - `match_streams` con provider, canal/video, enabled y fallback.
-  - Admin para asignar stream por partido o torneo.
-  - Embed con `parent` de Twitch y iframe de YouTube.
+  - `match_streams` con provider, canal/video, `label`, `enabled` y `fallback_url`.
+  - Asignación por partida o liga; resolución partida > liga.
+  - Admin `/admin/streams` con alta, edición, activación y borrado auditados.
+  - Embed con `parent` de Twitch y iframe de YouTube; click-to-load sin autoplay.
   - CSP `frame-src` limitado a `player.twitch.tv` y YouTube.
   - Solo canales oficiales; nunca streams no oficiales.
+- Player en `/match/[id]`, debajo del scoreboard; CTA “Ver stream” en hero,
+  badge en cards y enlace en el modal. Sin iframe en el lobby.
 - Copy ES/EN nuevo de la arena.
-- “Próximos” preparado para M8.
+- “Próximos” queda preparado para M8; no se muestra hasta que exista data.
 - UI de depósitos/retiros simulados y métodos genéricos.
 - Detalle de partido con stream, timeline y mercados.
 - Pulido final: home, live, partido, wallet, historial y admin.
@@ -225,8 +230,8 @@ Las semanas son relativas porque la fecha de inicio está por definir. Con 16 GB
 
 ## MVP mínimo
 
-M0–M5 + M6a (arena visual) + admin. Si falta tiempo, recortar M6b
-(streaming/secundarios) antes que M7 (seguridad/demo).
+M0–M6 (arena visual + streaming) + admin. Si falta tiempo, recortar
+secundarios de M8 antes que M7 (seguridad/demo).
 
 ## Definition of Done
 

@@ -1,7 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
-import { CloseIcon, LockIcon, TrophyIcon } from "@/components/icons";
+import { CloseIcon, LockIcon, PlayIcon, TrophyIcon } from "@/components/icons";
 import { Modal } from "@/components/modal";
 import { OddsButton } from "@/components/odds-button";
 import { TeamCrest } from "@/components/team-crest";
@@ -146,14 +147,25 @@ export function MatchDetailModal({
               {source ? ` · ${source}` : ""}
             </p>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label={t("match.close")}
-            className="grid h-9 w-9 shrink-0 place-items-center rounded-lg text-arena-muted transition hover:bg-white/5 hover:text-arena-ink"
-          >
-            <CloseIcon className="h-5 w-5" />
-          </button>
+          <div className="flex shrink-0 items-center gap-1">
+            {match.stream ? (
+              <Link
+                href={`/match/${match.id}#stream`}
+                className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-accent transition hover:bg-accent/10"
+              >
+                <PlayIcon className="h-3.5 w-3.5" />
+                {t("match.watchStream")}
+              </Link>
+            ) : null}
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label={t("match.close")}
+              className="grid h-9 w-9 place-items-center rounded-lg text-arena-muted transition hover:bg-white/5 hover:text-arena-ink"
+            >
+              <CloseIcon className="h-5 w-5" />
+            </button>
+          </div>
         </div>
       </div>
 

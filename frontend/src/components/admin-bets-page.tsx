@@ -110,12 +110,20 @@ export function AdminBetsPage() {
             </h1>
             <p className="mt-1 text-sm text-muted">{t("admin.subtitle")}</p>
           </div>
-          <Link
-            href="/admin/markets"
-            className="text-xs font-semibold text-accent-strong hover:underline"
-          >
-            {t("admin.markets")}
-          </Link>
+          <div className="flex items-center gap-4">
+            <Link
+              href="/admin/markets"
+              className="text-xs font-semibold text-accent-strong hover:underline"
+            >
+              {t("admin.markets")}
+            </Link>
+            <Link
+              href="/admin/streams"
+              className="text-xs font-semibold text-accent-strong hover:underline"
+            >
+              {t("admin.streams")}
+            </Link>
+          </div>
         </div>
 
         {!loading && !isAdmin ? (

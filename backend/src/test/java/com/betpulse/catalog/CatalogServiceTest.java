@@ -3,6 +3,7 @@ package com.betpulse.catalog;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -24,6 +25,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
 
 import com.betpulse.catalog.LobbyDtos.LobbyResponse;
+import com.betpulse.catalog.LobbyDtos.StreamRef;
 import com.betpulse.catalog.OpenDotaDtos.LiveMatch;
 import com.betpulse.catalog.OpenDotaDtos.ProMatch;
 import com.betpulse.live.GsiLiveRegistry;
@@ -36,6 +38,9 @@ class CatalogServiceTest {
 
 	@Mock
 	private LeagueNameCache leagueNames;
+
+	@Mock
+	private StreamService streamService;
 
 	@Mock
 	private GsiLiveRegistry gsiLiveRegistry;
@@ -51,7 +56,8 @@ class CatalogServiceTest {
 	void setUp() {
 		clock = new MutableClock(Instant.parse("2026-10-26T12:00:00Z"));
 		properties = new OpenDotaProperties();
-		service = new CatalogService(openDotaClient, leagueNames, gsiLiveRegistry, eventPublisher, properties, clock);
+		service = new CatalogService(openDotaClient, leagueNames, streamService, gsiLiveRegistry, eventPublisher,
+				properties, clock);
 		lenient().when(leagueNames.name(anyLong())).thenAnswer(invocation -> "Liga " + invocation.getArgument(0));
 	}
 
@@ -119,6 +125,23 @@ class CatalogServiceTest {
 	}
 
 	@Test
+	void attachesResolvedStreamToLobbyMatch() {
+		when(openDotaClient.fetchLiveMatches())
+				.thenReturn(List.of(liveMatch(1, 1, 100, 5_000, true, 600, 0)));
+		when(openDotaClient.fetchProMatches()).thenReturn(List.of());
+		when(streamService.findRef(anyString(), anyLong()))
+				.thenReturn(new StreamRef("TWITCH", "betpulse", "Stream oficial", "https://twitch.tv/betpulse"));
+
+		service.refresh();
+		LobbyResponse response = service.getLobby();
+
+		assertThat(response.live()).hasSize(1);
+		assertThat(response.live().getFirst().stream()).isNotNull();
+		assertThat(response.live().getFirst().stream().provider()).isEqualTo("TWITCH");
+		assertThat(response.live().getFirst().stream().channelOrVideo()).isEqualTo("betpulse");
+	}
+
+	@Test
 	void keepsLastSnapshotAndMarksFeedDegradedOnFailure() {
 		when(openDotaClient.fetchLiveMatches()).thenReturn(List.of(
 				liveMatch(1, 1, 100, 5_000, true, 600, 0)));
@@ -180,7 +203,7 @@ class CatalogServiceTest {
 	private static ProMatch proMatch(long id, long startTime, String radiantName, String direName,
 			boolean radiantWin) {
 		return new ProMatch(id, 2_400L, startTime, radiantName, direName, 3_000 + id, 4_000 + id,
-				"League " + id, (int) (id % 3), 20, 15, radiantWin);
+				5_000 + id, "League " + id, (int) (id % 3), 20, 15, radiantWin);
 	}
 
 	private static final class MutableClock extends Clock {

@@ -68,11 +68,13 @@ En desarrollo, Next.js hace proxy de `/api` al backend para evitar CORS y compar
 - `lib/catalog.ts` consulta el backend en `BACKEND_URL` (por defecto `http://127.0.0.1:8081`) vía `GET /api/catalog/lobby`, con timeout de 7 s y `cache: "no-store"`. Si el backend no responde, devuelve lobby vacío con `feed.status=DOWN`.
 - `lib/live.ts` abre `EventSource("/api/live/stream")`, escucha `lobby`, `markets` y `heartbeat`, y expone `data`, `markets`, `connection` (`connecting|connected|disconnected`) y `retry` a `HomeLobby`.
 - `components/home-lobby.tsx` usa el snapshot inicial del servidor y lo reemplaza con cada evento SSE; muestra estado de conexión/feed en ES/EN y orquesta partido destacado, tabs En vivo/Resultados, rail de torneos, lista, bet slip, modales y navegación.
-- Componentes de arena: `featured-match`, `match-card`, `odds-button`, `team-crest`, `lobby-tabs`, `filter-rail`, `live-ticker`, `bet-slip`, `match-detail-modal` y `match-detail-page`.
+- Componentes de arena: `featured-match`, `match-card`, `odds-button`, `team-crest`, `lobby-tabs`, `filter-rail`, `live-ticker`, `bet-slip`, `match-detail-modal`, `stream-player` y `match-detail-page`.
 - Tokens en `app/globals.css`: arena `#070D18`, superficies `#0F1A2C`/`#142136`, líneas `#223149`, texto `#F8FAFC`, muted `#94A3B8`, naranja `#F97316`; el tema claro de cuenta conserva `--color-paper` y `--color-surface`. Tipografía local con números tabulares.
 - Superficies: lobby y `/match/[id]` son “arena” oscura; `/wallet`, `/bets`, `/admin` y `/admin/markets` son “cuenta” claras.
 - Escudos: `LobbyTeam.teamId` viaja desde el catálogo; `TeamCrest` consume `GET /api/catalog/teams/{id}/logo`, que redirige al CDN cacheado por `TeamLogoCache`. Fallback a monograma.
 - `OddsButton` muestra etiqueta + cuota, estado suspendido, estado “en tu boleto” y flash breve cuando la cuota cambia; respeta `prefers-reduced-motion`.
+- Streaming M6b: `LobbyMatch.stream` expone `provider`, `channelOrVideo`, `label` y `fallbackUrl`. El lobby muestra CTA/badge; `/match/[id]` monta `StreamPlayer` click-to-load debajo del scoreboard y consulta `/api/markets/live` para el panel de mercados. El embed no se carga hasta pulsar play.
+- Admin de streams: `AdminStreamsPage` en `/admin/streams`; API `GET/POST /api/admin/streams`, `POST /{id}/enabled` y `DELETE /{id}`.
 - Auth y wallet implementados: modal de login/registro contra la API, sesión con cookie HttpOnly + CSRF, header autenticado y página `/wallet` con depósitos/retiros demo e historial.
 - M3a/M3b implementados: `lib/markets.ts` obtiene `GET /api/markets/live`; cards y modal muestran cuatro mercados por partida, línea, versión y estado de suspensión.
 - M4 implementado: bet slip y modal móvil permiten elegir cuota y stake; `lib/bets.ts` llama a `/api/bets` con idempotencia. `/bets` muestra el historial privado.
@@ -85,7 +87,7 @@ En desarrollo, Next.js hace proxy de `/api` al backend para evitar CORS y compar
 1. Dota 2 (espectando o jugando) envía GSI al colector local.
 2. El colector valida token, normaliza, deduplica eventos, envía snapshots a 1 Hz y firma con HMAC; si el backend cae, guarda en spool.
 3. El backend valida firma, guarda `game_snapshots`/`game_events`, actualiza `GsiLiveRegistry` y fusiona la partida en el lobby con `source=GSI`. Al terminar, guarda `match_results` con `source=GSI`.
-4. El poller OpenDota refresca el catálogo cada 30 s; `CatalogService` publica un evento interno y `LiveFeedService` lo difunde por SSE (`lobby`).
+4. El poller OpenDota refresca el catálogo cada 30 s; `CatalogService` publica un evento interno y `LiveFeedService` lo difunde por SSE (`lobby`). Al mapear cada partida, `StreamService` resuelve un stream habilitado por partida o, si no existe, por liga.
 5. El motor de cuotas recalcula los mercados `MATCH_WINNER`, `TOTAL_KILLS`, `KILL_HANDICAP` y `DURATION` en cada refresco del catálogo, aplica margen, versiona si cambian las cuotas y publica por SSE (M3a/M3b).
 6. OpenDota se consulta periódicamente para catálogo, partidos secundarios, pre-partida y verificación.
 7. El usuario apuesta: el backend valida mercado, versión, cuota, límites y saldo; retiene fondos, registra la apuesta y su estado inicial `PLACED` (M4).
@@ -134,6 +136,7 @@ Reglas:
 - `audit_logs` (append-only: liquidaciones y anulaciones)
 - `markets.source` (`OPENDOTA`/`GSI`) y `markets.practice` (partida local)
 - `game_snapshots`, `game_events`, `match_state`
+- `match_streams` (stream oficial por partida o liga; provider, canal/video, enabled y fallback)
 - `markets`, `selections`, `odds_history`, `market_suspensions`
 - `bets`, `bet_selections`, `bet_status_history`
 - `settlements`, `payouts`
@@ -159,8 +162,9 @@ Constraints clave:
 ## API y eventos
 
 - REST para auth, catálogo, mercados, apuestas, wallet, pagos y admin.
-- Catálogo actual: `GET /api/catalog/lobby` (público), `GET /api/catalog/teams/{teamId}/logo` (redirección cacheada al CDN de escudos), `GET /api/markets/live` (público) y `GET /api/live/health`.
+- Catálogo actual: `GET /api/catalog/lobby` (público, incluye `stream` por partida), `GET /api/catalog/teams/{teamId}/logo` (redirección cacheada al CDN de escudos), `GET /api/markets/live` (público) y `GET /api/live/health`.
 - Apuestas autenticadas: `POST /api/bets` con `Idempotency-Key`, `GET /api/bets` y `GET /api/bets/{id}`.
+- Admin de streams: `GET/POST /api/admin/streams`, `POST /api/admin/streams/{id}/enabled` y `DELETE /api/admin/streams/{id}` (rol `ADMIN`, auditado).
 - SSE actual: `GET /api/live/stream` con eventos `lobby`, `markets` y `heartbeat`. Los eventos de mercados se emiten después del commit de la sincronización.
 - Endpoint interno `/internal/ingest` con HMAC para el colector (M2b).
 - `Idempotency-Key` en apuestas, depósitos y retiros.

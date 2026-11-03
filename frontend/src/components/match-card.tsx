@@ -4,6 +4,7 @@ import Link from "next/link";
 import {
   ArrowRightIcon,
   ClockIcon,
+  PlayIcon,
   TrophyIcon,
   UsersIcon,
 } from "@/components/icons";
@@ -111,6 +112,15 @@ export function MatchCard({
               className="shrink-0 text-[11px] font-semibold text-accent underline-offset-2 hover:underline"
             >
               {t("match.detail")}
+            </Link>
+          ) : null}
+          {match.stream ? (
+            <Link
+              href={`/match/${match.id}#stream`}
+              className="inline-flex shrink-0 items-center gap-1 text-[11px] font-semibold text-accent underline-offset-2 hover:underline"
+            >
+              <PlayIcon className="h-3 w-3" />
+              {t("match.stream")}
             </Link>
           ) : null}
         </div>

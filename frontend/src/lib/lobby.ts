@@ -32,6 +32,7 @@ export type LobbyMatch = {
   playersScope?: "FULL" | "LOCAL";
   paused?: boolean;
   roshanAvailable?: boolean;
+  stream?: LobbyStream;
 };
 
 export type LobbyData = {
@@ -39,6 +40,15 @@ export type LobbyData = {
   recent: LobbyMatch[];
   updatedAt: string;
   feed?: FeedHealth;
+};
+
+export type StreamProvider = "TWITCH" | "YOUTUBE";
+
+export type LobbyStream = {
+  provider: StreamProvider;
+  channelOrVideo: string;
+  label?: string | null;
+  fallbackUrl?: string | null;
 };
 
 export type FeedStatus = "STARTING" | "LIVE" | "DEGRADED" | "STALE" | "DOWN";

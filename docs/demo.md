@@ -36,15 +36,19 @@ Abrir dos perfiles del navegador:
 - usuario demo;
 - admin (`admin@betpulse.local` / `Admin123!`).
 
+En `/admin/streams`, asignar un canal oficial de Twitch o un video de YouTube
+a la partida o liga que se mostrará. Sin stream asignado, la UI muestra el
+fallback “sin stream oficial”; no se inventa señal.
+
 ## Guion (15–20 min)
 
 | Minuto | Acción |
 |---|---|
 | 0–2 | Presentar BetPulse: apuestas simuladas, saldo ficticio, datos reales |
 | 2–4 | Login, wallet en S/ y aviso de modo demo |
-| 4–6 | Lobby: partido destacado con escudos y marcador, tabs En vivo/Resultados, cuotas que se mueven y boleto |
+| 4–6 | Lobby: partido destacado con escudos, tabs, cuotas, boleto y CTA “Ver stream”; abrir el detalle y reproducir el stream oficial |
 | 6–9 | "Mi partida": iniciar partida con bots en Dota 2 o entrar a DotaTV |
-| 9–12 | Mostrar `/match/[id]`: marcador, jugadores, timeline, Roshan, SSE |
+| 9–12 | Mostrar `/match/[id]`: marcador, stream, mercados, timeline, Roshan y SSE |
 | 12–14 | Apostar a primera sangre o primera torre; ver hold y `/bets` |
 | 14–16 | Provocar el evento en la partida; el mercado se cierra |
 | 16–18 | Terminar la partida o esperar `POST_GAME`; liquidación automática |
@@ -69,6 +73,8 @@ Abrir dos perfiles del navegador:
 - Admin: suspender, reanudar y override auditados.
 - M6a: lobby con partido destacado, escudos reales, tabs y boleto revisado con
   feed OpenDota a 1440 px y 390 px.
+- M6b: asignación de stream desde `/admin/streams`, CTA en el hero, player
+  click-to-load en `/match/[id]` y fallback probados con Twitch.
 
 ## Riesgos
 
@@ -79,6 +85,7 @@ Abrir dos perfiles del navegador:
 | Dota 2 no arranca en la laptop | Probar el setup con antelación |
 | El partido no termina | Usar bots y cerrar la partida |
 | SSE no actualiza | Verificar proxy y reconexión |
+| Stream oficial offline o embed bloqueado | Usar `fallback_url`; probar Twitch/YouTube antes de la demo |
 | Steam key ausente | No hace falta para la demo con OpenDota/GSI |
 
 ## Checklist

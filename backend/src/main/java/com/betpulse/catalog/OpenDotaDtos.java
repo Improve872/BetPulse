@@ -79,6 +79,7 @@ public final class OpenDotaDtos {
 			@JsonProperty("dire_name") String direName,
 			@JsonProperty("radiant_team_id") Long radiantTeamId,
 			@JsonProperty("dire_team_id") Long direTeamId,
+			@JsonProperty("leagueid") Long leagueId,
 			@JsonProperty("league_name") String leagueName,
 			@JsonProperty("series_type") Integer seriesType,
 			@JsonProperty("radiant_score") Integer radiantScore,

@@ -145,6 +145,15 @@ export function UsersIcon({ className }: IconProps) {
   );
 }
 
+export function PlayIcon({ className }: IconProps) {
+  return (
+    <svg {...iconProps(className)}>
+      <circle cx="12" cy="12" r="8.5" />
+      <path d="m10 8.8 5 3.2-5 3.2z" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+
 export function FilterIcon({ className }: IconProps) {
   return (
     <svg {...iconProps(className)}>

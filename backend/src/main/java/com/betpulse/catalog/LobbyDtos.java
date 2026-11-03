@@ -18,7 +18,19 @@ public final class LobbyDtos {
 	public record LobbyMatch(String id, String game, String state, String tournament, String tournamentKind,
 			String format, long startedAt, long durationSeconds, LobbyTeam radiant, LobbyTeam dire,
 			Integer averageMmr, Integer spectators, Integer delaySeconds, String source, String playersScope,
-			Boolean paused, Boolean roshanAvailable) {
+			Boolean paused, Boolean roshanAvailable, StreamRef stream) {
+
+		public LobbyMatch(String id, String game, String state, String tournament, String tournamentKind,
+				String format, long startedAt, long durationSeconds, LobbyTeam radiant, LobbyTeam dire,
+				Integer averageMmr, Integer spectators, Integer delaySeconds, String source, String playersScope,
+				Boolean paused, Boolean roshanAvailable) {
+			this(id, game, state, tournament, tournamentKind, format, startedAt, durationSeconds, radiant, dire,
+					averageMmr, spectators, delaySeconds, source, playersScope, paused, roshanAvailable, null);
+		}
+	}
+
+	@JsonInclude(JsonInclude.Include.NON_NULL)
+	public record StreamRef(String provider, String channelOrVideo, String label, String fallbackUrl) {
 	}
 
 	@JsonInclude(JsonInclude.Include.NON_NULL)

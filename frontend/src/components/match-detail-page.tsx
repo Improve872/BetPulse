@@ -3,16 +3,28 @@
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
-import { ArrowRightIcon } from "@/components/icons";
+import { ArrowRightIcon, PlayIcon } from "@/components/icons";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
+import { StreamPlayer } from "@/components/stream-player";
 import { TeamCrest } from "@/components/team-crest";
-import { ApiError } from "@/lib/api";
-import { cn, formatGameTime, formatMoney } from "@/lib/format";
+import { ApiError, apiFetch } from "@/lib/api";
+import {
+  cn,
+  formatGameTime,
+  formatMoney,
+  formatOdds,
+} from "@/lib/format";
 import { useLanguage, type TranslationKey } from "@/lib/i18n";
-import type { LobbyTeam } from "@/lib/lobby";
+import type { LobbyMatch, LobbyTeam } from "@/lib/lobby";
+import { matchSelectionLabel } from "@/lib/match-labels";
 import type { MatchDetail, MatchPlayer } from "@/lib/match-detail";
 import { getMatchDetail, useMatchStream } from "@/lib/match-detail";
+import {
+  marketTitle,
+  type LiveMarketsData,
+  type Market,
+} from "@/lib/markets";
 
 function teamPlayers(players: MatchPlayer[], team: string) {
   return players
@@ -24,6 +36,142 @@ function netWorth(players: MatchPlayer[]) {
   return players.reduce((total, player) => total + (player.netWorth ?? 0), 0);
 }
 
+function useMatchMarkets(matchId: string) {
+  const [markets, setMarkets] = useState<Market[]>([]);
+
+  useEffect(() => {
+    let active = true;
+    const load = async () => {
+      try {
+        const data = await apiFetch<LiveMarketsData>("/api/markets/live");
+        if (active) {
+          setMarkets(
+            data.markets.filter((market) => market.matchId === matchId),
+          );
+        }
+      } catch {
+        // The page keeps working with the stream and match timeline.
+      }
+    };
+    void load();
+    const timer = window.setInterval(load, 5000);
+    return () => {
+      active = false;
+      window.clearInterval(timer);
+    };
+  }, [matchId]);
+
+  return markets;
+}
+
+function marketStatusLabel(market: Market, t: (key: TranslationKey) => string) {
+  if (market.status === "OPEN") {
+    return t("market.open");
+  }
+  if (market.status === "SUSPENDED") {
+    return t("market.suspended");
+  }
+  return t("market.closed");
+}
+
+function MarketsPanel({
+  match,
+  markets,
+  t,
+}: {
+  match: LobbyMatch;
+  markets: Market[];
+  t: (key: TranslationKey) => string;
+}) {
+  return (
+    <div className="rounded-2xl border border-arena-line bg-arena-surface p-4 sm:p-5">
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="text-xs font-bold uppercase tracking-[0.14em] text-arena-muted">
+          {t("match.markets")}
+        </h2>
+        <Link
+          href="/"
+          className="inline-flex items-center gap-1 text-[11px] font-semibold text-accent transition hover:text-accent-bright"
+        >
+          {t("detail.betLobby")}
+          <ArrowRightIcon className="h-3 w-3" />
+        </Link>
+      </div>
+
+      {markets.length === 0 ? (
+        <div className="mt-3 rounded-xl border border-dashed border-arena-line bg-arena-raised/30 p-4">
+          <p className="text-sm font-semibold text-arena-ink">
+            {t("match.marketsEmptyTitle")}
+          </p>
+          <p className="mt-1 text-xs leading-5 text-arena-muted">
+            {t("match.marketsEmptyBody")}
+          </p>
+        </div>
+      ) : (
+        <div className="mt-3 space-y-3">
+          {markets.map((market) => {
+            const open = market.status === "OPEN";
+            return (
+              <section
+                key={market.id}
+                className={cn(
+                  "rounded-xl border p-3",
+                  open
+                    ? "border-arena-line bg-arena-raised/40"
+                    : "border-arena-line/70 bg-arena-raised/20",
+                )}
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <p className="text-xs font-semibold text-arena-ink">
+                    {marketTitle(market, t)}
+                  </p>
+                  <span
+                    className={cn(
+                      "shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide ring-1",
+                      market.status === "OPEN"
+                        ? "bg-emerald-500/10 text-emerald-300 ring-emerald-400/25"
+                        : market.status === "SUSPENDED"
+                          ? "bg-amber-400/10 text-amber-300 ring-amber-400/25"
+                          : "bg-white/5 text-arena-muted ring-arena-line",
+                    )}
+                  >
+                    {marketStatusLabel(market, t)}
+                  </span>
+                </div>
+                <div className="mt-2 grid grid-cols-2 gap-2">
+                  {market.selections.map((selection) => (
+                    <div
+                      key={selection.key}
+                      className={cn(
+                        "rounded-lg border px-2.5 py-2",
+                        open
+                          ? "border-arena-line bg-arena/45"
+                          : "border-arena-line/60 bg-arena/25 opacity-70",
+                      )}
+                    >
+                      <p className="truncate text-[11px] font-semibold text-arena-muted">
+                        {matchSelectionLabel(
+                          match,
+                          market,
+                          selection.key,
+                          t,
+                        )}
+                      </p>
+                      <p className="mt-0.5 font-score text-lg font-semibold tabular-nums text-arena-ink">
+                        {formatOdds(selection.odds)}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function MatchDetailPage() {
   const { t, language } = useLanguage();
   const router = useRouter();
@@ -32,6 +180,7 @@ export function MatchDetailPage() {
   const [initial, setInitial] = useState<MatchDetail | null>(null);
   const [error, setError] = useState("");
   const { detail, connected } = useMatchStream(matchId, initial);
+  const markets = useMatchMarkets(matchId);
 
   useEffect(() => {
     let active = true;
@@ -83,7 +232,7 @@ export function MatchDetailPage() {
       ? current?.match.playersScope === "LOCAL"
         ? t("match.practice")
         : t("match.spectating")
-      : t("match.live");
+      : t("match.pro");
   const connectionLabel = connected
     ? source === "GSI"
       ? t("own.connected")
@@ -167,7 +316,8 @@ export function MatchDetailPage() {
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div className="min-w-0">
                     <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-accent">
-                      {current.match.tournament || t("match.gsi")}
+                      {current.match.tournament ||
+                        (source === "GSI" ? t("match.gsi") : t("match.pro"))}
                     </p>
                     <h1 className="mt-1 font-display text-xl font-semibold tracking-tight text-arena-ink">
                       {current.match.radiant.name} vs {current.match.dire.name}
@@ -227,69 +377,97 @@ export function MatchDetailPage() {
               </div>
             </section>
 
+            <section className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1fr)_340px]">
+              <div className="space-y-4">
+                {current.match.stream ? (
+                  <StreamPlayer
+                    stream={current.match.stream}
+                    matchLabel={`${current.match.radiant.name} vs ${current.match.dire.name}`}
+                  />
+                ) : (
+                  <div className="rounded-2xl border border-dashed border-arena-line bg-arena-surface/50 p-5">
+                    <span className="grid h-10 w-10 place-items-center rounded-xl border border-arena-line bg-arena-raised text-arena-muted">
+                      <PlayIcon className="h-5 w-5" />
+                    </span>
+                    <p className="mt-3 text-sm font-semibold text-arena-ink">
+                      {t("stream.unavailable")}
+                    </p>
+                    <p className="mt-1 text-xs leading-5 text-arena-muted">
+                      {source === "GSI"
+                        ? t("stream.ownUnavailable")
+                        : t("stream.none")}
+                    </p>
+                  </div>
+                )}
+
+                <div className="rounded-2xl border border-arena-line bg-arena-surface p-5">
+                  <h2 className="text-xs font-bold uppercase tracking-[0.14em] text-arena-muted">
+                    {t("detail.events")}
+                  </h2>
+                  <ul className="mt-3 space-y-2">
+                    {current.events
+                      .slice()
+                      .reverse()
+                      .map((event) => (
+                        <li
+                          key={event.id}
+                          className="flex items-center justify-between gap-3 border-b border-arena-line pb-2 text-xs last:border-0"
+                        >
+                          <span className="font-semibold text-arena-ink">
+                            {t(`event.${event.type}` as TranslationKey)}
+                          </span>
+                          <span className="text-arena-muted">
+                            {formatGameTime(event.clockTime)}
+                            {event.team
+                              ? ` · ${event.team === "radiant" ? t("detail.teamRadiant") : t("detail.teamDire")}`
+                              : ""}
+                          </span>
+                        </li>
+                      ))}
+                    {current.events.length === 0 ? (
+                      <li className="text-xs text-arena-muted">
+                        {t("detail.noEvents")}
+                      </li>
+                    ) : null}
+                  </ul>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <MarketsPanel
+                  match={current.match}
+                  markets={markets}
+                  t={t}
+                />
+
+                <div className="rounded-2xl border border-arena-line bg-arena-surface p-5">
+                  <h2 className="text-xs font-bold uppercase tracking-[0.14em] text-arena-muted">
+                    {t("detail.roshan")}
+                  </h2>
+                  <p className="mt-2 text-sm font-semibold text-arena-ink">
+                    {current.roshan
+                      ? current.roshan.alive
+                        ? t("detail.roshanAlive")
+                        : t("detail.roshanDead")
+                      : t("detail.roshanUnavailable")}
+                  </p>
+                  {current.roshan?.phaseTimeRemaining ? (
+                    <p className="mt-1 text-xs text-arena-muted">
+                      {t("detail.roshanTimer", {
+                        seconds: Math.round(current.roshan.phaseTimeRemaining),
+                      })}
+                    </p>
+                  ) : null}
+                </div>
+              </div>
+            </section>
+
             <section className="mt-4 grid gap-4 sm:grid-cols-2">
               <div className="rounded-2xl border border-arena-line bg-arena-surface p-4 sm:p-5">
                 {renderTeam("radiant", radiantPlayers)}
               </div>
               <div className="rounded-2xl border border-arena-line bg-arena-surface p-4 sm:p-5">
                 {renderTeam("dire", direPlayers)}
-              </div>
-            </section>
-
-            <section className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1fr)_300px]">
-              <div className="rounded-2xl border border-arena-line bg-arena-surface p-5">
-                <h2 className="text-xs font-bold uppercase tracking-[0.14em] text-arena-muted">
-                  {t("detail.events")}
-                </h2>
-                <ul className="mt-3 space-y-2">
-                  {current.events
-                    .slice()
-                    .reverse()
-                    .map((event) => (
-                      <li
-                        key={event.id}
-                        className="flex items-center justify-between gap-3 border-b border-arena-line pb-2 text-xs last:border-0"
-                      >
-                        <span className="font-semibold text-arena-ink">
-                          {t(`event.${event.type}` as TranslationKey)}
-                        </span>
-                        <span className="text-arena-muted">
-                          {formatGameTime(event.clockTime)}
-                          {event.team
-                            ? ` · ${event.team === "radiant" ? t("detail.teamRadiant") : t("detail.teamDire")}`
-                            : ""}
-                        </span>
-                      </li>
-                    ))}
-                  {current.events.length === 0 ? (
-                    <li className="text-xs text-arena-muted">
-                      {t("detail.noEvents")}
-                    </li>
-                  ) : null}
-                </ul>
-              </div>
-
-              <div className="rounded-2xl border border-arena-line bg-arena-surface p-5">
-                <h2 className="text-xs font-bold uppercase tracking-[0.14em] text-arena-muted">
-                  {t("detail.roshan")}
-                </h2>
-                <p className="mt-2 text-sm font-semibold text-arena-ink">
-                  {current.roshan
-                    ? current.roshan.alive
-                      ? t("detail.roshanAlive")
-                      : t("detail.roshanDead")
-                    : t("detail.roshanUnavailable")}
-                </p>
-                {current.roshan?.phaseTimeRemaining ? (
-                  <p className="mt-1 text-xs text-arena-muted">
-                    {t("detail.roshanTimer", {
-                      seconds: Math.round(current.roshan.phaseTimeRemaining),
-                    })}
-                  </p>
-                ) : null}
-                <p className="mt-4 text-xs leading-5 text-arena-muted">
-                  {t("detail.betHint")}
-                </p>
               </div>
             </section>
           </>

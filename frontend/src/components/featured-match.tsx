@@ -1,6 +1,7 @@
 "use client";
 
-import { ArrowRightIcon, TrophyIcon } from "@/components/icons";
+import Link from "next/link";
+import { ArrowRightIcon, PlayIcon, TrophyIcon } from "@/components/icons";
 import { OddsButton } from "@/components/odds-button";
 import { PulseMark } from "@/components/pulse-mark";
 import { TeamCrest } from "@/components/team-crest";
@@ -171,14 +172,25 @@ export function FeaturedMatch({
               <TrophyIcon className="h-3.5 w-3.5 text-accent" />
               {market ? marketTitle(market, t) : t("match.market")}
             </p>
-            <button
-              type="button"
-              onClick={() => onOpen(match)}
-              className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-semibold text-arena-muted transition hover:bg-white/5 hover:text-arena-ink"
-            >
-              {t("match.openMarkets")}
-              <ArrowRightIcon className="h-3.5 w-3.5" />
-            </button>
+            <div className="flex items-center gap-1">
+              {match.stream ? (
+                <Link
+                  href={`/match/${match.id}#stream`}
+                  className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-semibold text-accent transition hover:bg-accent/10"
+                >
+                  <PlayIcon className="h-3.5 w-3.5" />
+                  {t("match.watchStream")}
+                </Link>
+              ) : null}
+              <button
+                type="button"
+                onClick={() => onOpen(match)}
+                className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-semibold text-arena-muted transition hover:bg-white/5 hover:text-arena-ink"
+              >
+                {t("match.openMarkets")}
+                <ArrowRightIcon className="h-3.5 w-3.5" />
+              </button>
+            </div>
           </div>
 
           {market ? (

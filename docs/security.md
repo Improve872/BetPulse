@@ -15,12 +15,12 @@ Proteger cuentas, saldos, apuestas, cuotas, panel administrativo, datos personal
 - Infraestructura (PostgreSQL, colector, API).
 - Integridad del juego y reputación del proyecto.
 
-## Estado implementado (2026-11-01)
+## Estado implementado (2026-11-03)
 
 | Control | Estado | Evidencia |
 |---|---|---|
 | Auth con BCrypt 12, sesión HttpOnly y CSRF | Implementado | `AuthFlowTest`, `SecurityConfig` |
-| RBAC admin con `@EnableMethodSecurity` | Implementado | `AdminBetController`, `AdminMarketController` |
+| RBAC admin con `@EnableMethodSecurity` | Implementado | `AdminBetController`, `AdminMarketController`, `AdminStreamController` |
 | Ingest GSI con HMAC-SHA256 y ventana de 5 min | Implementado | `IngestSignature`, `IngestFlowTest` |
 | Idempotencia de snapshots y eventos | Implementado | `snapshot_id` único y `UNIQUE (match_id, event_id)` |
 | Ledger de doble entrada y saldos no negativos | Implementado | `WalletFlowTest`, constraints V2 |
@@ -30,7 +30,9 @@ Proteger cuentas, saldos, apuestas, cuotas, panel administrativo, datos personal
 | Límite de stake en práctica | Implementado | S/ 100 vía `practice-max-stake-cents` |
 | Rate limiting | **No implementado** | Pendiente M7 |
 | MFA para admin | **No implementado** | Pendiente M7 |
-| CSP y headers de seguridad | **No implementado** | Pendiente M7 |
+| CSP `frame-src` para streaming | Implementado | `next.config.ts`; CSP completa pendiente M7 |
+| Admin de streams con RBAC y auditoría | Implementado | `AdminStreamController`, `audit_logs`, `AdminStreamFlowTest` |
+| URLs de streaming validadas | Implementado | Provider Twitch/YouTube, canal/video obligatorio y fallback HTTP(S) |
 | Rol `TRADER` operativo | **No implementado** | El rol existe; no hay endpoints/UI |
 | Rol `AUDITOR` operativo | **No implementado** | El rol existe; no hay endpoints/UI |
 | Backups y restauración probados | **No implementado** | Pendiente de entorno |
@@ -151,11 +153,13 @@ Reglas:
 
 ### Streaming
 
-- Solo iframes oficiales de Twitch/YouTube.
-- Allowlist de dominios.
-- CSP `frame-src`.
-- Sin re-transmisión.
-- URL administrada por admin y validada.
+- Solo iframes oficiales de Twitch/YouTube; sin re-transmisión ni scraping.
+- `match_streams` guarda `provider` + `channel_or_video`; el frontend construye la URL y no acepta un embed arbitrario.
+- Admin con `ROLE_ADMIN`; cada alta, toggle o borrado se audita en `audit_logs`.
+- CSP `frame-src` limitado a `player.twitch.tv`, YouTube y `youtube-nocookie.com`.
+- Click-to-load: no se carga el iframe hasta que el usuario lo pide.
+- `fallback_url` validada como HTTP(S) para evitar cajas negras.
+- Twitch usa `parent` del hostname actual; en local es `localhost`/`127.0.0.1`.
 
 ### Pagos simulados
 
