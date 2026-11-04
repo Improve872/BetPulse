@@ -47,7 +47,7 @@ Cerrados: M0 (capturas GSI reales), M1 (identidad y wallet), M2a (catálogo Open
 - Colector Javalin definitivo: expone `/health` y `/`, recibe `/gsi`, normaliza, deduplica, firma con HMAC y reenvía al backend con spool ante caídas.
 - Liquidación implementada: `settlements` único por apuesta, payout/void, ledger y auditoría. Las apuestas ya no quedan abiertas para siempre.
 - Steam `GetLiveLeagueGames` no integrado: falta `STEAM_API_KEY` (rate limit de generación). No bloquea la demo.
-- CI: última ejecución publicada en `627149a` con 90 tests backend, 11 del colector y frontend verde. M6 suma 8 tests backend y queda pendiente de push.
+- CI: ejecución `0cbe24e` en verde para backend, colector y frontend; M6 cierra con 98 tests backend locales.
 
 ## Próxima acción
 
@@ -93,9 +93,8 @@ Resultados 2026-11-03 (M6):
 - QA visual local con OpenDota real: lobby con CTA “Ver stream”, detalle con player click-to-load y mercados, admin de streams y iframe de Twitch cargado (canal offline en la prueba). Revisado a 1440 px y 390 px. Sin tests visuales automatizados todavía.
 - Colector: 11/11 tests verdes y `package` con shade correcto.
 - E2E real (2026-11-01): GSI mid-game → 4 mercados base + torre/Roshan → apuesta de S/ 10 a ganador → `POST_GAME` → `WON` con payout S/ 10.96; wallet disponible S/ 100.96 y retenido S/ 0. Liquidación en menos de un minuto.
-- CI actual (`627149a`, 2026-11-01): backend, colector y frontend en verde.
-  `https://github.com/Improve872/BetPulse/actions/runs/41372983395`
-- Nota: la verificación de M6 es local; el CI se actualizará al hacer push del cierre.
+- CI actual (`0cbe24e`, 2026-11-04): backend, colector y frontend en verde.
+  `https://github.com/Improve872/BetPulse/actions/runs/41744744848`
 
 Verificación funcional anterior (2026-10-27): 24 mercados abiertos (4 por partida en 6 partidas en vivo); E2E registro → depósito S/ 100 → apuesta S/ 10 → `PLACED` con disponible S/ 90 y retenido S/ 10.
 
