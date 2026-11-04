@@ -1,5 +1,6 @@
 package com.betpulse.identity;
 
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
@@ -18,15 +19,17 @@ public class AppUserPrincipal implements UserDetails {
 	private final String passwordHash;
 	private final Set<String> roles;
 	private final boolean active;
+	private final Instant createdAt;
 
 	public AppUserPrincipal(UUID id, String email, String displayName, String passwordHash, Set<String> roles,
-			boolean active) {
+			boolean active, Instant createdAt) {
 		this.id = id;
 		this.email = email;
 		this.displayName = displayName;
 		this.passwordHash = passwordHash;
 		this.roles = Set.copyOf(roles);
 		this.active = active;
+		this.createdAt = createdAt;
 	}
 
 	public UUID getId() {
@@ -39,6 +42,10 @@ public class AppUserPrincipal implements UserDetails {
 
 	public String getDisplayName() {
 		return displayName;
+	}
+
+	public Instant getCreatedAt() {
+		return createdAt;
 	}
 
 	public List<String> getRoleNames() {

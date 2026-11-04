@@ -3,7 +3,13 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { GameSwitcher } from "@/components/game-switcher";
-import { CloseIcon, MenuIcon, UserIcon, WalletIcon } from "@/components/icons";
+import {
+  ChevronDownIcon,
+  CloseIcon,
+  MenuIcon,
+  UserIcon,
+  WalletIcon,
+} from "@/components/icons";
 import { LanguageToggle } from "@/components/language-toggle";
 import { Logo } from "@/components/logo";
 import { useAuth } from "@/lib/auth";
@@ -35,23 +41,31 @@ export function SiteHeader({
   const { t } = useLanguage();
   const { user, loading, logout } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [accountOpen, setAccountOpen] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
   const headerRef = useRef<HTMLElement>(null);
+  const userMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!menuOpen) {
+    if (!menuOpen && !accountOpen) {
       return;
     }
 
     const handlePointerDown = (event: MouseEvent) => {
-      if (!headerRef.current?.contains(event.target as Node)) {
+      const target = event.target as Node;
+      if (
+        !headerRef.current?.contains(target) ||
+        (!userMenuRef.current?.contains(target) && !menuOpen)
+      ) {
         setMenuOpen(false);
+        setAccountOpen(false);
       }
     };
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         setMenuOpen(false);
+        setAccountOpen(false);
       }
     };
 
@@ -62,7 +76,7 @@ export function SiteHeader({
       document.removeEventListener("mousedown", handlePointerDown);
       document.removeEventListener("keydown", handleKeyDown);
     };
-  }, [menuOpen]);
+  }, [accountOpen, menuOpen]);
 
   const handleNavigate = (view: LobbyView) => {
     setMenuOpen(false);
@@ -88,6 +102,7 @@ export function SiteHeader({
     } finally {
       setSigningOut(false);
       setMenuOpen(false);
+      setAccountOpen(false);
     }
   };
 
@@ -160,17 +175,70 @@ export function SiteHeader({
                 <WalletIcon className="h-4 w-4" />
                 {t("header.wallet")}
               </Link>
-              <span className="hidden max-w-[150px] truncate text-sm font-semibold text-white/85 md:block">
-                {user.displayName}
-              </span>
-              <button
-                type="button"
-                onClick={handleLogout}
-                disabled={signingOut}
-                className="hidden whitespace-nowrap rounded-lg border border-white/15 px-3 py-2 text-sm font-medium text-white/75 transition hover:border-white/30 hover:text-white disabled:cursor-not-allowed disabled:opacity-50 sm:inline-flex"
-              >
-                {t("header.logout")}
-              </button>
+              <div ref={userMenuRef} className="relative hidden sm:block">
+                <button
+                  type="button"
+                  onClick={() => setAccountOpen((current) => !current)}
+                  aria-expanded={accountOpen}
+                  aria-haspopup="menu"
+                  className="hidden max-w-[190px] items-center gap-1.5 truncate rounded-lg px-2.5 py-2 text-sm font-semibold text-white/85 transition hover:bg-white/10 hover:text-white sm:inline-flex"
+                >
+                  <span className="truncate">{user.displayName}</span>
+                  <ChevronDownIcon
+                    className={cn(
+                      "h-3.5 w-3.5 shrink-0 transition",
+                      accountOpen ? "rotate-180" : "rotate-0",
+                    )}
+                  />
+                </button>
+                {accountOpen ? (
+                  <div
+                    role="menu"
+                    className="absolute right-0 top-full z-50 mt-2 w-56 overflow-hidden rounded-xl border border-arena-line bg-arena-surface p-1.5 text-arena-ink shadow-xl"
+                  >
+                    <Link
+                      href="/account"
+                      onClick={() => setAccountOpen(false)}
+                      className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-arena-ink transition hover:bg-white/5"
+                    >
+                      <UserIcon className="h-4 w-4 text-arena-muted" />
+                      {t("nav.account")}
+                    </Link>
+                    <Link
+                      href="/wallet"
+                      onClick={() => setAccountOpen(false)}
+                      className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-arena-ink transition hover:bg-white/5"
+                    >
+                      <WalletIcon className="h-4 w-4 text-arena-muted" />
+                      {t("header.wallet")}
+                    </Link>
+                    <Link
+                      href="/bets"
+                      onClick={() => setAccountOpen(false)}
+                      className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-arena-ink transition hover:bg-white/5"
+                    >
+                      {t("nav.myBets")}
+                    </Link>
+                    {user.roles.includes("ADMIN") ? (
+                      <Link
+                        href="/admin"
+                        onClick={() => setAccountOpen(false)}
+                        className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-accent transition hover:bg-accent/10"
+                      >
+                        {t("nav.admin")}
+                      </Link>
+                    ) : null}
+                    <button
+                      type="button"
+                      onClick={() => void handleLogout()}
+                      disabled={signingOut}
+                      className="mt-1 flex w-full items-center gap-2 rounded-lg border-t border-arena-line px-3 py-2 pt-2 text-left text-sm text-arena-muted transition hover:bg-white/5 hover:text-arena-ink disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {t("header.logout")}
+                    </button>
+                  </div>
+                ) : null}
+              </div>
               <Link
                 href="/wallet"
                 aria-label={t("header.wallet")}
@@ -295,6 +363,15 @@ export function SiteHeader({
                   {t("nav.myBets")}
                 </button>
               )}
+              {user ? (
+                <Link
+                  href="/account"
+                  onClick={() => setMenuOpen(false)}
+                  className="rounded-lg border border-arena-line bg-white/[0.03] px-3 py-2.5 text-left text-sm font-medium text-arena-ink transition hover:bg-white/[0.06]"
+                >
+                  {t("nav.account")}
+                </Link>
+              ) : null}
               {user?.roles.includes("ADMIN") ? (
                 <Link
                   href="/admin"

@@ -22,7 +22,7 @@ public class AppUserDetailsService implements UserDetailsService {
 		User user = users.findByEmail(email)
 				.orElseThrow(() -> new UsernameNotFoundException("User not found"));
 		return new AppUserPrincipal(user.getId(), user.getEmail(), user.getDisplayName(), user.getPasswordHash(),
-				user.getRoles(), user.isActive());
+				user.getRoles(), user.isActive(), user.getCreatedAt());
 	}
 
 }

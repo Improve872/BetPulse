@@ -1,5 +1,6 @@
 package com.betpulse.identity;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -25,7 +26,7 @@ public final class AuthDtos {
 			@NotBlank @Size(max = 72) String password) {
 	}
 
-	public record UserResponse(UUID id, String email, String displayName, List<String> roles) {
+	public record UserResponse(UUID id, String email, String displayName, List<String> roles, Instant createdAt) {
 	}
 
 	public record AuthResponse(UserResponse user) {

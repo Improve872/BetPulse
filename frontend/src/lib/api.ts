@@ -3,6 +3,7 @@ export type User = {
   email: string;
   displayName: string;
   roles: string[];
+  createdAt: string;
 };
 
 export type AuthResponse = {

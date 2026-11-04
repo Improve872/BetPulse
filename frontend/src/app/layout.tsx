@@ -4,7 +4,7 @@ import { AuthProvider } from "@/lib/auth";
 import { LanguageProvider } from "@/lib/i18n";
 
 export const metadata: Metadata = {
-  title: "BetPulse — Apuestas simuladas de Dota 2",
+  title: "BetPulse — Apuestas en vivo",
   description:
     "Partidas en vivo, resultados y cuotas propias para apuestas deportivas.",
 };

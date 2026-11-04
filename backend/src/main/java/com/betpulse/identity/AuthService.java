@@ -1,5 +1,6 @@
 package com.betpulse.identity;
 
+import java.util.UUID;
 import java.util.regex.Pattern;
 
 import org.springframework.security.authentication.AuthenticationManager;
@@ -74,12 +75,31 @@ public class AuthService {
 
 	public UserResponse toResponse(AppUserPrincipal principal) {
 		return new UserResponse(principal.getId(), principal.getEmail(), principal.getDisplayName(),
-				principal.getRoleNames());
+				principal.getRoleNames(), principal.getCreatedAt());
+	}
+
+	@Transactional
+	public void changePassword(UUID userId, String currentPassword, String newPassword) {
+		User user = users.findById(userId)
+				.orElseThrow(() -> ApiException.notFound("USER_NOT_FOUND", "El usuario no existe."));
+		if (currentPassword == null || !passwordEncoder.matches(currentPassword, user.getPasswordHash())) {
+			throw ApiException.badRequest("INVALID_CURRENT_PASSWORD", "La contraseña actual no es correcta.");
+		}
+		if (newPassword == null || newPassword.length() < 8 || newPassword.length() > 72
+				|| !PASSWORD_POLICY.matcher(newPassword).matches()) {
+			throw ApiException.badRequest("WEAK_PASSWORD",
+					"La contraseña debe tener al menos 8 caracteres, una letra y un número.");
+		}
+		if (passwordEncoder.matches(newPassword, user.getPasswordHash())) {
+			throw ApiException.badRequest("SAME_PASSWORD", "La nueva contraseña debe ser diferente.");
+		}
+		user.changePasswordHash(passwordEncoder.encode(newPassword));
+		users.save(user);
 	}
 
 	public AppUserPrincipal toPrincipal(User user) {
 		return new AppUserPrincipal(user.getId(), user.getEmail(), user.getDisplayName(), user.getPasswordHash(),
-				user.getRoles(), user.isActive());
+				user.getRoles(), user.isActive(), user.getCreatedAt());
 	}
 
 	public static String normalizeEmail(String email) {

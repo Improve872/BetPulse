@@ -24,6 +24,8 @@ import com.betpulse.identity.AuthDtos.UserResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -70,6 +72,18 @@ public class AuthController {
 				SecurityContextHolder.getContext().getAuthentication());
 		SecurityContextHolder.clearContext();
 		return ResponseEntity.noContent().build();
+	}
+
+	@PostMapping("/password")
+	public ResponseEntity<Void> changePassword(@AuthenticationPrincipal AppUserPrincipal principal,
+			@Valid @RequestBody ChangePasswordRequest request) {
+		authService.changePassword(principal.getId(), request.currentPassword(), request.newPassword());
+		return ResponseEntity.noContent().build();
+	}
+
+	public record ChangePasswordRequest(
+			@NotBlank @Size(max = 72) String currentPassword,
+			@NotBlank @Size(min = 8, max = 72) String newPassword) {
 	}
 
 	private void establishSession(Authentication authentication, HttpServletRequest request,

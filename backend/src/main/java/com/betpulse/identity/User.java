@@ -71,6 +71,11 @@ public class User {
 		return passwordHash;
 	}
 
+	public void changePasswordHash(String passwordHash) {
+		this.passwordHash = passwordHash;
+		this.updatedAt = Instant.now();
+	}
+
 	public String getDisplayName() {
 		return displayName;
 	}

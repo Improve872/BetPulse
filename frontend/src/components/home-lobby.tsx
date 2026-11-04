@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { BetSlip, type BetTarget } from "@/components/bet-slip";
 import { FeaturedMatch } from "@/components/featured-match";
 import { FilterRail } from "@/components/filter-rail";
-import { LiveTicker } from "@/components/live-ticker";
+import { LiveRail } from "@/components/live-rail";
 import { LobbyTabs } from "@/components/lobby-tabs";
 import { LoginModal, type LoginMode } from "@/components/login-modal";
 import { MatchCard } from "@/components/match-card";
@@ -181,9 +181,6 @@ export function HomeLobby({ data: initialData, markets: initialMarkets }: HomeLo
     view === "results" ? t("lobby.subtitleResults") : t("lobby.subtitleLive");
 
   const feedStatus = data.feed?.status ?? "STARTING";
-  const updatedAt =
-    data.feed?.lastSuccessAt ??
-    (connection === "connected" ? data.updatedAt : null);
   const feedOffline =
     connection === "disconnected" || feedStatus === "DOWN";
   const feedLabel =
@@ -310,6 +307,14 @@ export function HomeLobby({ data: initialData, markets: initialMarkets }: HomeLo
       : liveMatches.length + ownMatches.length;
   const visibleForView =
     filteredMatches.length + (featuredMatch ? 1 : 0);
+  const railMatches =
+    view === "live"
+      ? liveMatches.filter(
+          (match) =>
+            match.id !== featuredMatch?.id &&
+            (tournament === "all" || match.tournament === tournament),
+        )
+      : [];
 
   return (
     <div className="min-h-screen bg-arena text-arena-ink">
@@ -321,12 +326,6 @@ export function HomeLobby({ data: initialData, markets: initialMarkets }: HomeLo
         onLogin={() => openLogin("login")}
         onRegister={() => openLogin("register")}
       />
-      <LiveTicker
-        matches={liveMatches}
-        updatedAt={updatedAt}
-        onOpen={handleOpenMatch}
-      />
-
       <main className="mx-auto max-w-[1320px] px-4 pb-12 pt-6 sm:px-6 lg:px-8 lg:pb-16">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
@@ -398,6 +397,16 @@ export function HomeLobby({ data: initialData, markets: initialMarkets }: HomeLo
               selected={selectedFor(featuredMatch.id)}
             />
           </div>
+        ) : null}
+
+        {railMatches.length > 0 ? (
+          <LiveRail
+            matches={railMatches}
+            markets={marketByMatchId}
+            onOpen={handleOpenMatch}
+            onSelect={handleSelect}
+            selectedFor={selectedFor}
+          />
         ) : null}
 
         {connection === "disconnected" && allMatches.length > 0 ? (

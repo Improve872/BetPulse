@@ -117,6 +117,39 @@ class AuthFlowTest extends IntegrationTestBase {
 	}
 
 	@Test
+	void changesPasswordAndInvalidatesOldOne() throws Exception {
+		String email = email();
+		MvcResult result = mockMvc.perform(post("/api/auth/register")
+				.with(csrf())
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(registerBody(email)))
+				.andExpect(status().isCreated())
+				.andReturn();
+		MockHttpSession session = (MockHttpSession) result.getRequest().getSession(false);
+
+		mockMvc.perform(post("/api/auth/password")
+				.session(session)
+				.with(csrf())
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("""
+						{"currentPassword":"Secret123","newPassword":"NewSecret456"}
+						"""))
+				.andExpect(status().isNoContent());
+
+		mockMvc.perform(post("/api/auth/login")
+				.with(csrf())
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(loginBody(email, "Secret123")))
+				.andExpect(status().isUnauthorized());
+
+		mockMvc.perform(post("/api/auth/login")
+				.with(csrf())
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(loginBody(email, "NewSecret456")))
+				.andExpect(status().isOk());
+	}
+
+	@Test
 	void mutationWithoutCsrfIsRejected() throws Exception {
 		mockMvc.perform(post("/api/auth/register")
 				.contentType(MediaType.APPLICATION_JSON)
