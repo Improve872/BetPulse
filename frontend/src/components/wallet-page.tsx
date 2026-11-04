@@ -37,6 +37,7 @@ import {
   useLanguage,
   type TranslationKey,
 } from "@/lib/i18n";
+import { notifyWalletUpdated } from "@/lib/wallet-events";
 
 const quickAmounts = [10, 50, 100, 500];
 
@@ -96,6 +97,7 @@ export function WalletPage() {
       ]);
       setBalance(nextBalance);
       setTransactions(nextTransactions);
+      notifyWalletUpdated();
     } catch (error) {
       if (error instanceof ApiError && error.status === 401) {
         setDataError(t("wallet.loginRequired"));

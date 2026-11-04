@@ -6,17 +6,21 @@ import { GameSwitcher } from "@/components/game-switcher";
 import {
   ChevronDownIcon,
   CloseIcon,
+  EyeIcon,
+  EyeOffIcon,
   MenuIcon,
   UserIcon,
   WalletIcon,
 } from "@/components/icons";
 import { LanguageToggle } from "@/components/language-toggle";
 import { Logo } from "@/components/logo";
+import { apiFetch, type WalletBalance } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
-import { cn } from "@/lib/format";
+import { cn, formatMoney } from "@/lib/format";
 import { games } from "@/lib/games";
 import { useLanguage } from "@/lib/i18n";
 import type { GameId, LobbyView } from "@/lib/lobby";
+import { WALLET_UPDATED_EVENT } from "@/lib/wallet-events";
 
 type SiteHeaderProps = {
   game: GameId;
@@ -38,13 +42,84 @@ export function SiteHeader({
   onLogin,
   onRegister,
 }: SiteHeaderProps) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { user, loading, logout } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
+  const [balanceCents, setBalanceCents] = useState<number | null>(null);
+  const [balanceLoading, setBalanceLoading] = useState(false);
+  const [hideBalance, setHideBalance] = useState(false);
   const headerRef = useRef<HTMLElement>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    try {
+      setHideBalance(window.localStorage.getItem("betpulse.balance.hidden") === "1");
+    } catch {
+      setHideBalance(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!user) {
+      setBalanceCents(null);
+      setBalanceLoading(false);
+      return;
+    }
+
+    let active = true;
+    const loadBalance = async () => {
+      setBalanceLoading(true);
+      try {
+        const wallet = await apiFetch<WalletBalance>("/api/wallet");
+        if (active) {
+          setBalanceCents(wallet.availableCents);
+        }
+      } catch {
+        if (active) {
+          setBalanceCents(null);
+        }
+      } finally {
+        if (active) {
+          setBalanceLoading(false);
+        }
+      }
+    };
+
+    void loadBalance();
+    const interval = window.setInterval(() => {
+      void loadBalance();
+    }, 30000);
+    const handleFocus = () => {
+      void loadBalance();
+    };
+    const handleUpdated = () => {
+      void loadBalance();
+    };
+
+    window.addEventListener("focus", handleFocus);
+    window.addEventListener(WALLET_UPDATED_EVENT, handleUpdated);
+
+    return () => {
+      active = false;
+      window.clearInterval(interval);
+      window.removeEventListener("focus", handleFocus);
+      window.removeEventListener(WALLET_UPDATED_EVENT, handleUpdated);
+    };
+  }, [user]);
+
+  const toggleBalance = () => {
+    setHideBalance((current) => {
+      const next = !current;
+      try {
+        window.localStorage.setItem("betpulse.balance.hidden", next ? "1" : "0");
+      } catch {
+        // Preference is best-effort; the toggle still works this session.
+      }
+      return next;
+    });
+  };
 
   useEffect(() => {
     if (!menuOpen && !accountOpen) {
@@ -168,13 +243,42 @@ export function SiteHeader({
             <div className="hidden h-8 w-28 animate-pulse rounded-lg bg-white/10 sm:block" />
           ) : user ? (
             <>
-              <Link
-                href="/wallet"
-                className="hidden items-center gap-2 whitespace-nowrap rounded-lg px-3 py-2 text-sm font-medium text-white/75 transition hover:bg-white/10 hover:text-white sm:inline-flex"
-              >
-                <WalletIcon className="h-4 w-4" />
-                {t("header.wallet")}
-              </Link>
+              <div className="flex items-center rounded-lg border border-white/10 bg-white/[0.06] p-0.5">
+                <Link
+                  href="/wallet"
+                  aria-label={t("header.wallet")}
+                  className="inline-flex min-w-[76px] items-center justify-center rounded-md px-2 py-1.5 text-xs font-semibold text-white/85 transition hover:bg-white/10 hover:text-white"
+                >
+                  {balanceLoading && balanceCents === null ? (
+                    <span className="h-3 w-12 animate-pulse rounded bg-white/15" />
+                  ) : hideBalance ? (
+                    <span className="tracking-[0.18em] text-white/55">S/ ••••</span>
+                  ) : (
+                    <span className="font-score tabular-nums">
+                      {balanceCents === null
+                        ? "S/ —"
+                        : formatMoney(balanceCents, language)}
+                    </span>
+                  )}
+                </Link>
+                <button
+                  type="button"
+                  onClick={toggleBalance}
+                  aria-label={
+                    hideBalance
+                      ? t("header.showBalance")
+                      : t("header.hideBalance")
+                  }
+                  aria-pressed={hideBalance}
+                  className="grid h-7 w-7 place-items-center rounded-md text-white/55 transition hover:bg-white/10 hover:text-white"
+                >
+                  {hideBalance ? (
+                    <EyeIcon className="h-3.5 w-3.5" />
+                  ) : (
+                    <EyeOffIcon className="h-3.5 w-3.5" />
+                  )}
+                </button>
+              </div>
               <div ref={userMenuRef} className="relative hidden sm:block">
                 <button
                   type="button"
@@ -239,13 +343,6 @@ export function SiteHeader({
                   </div>
                 ) : null}
               </div>
-              <Link
-                href="/wallet"
-                aria-label={t("header.wallet")}
-                className="grid h-9 w-9 place-items-center rounded-lg text-white/75 transition hover:bg-white/10 hover:text-white sm:hidden"
-              >
-                <WalletIcon className="h-5 w-5" />
-              </Link>
             </>
           ) : (
             <>

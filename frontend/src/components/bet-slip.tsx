@@ -17,6 +17,7 @@ import { useLanguage } from "@/lib/i18n";
 import { matchSelectionLabel } from "@/lib/match-labels";
 import type { LobbyMatch } from "@/lib/lobby";
 import { marketTitle, type Market, type Selection } from "@/lib/markets";
+import { notifyWalletUpdated } from "@/lib/wallet-events";
 
 export type BetTarget = {
   match: LobbyMatch;
@@ -105,6 +106,7 @@ export function BetSlip({
       setNotice(t("bet.success"));
       idempotencyKey.current = null;
       onPlaced?.(bet);
+      notifyWalletUpdated();
     } catch (caught) {
       if (caught instanceof ApiError) {
         setError(caught.message);
