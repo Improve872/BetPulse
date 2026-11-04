@@ -75,6 +75,7 @@ En desarrollo, Next.js hace proxy de `/api` al backend para evitar CORS y compar
 - `OddsButton` muestra etiqueta + cuota, estado suspendido, estado “en tu boleto” y flash breve cuando la cuota cambia; respeta `prefers-reduced-motion`.
 - Streaming M6b: `LobbyMatch.stream` expone `provider`, `channelOrVideo`, `label` y `fallbackUrl`. El lobby muestra CTA/badge; `/match/[id]` monta `StreamPlayer` click-to-load debajo del scoreboard y consulta `/api/markets/live` para el panel de mercados. El embed no se carga hasta pulsar play.
 - Admin de streams: `AdminStreamsPage` en `/admin/streams`; API `GET/POST /api/admin/streams`, `POST /{id}/enabled` y `DELETE /{id}`.
+- Admin de usuarios: `AdminUsersPage` en `/admin/users`; búsqueda por email/nombre y ajuste de saldo con `ADMIN_ADJUSTMENT` (ledger `USER_AVAILABLE` contra `HOUSE`) y auditoría `WALLET_ADMIN_ADJUSTMENT`.
 - Auth y wallet implementados: modal de login/registro contra la API, sesión con cookie HttpOnly + CSRF, header autenticado y página `/wallet` con depósitos/retiros demo e historial.
 - M3a/M3b implementados: `lib/markets.ts` obtiene `GET /api/markets/live`; cards y modal muestran cuatro mercados por partida, línea, versión y estado de suspensión.
 - M4 implementado: bet slip y modal móvil permiten elegir cuota y stake; `lib/bets.ts` llama a `/api/bets` con idempotencia. `/bets` muestra el historial privado.
@@ -165,6 +166,7 @@ Constraints clave:
 - Catálogo actual: `GET /api/catalog/lobby` (público, incluye `stream` por partida), `GET /api/catalog/teams/{teamId}/logo` (redirección cacheada al CDN de escudos), `GET /api/markets/live` (público) y `GET /api/live/health`.
 - Apuestas autenticadas: `POST /api/bets` con `Idempotency-Key`, `GET /api/bets` y `GET /api/bets/{id}`.
 - Admin de streams: `GET/POST /api/admin/streams`, `POST /api/admin/streams/{id}/enabled` y `DELETE /api/admin/streams/{id}` (rol `ADMIN`, auditado).
+- Admin de usuarios: `GET /api/admin/users?query=` y `POST /api/admin/users/{userId}/wallet-adjustments` con `Idempotency-Key` (rol `ADMIN`, ledger y auditoría).
 - SSE actual: `GET /api/live/stream` con eventos `lobby`, `markets` y `heartbeat`. Los eventos de mercados se emiten después del commit de la sincronización.
 - Endpoint interno `/internal/ingest` con HMAC para el colector (M2b).
 - `Idempotency-Key` en apuestas, depósitos y retiros.

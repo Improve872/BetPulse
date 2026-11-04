@@ -32,7 +32,7 @@ No capta usuarios ni opera con dinero real. Es un proyecto académico y demostra
 - Auditar acciones administrativas y cambios de cuotas.
 - No simulación en el producto. Para tests se usan fixtures de payloads reales de GSI.
 - No implementar parlays/cashout sin actualizar el alcance.
-- Aviso visible de "Modo demo / saldo ficticio".
+- Entorno local de demostración documentado en README/runbook; la UI no muestra avisos de demo ni saldo ficticio.
 - No solicitar datos reales de tarjetas ni procesar pagos reales.
 
 ## Invariantes de dominio

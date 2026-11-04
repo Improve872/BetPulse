@@ -33,8 +33,8 @@ Dota 2: `-gamestateintegration` y el `.cfg` instalado con
 
 Abrir dos perfiles del navegador:
 
-- usuario demo;
-- admin (`admin@betpulse.local` / `Admin123!`).
+- usuario nuevo (regístrate con cualquier correo);
+- admin (`admin@betpulse.local` / `Admin123!`), que puede acreditarle saldo desde `/admin/users`.
 
 En `/admin/streams`, asignar un canal oficial de Twitch o un video de YouTube
 a la partida o liga que se mostrará. Sin stream asignado, la UI muestra el
@@ -44,8 +44,8 @@ fallback “sin stream oficial”; no se inventa señal.
 
 | Minuto | Acción |
 |---|---|
-| 0–2 | Presentar BetPulse: apuestas simuladas, saldo ficticio, datos reales |
-| 2–4 | Login, wallet en S/ y aviso de modo demo |
+| 0–2 | Presentar BetPulse: apuestas de esports, datos reales y panel administrativo |
+| 2–4 | Registro/login, wallet en S/ y admin acreditando saldo desde `/admin/users` |
 | 4–6 | Lobby: partido destacado con escudos, tabs, cuotas, boleto y CTA “Ver stream”; abrir el detalle y reproducir el stream oficial |
 | 6–9 | "Mi partida": iniciar partida con bots en Dota 2 o entrar a DotaTV |
 | 9–12 | Mostrar `/match/[id]`: marcador, stream, mercados, timeline, Roshan y SSE |
@@ -53,7 +53,7 @@ fallback “sin stream oficial”; no se inventa señal.
 | 14–16 | Provocar el evento en la partida; el mercado se cierra |
 | 16–18 | Terminar la partida o esperar `POST_GAME`; liquidación automática |
 | 18–19 | Wallet actualizada, pago, estado `WON/LOST/VOID`, auditoría |
-| 19–20 | Admin: suspender/reanudar/override de cuota con motivo |
+| 19–20 | Admin: ajustar saldo, suspender/reanudar/override de cuota con motivo |
 
 ## Liquidación
 

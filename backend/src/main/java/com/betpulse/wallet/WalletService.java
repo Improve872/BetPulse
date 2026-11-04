@@ -5,7 +5,9 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.HexFormat;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -31,6 +33,7 @@ public class WalletService {
 
 	static final String SCOPE_DEPOSIT = "WALLET_DEPOSIT";
 	static final String SCOPE_WITHDRAWAL = "WALLET_WITHDRAWAL";
+	static final String SCOPE_ADMIN_ADJUSTMENT = "ADMIN_ADJUSTMENT";
 
 	private static final long MIN_AMOUNT_CENTS = 100L;
 	private static final long MAX_AMOUNT_CENTS = 1_000_000L;
@@ -146,6 +149,91 @@ public class WalletService {
 				balance.heldCents(), balance.currency(), false, Instant.now());
 		completeIdempotency(userId, SCOPE_WITHDRAWAL, key, transactionId, response);
 		return response;
+	}
+
+	@Transactional
+	public WalletOperationResponse adjustByAdmin(UUID targetUserId, UUID adminUserId, long amountCents,
+			String reason, String idempotencyKey) {
+		if (amountCents == 0) {
+			throw ApiException.badRequest("INVALID_ADJUSTMENT", "El ajuste no puede ser cero.");
+		}
+		long absoluteAmount;
+		try {
+			absoluteAmount = Math.absExact(amountCents);
+		} catch (ArithmeticException exception) {
+			throw ApiException.badRequest("INVALID_ADJUSTMENT", "El monto del ajuste no es válido.");
+		}
+		validateAmount(absoluteAmount);
+		String normalizedReason = reason == null ? "" : reason.trim();
+		if (normalizedReason.isEmpty()) {
+			throw ApiException.badRequest("MISSING_ADJUSTMENT_REASON", "Indica el motivo del ajuste.");
+		}
+		if (normalizedReason.length() > 200) {
+			throw ApiException.badRequest("ADJUSTMENT_REASON_TOO_LONG",
+					"El motivo no puede superar 200 caracteres.");
+		}
+
+		String key = normalizeKey(idempotencyKey);
+		String requestHash = hash(SCOPE_ADMIN_ADJUSTMENT + ":" + targetUserId + ":" + amountCents + ":"
+				+ normalizedReason);
+
+		Optional<WalletOperationResponse> replay = findReplay(targetUserId, SCOPE_ADMIN_ADJUSTMENT, key,
+				requestHash);
+		if (replay.isPresent()) {
+			return replay.get();
+		}
+
+		int inserted = jdbcTemplate.update("""
+				INSERT INTO idempotency_keys (user_id, scope, key, request_hash, status)
+				VALUES (?, ?, ?, ?, 'IN_PROGRESS')
+				ON CONFLICT (user_id, scope, key) DO NOTHING
+				""", targetUserId, SCOPE_ADMIN_ADJUSTMENT, key, requestHash);
+		if (inserted == 0) {
+			return findReplay(targetUserId, SCOPE_ADMIN_ADJUSTMENT, key, requestHash)
+					.orElseThrow(() -> ApiException.conflict("IDEMPOTENCY_IN_PROGRESS",
+							"La operación con esa clave todavía está en curso."));
+		}
+
+		WalletBalance balance = lockWallet(targetUserId);
+		long newAvailable;
+		try {
+			newAvailable = Math.addExact(balance.availableCents(), amountCents);
+		} catch (ArithmeticException exception) {
+			throw ApiException.badRequest("INVALID_ADJUSTMENT", "El ajuste excede el saldo permitido.");
+		}
+		if (newAvailable < 0) {
+			throw ApiException.conflict("INSUFFICIENT_FUNDS", "Saldo disponible insuficiente.");
+		}
+		updateWallet(targetUserId, newAvailable, balance.heldCents());
+
+		UUID transactionId = UUID.randomUUID();
+		insertTransaction(transactionId, "ADMIN_ADJUSTMENT", "admin-adjustment", key, adminUserId);
+		insertEntry(transactionId, accountId(USER_AVAILABLE, targetUserId), amountCents);
+		insertEntry(transactionId, accountId(HOUSE, null), -amountCents);
+		auditAdminAdjustment(adminUserId, targetUserId, amountCents, normalizedReason, transactionId);
+
+		WalletOperationResponse response = new WalletOperationResponse(transactionId, newAvailable,
+				balance.heldCents(), balance.currency(), false, Instant.now());
+		completeIdempotency(targetUserId, SCOPE_ADMIN_ADJUSTMENT, key, transactionId, response);
+		return response;
+	}
+
+	private void auditAdminAdjustment(UUID adminUserId, UUID targetUserId, long amountCents, String reason,
+			UUID transactionId) {
+		Map<String, Object> details = new LinkedHashMap<>();
+		details.put("targetUserId", targetUserId.toString());
+		details.put("amountCents", amountCents);
+		details.put("reason", reason);
+		details.put("transactionId", transactionId.toString());
+		try {
+			jdbcTemplate.update("""
+					INSERT INTO audit_logs (actor_user_id, action, entity_type, entity_id, details)
+					VALUES (?, 'WALLET_ADMIN_ADJUSTMENT', 'WALLET', ?, CAST(? AS jsonb))
+					""", adminUserId, targetUserId.toString(),
+					objectMapper.writeValueAsString(details));
+		} catch (JsonProcessingException exception) {
+			throw new IllegalStateException("No se pudo serializar la auditoría del ajuste de saldo", exception);
+		}
 	}
 
 	@Transactional

@@ -99,13 +99,6 @@ export function SiteHeader({
       <div className="mx-auto flex h-16 max-w-[1320px] items-center gap-3 px-4 sm:px-6 lg:px-8">
         <Logo />
 
-        <span
-          title={t("demo.title")}
-          className="inline-flex items-center rounded-full border border-accent/30 bg-accent/10 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.14em] text-accent sm:px-2"
-        >
-          {t("demo.badge")}
-        </span>
-
         <div className="hidden h-6 w-px bg-white/10 lg:block" />
 
         <div className="hidden xl:block">
@@ -141,6 +134,14 @@ export function SiteHeader({
               {t("nav.myBets")}
             </button>
           )}
+          {user?.roles.includes("ADMIN") ? (
+            <Link
+              href="/admin"
+              className={cn(navBase, "text-accent hover:bg-accent/10")}
+            >
+              {t("nav.admin")}
+            </Link>
+          ) : null}
         </nav>
 
         <div className="ml-auto flex items-center gap-2">
@@ -294,6 +295,15 @@ export function SiteHeader({
                   {t("nav.myBets")}
                 </button>
               )}
+              {user?.roles.includes("ADMIN") ? (
+                <Link
+                  href="/admin"
+                  onClick={() => setMenuOpen(false)}
+                  className="rounded-lg border border-accent/30 bg-accent/10 px-3 py-2.5 text-left text-sm font-medium text-accent transition hover:bg-accent/15"
+                >
+                  {t("nav.admin")}
+                </Link>
+              ) : null}
             </div>
 
             <div className="flex items-center justify-between gap-3 border-t border-arena-line pt-4">

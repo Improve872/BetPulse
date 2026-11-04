@@ -110,7 +110,7 @@ Aceptación: partido termina → apuestas liquidadas una sola vez → wallet acr
 
 ### M6 — Producto: arena visual, streaming y contenido (2 semanas)
 
-**Estado:** cerrado 2026-11-03 (M6a + M6b).
+**Estado:** cerrado 2026-11-04 (M6a + M6b + M6c).
 
 Objetivo: consolidar la capa visual del producto y la jerarquía de información
 del lobby, y después añadir streaming y contenido alrededor del partido.
@@ -163,6 +163,19 @@ Aceptación M6a:
 
 Aceptación M6b: toggle ES/EN; soles bien formateados; stream carga o muestra
 fallback; home con hero y contenido; flujo de pago demo; UI completa.
+
+#### M6c — Copy de producto y saldo administrativo
+
+- Quitar de la UI “saldo ficticio”, “partidas reales”, “proyecto académico” y chip DEMO.
+- Footer global: solo copyright.
+- Enlace **Admin** visible para `ROLE_ADMIN`.
+- `/admin/users`: búsqueda por email/nombre y ajuste de saldo con motivo.
+- Migración V11: `ADMIN_ADJUSTMENT` con ledger `USER_AVAILABLE` contra `HOUSE`
+  y auditoría `WALLET_ADMIN_ADJUSTMENT`.
+- Sin usuario demo fijo: el registro público crea la wallet.
+
+Aceptación M6c: copy de producto sin avisos de demo; admin puede acreditar y
+debitar saldo con ledger balanceado y auditoría; 100 tests backend verdes.
 
 ### M7 — Hardening + demo + empaquetado laptop (2 semanas)
 

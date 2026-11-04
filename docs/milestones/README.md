@@ -13,3 +13,4 @@ El estado vigente está siempre en `docs/STATUS.md`.
 | M5 — Liquidación y admin | `M5-liquidacion.md` | 2026-11-01 |
 | M6a — Arena visual y sistema de diseño | `M6a-arena-visual.md` | 2026-11-03 |
 | M6b — Streaming oficial y cierre de producto | `M6b-streaming.md` | 2026-11-03 |
+| M6c — Copy de producto y saldo administrativo | `M6c-cuenta-admin.md` | 2026-11-04 |

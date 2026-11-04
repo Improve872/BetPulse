@@ -332,7 +332,7 @@ export function MatchDetailModal({
               })}
 
               <p className="text-[11px] leading-4 text-arena-muted">
-                {t("market.demoNote")}
+                {t("market.oddsNote")}
               </p>
             </>
           ) : (

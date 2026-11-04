@@ -179,6 +179,12 @@ export function AdminStreamsPage() {
             >
               {t("admin.markets")}
             </Link>
+            <Link
+              href="/admin/users"
+              className="text-xs font-semibold text-accent-strong hover:underline"
+            >
+              {t("admin.users")}
+            </Link>
           </div>
         </div>
 

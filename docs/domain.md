@@ -16,7 +16,7 @@
 
 ## Dinero
 
-- Moneda: PEN ficticio.
+- Moneda: PEN de práctica.
 - Almacenamiento: `BIGINT` en céntimos.
 - Formato de UI: `S/ 1,250.00` con `es-PE`.
 - Nunca usar `float`/`double` para dinero.

@@ -123,6 +123,12 @@ export function AdminBetsPage() {
             >
               {t("admin.streams")}
             </Link>
+            <Link
+              href="/admin/users"
+              className="text-xs font-semibold text-accent-strong hover:underline"
+            >
+              {t("admin.users")}
+            </Link>
           </div>
         </div>
 

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
-import { ArrowRightIcon, InfoIcon, WalletIcon } from "@/components/icons";
+import { ArrowRightIcon, WalletIcon } from "@/components/icons";
 import { LoginModal, type LoginMode } from "@/components/login-modal";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
@@ -149,11 +149,6 @@ export function WalletPage() {
           </Link>
         </div>
 
-        <p className="mt-3 flex items-start gap-2 rounded-xl border border-accent/20 bg-accent/5 px-4 py-3 text-xs leading-5 text-accent-strong">
-          <InfoIcon className="mt-0.5 h-4 w-4 shrink-0" />
-          {t("wallet.demoNote")}
-        </p>
-
         {loading ? (
           <div className="mt-6 grid gap-4 sm:grid-cols-2">
             {[0, 1].map((item) => (
@@ -172,7 +167,7 @@ export function WalletPage() {
               {t("wallet.loginRequired")}
             </h2>
             <p className="mx-auto mt-1 max-w-sm text-sm leading-6 text-muted">
-              {t("wallet.demoNote")}
+              {t("wallet.loginHint")}
             </p>
             <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
               <button

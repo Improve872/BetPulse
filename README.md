@@ -1,8 +1,6 @@
 # BetPulse
 
-Plataforma web de apuestas simuladas de esports, con Dota 2 como primer juego. Datos reales, motor propio de cuotas, wallet ficticia en soles peruanos (PEN), liquidación y panel administrativo.
-
-> Proyecto académico. No opera con dinero real. El saldo es ficticio.
+Plataforma web de apuestas de esports, con Dota 2 como primer juego. Datos reales, motor propio de cuotas, saldo en soles peruanos (PEN), liquidación y panel administrativo.
 
 ## Estado
 
@@ -24,10 +22,10 @@ El estado vigente (hito actual, bloqueos y próxima acción) está en [`docs/STA
 - Catálogo con datos reales de OpenDota (`/live` y `/proMatches`) servido por el backend; sin fixtures ni cuotas inventadas.
 - Lobby actualizado por SSE (`/api/live/stream`) con eventos `lobby`, `markets` y `heartbeat`; badge de salud del feed y reconexión automática de `EventSource`.
 - Login/registro real contra la API, con sesión, CSRF y header autenticado.
-- Página `/wallet` con saldo disponible/retenido, depósitos y retiros demo, historial e idempotencia.
+- Página `/wallet` con saldo disponible/retenido, recargas, retiros, historial e idempotencia.
 - Cuatro mercados por partida en vivo: ganador, total de kills, hándicap de kills y duración, con cuotas propias a 3 decimales y versión.
 - Bet slip funcional con stake, payout potencial y retención de saldo; historial privado en `/bets`.
-- Aviso de saldo ficticio en el footer y en la billetera; sin franja “DEMO”.
+- Footer sobrio; el contexto de entorno local vive en la documentación, no en la interfaz.
 - Verificación: 1440, 1024 y 390 px; filtros, modales, ES/EN y flujo de billetera probados.
 
 ## Documentación

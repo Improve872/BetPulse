@@ -102,6 +102,8 @@ Formato: contexto → decisión → consecuencias. Actualizar cuando cambie una 
 
 **Consecuencias:** ledger en céntimos; depósitos/retiros simulados; sin datos de tarjetas reales.
 
+**Actualización (2026-11-04):** ADR-037 retira de la UI el badge “Modo demo” y el término “saldo ficticio”. El ledger y la moneda de práctica se mantienen.
+
 ## ADR-010 — Español por defecto + ES/EN
 
 **Estado:** aceptada
@@ -205,6 +207,8 @@ Formato: contexto → decisión → consecuencias. Actualizar cuando cambie una 
 **Actualización (2026-10-27):** ADR-022 implementó el M3a; las partidas en vivo ya publican el mercado `MATCH_WINNER` con cuotas propias. Se mantiene la regla de no inventar partidas ni cuotas.
 
 **Actualización (2026-11-03):** ADR-035 sustituye el lobby light-first y la ausencia de chip DEMO para las rutas de arena. Wallet, apuestas y admin conservan superficies claras.
+
+**Actualización (2026-11-04):** ADR-037 elimina el aviso legal de saldo ficticio del footer y de la billetera; el footer queda solo con el copyright.
 
 ## ADR-020 — Identidad y wallet base de M1
 
@@ -493,6 +497,8 @@ Formato: contexto → decisión → consecuencias. Actualizar cuando cambie una 
 - La UI gana jerarquía y legibilidad; el coste es un tema oscuro específico de arena y un endpoint adicional de solo lectura.
 - La página de partido y el modal oscuro comparten la misma identidad visual. Wallet/apuestas/admin no cambian de tema.
 
+**Actualización (2026-11-04):** ADR-037 retira el chip DEMO del header. La arena mantiene el resto del sistema visual.
+
 ## ADR-036 — Streaming oficial en el detalle, no en el lobby (M6b)
 
 **Estado:** aceptada (2026-11-03)
@@ -517,3 +523,27 @@ Formato: contexto → decisión → consecuencias. Actualizar cuando cambie una 
 - La configuración de streams requiere un admin y tarda hasta el siguiente refresco del catálogo (≤30 s) en reflejarse en el lobby.
 - Si Twitch/YouTube bloquea el embed o el canal está offline, el fallback evita una caja negra sin salida.
 - No se modifican cuotas, settlement, wallet ni reglas de apuesta.
+
+## ADR-037 — Superficie de producto sin aviso demo y ajuste de saldo admin (M6c)
+
+**Estado:** aceptada (2026-11-04)
+**Sustituye parcialmente:** ADR-009 (badge “Modo demo”), ADR-019 (aviso legal en footer) y ADR-035 (chip DEMO en el header).
+
+**Contexto:** el producto corre siempre en local y se usa como demostración de ingeniería y producto. Los avisos “saldo ficticio”, “proyecto académico” y el chip “DEMO” en la interfaz rompen la percepción de producto. Además, el admin no tenía forma de cargar saldo a un usuario, un flujo básico para la demo.
+
+**Decisión:**
+
+- La UI no muestra “saldo ficticio”, “partidas reales”, “proyecto académico” ni chip DEMO.
+- El footer muestra solo `© 2026 BetPulse.`; no incluye Dota 2 ni avisos legales.
+- El contexto de entorno local queda documentado en README/runbook, no en la interfaz.
+- El registro es público; no se siembra un usuario demo con credenciales fijas.
+- El admin puede ajustar el saldo de un usuario desde `/admin/users`: búsqueda por correo/nombre, saldo disponible/retenido, acreditar o debitar con motivo.
+- El ajuste usa el ledger de doble entrada (`USER_AVAILABLE` contra `HOUSE`), tipo `ADMIN_ADJUSTMENT`, idempotencia por usuario y auditoría `WALLET_ADMIN_ADJUSTMENT`.
+- El header muestra un enlace **Admin** solo cuando el usuario tiene rol `ADMIN`.
+
+**Consecuencias:**
+
+- AGENTS.md deja de exigir un aviso visible de demo; exige documentar el entorno local en README/runbook.
+- Se agrega la migración V11 para permitir `ADMIN_ADJUSTMENT` en `ledger_transactions`.
+- El admin puede preparar la demo sin tocar SQL manual; cada ajuste queda auditado y balanceado.
+- No se crea un usuario demo fijo: el usuario se registra y puede recargar desde `/wallet` o recibir saldo del admin.

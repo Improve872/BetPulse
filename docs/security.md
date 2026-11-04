@@ -32,6 +32,7 @@ Proteger cuentas, saldos, apuestas, cuotas, panel administrativo, datos personal
 | MFA para admin | **No implementado** | Pendiente M7 |
 | CSP `frame-src` para streaming | Implementado | `next.config.ts`; CSP completa pendiente M7 |
 | Admin de streams con RBAC y auditoría | Implementado | `AdminStreamController`, `audit_logs`, `AdminStreamFlowTest` |
+| Ajuste de saldo admin con ledger y auditoría | Implementado | `AdminUserController`, `ADMIN_ADJUSTMENT`, `AdminUserFlowTest` |
 | URLs de streaming validadas | Implementado | Provider Twitch/YouTube, canal/video obligatorio y fallback HTTP(S) |
 | Rol `TRADER` operativo | **No implementado** | El rol existe; no hay endpoints/UI |
 | Rol `AUDITOR` operativo | **No implementado** | El rol existe; no hay endpoints/UI |
@@ -194,7 +195,7 @@ Reglas:
 - Minimización: solo email, nombre y datos necesarios.
 - Aviso de privacidad y consentimiento en el registro.
 - Confirmación de mayoría de edad.
-- Aviso de dinero ficticio.
+- Contexto de entorno local documentado en README/runbook; la UI no muestra avisos de demo (ADR-037).
 - Retención limitada y eliminación de cuentas demo.
 - Acceso y rectificación.
 - Referencia a la Ley N.° 29733 de Protección de Datos Personales del Perú.
@@ -203,7 +204,7 @@ Reglas:
 ## Registro de usuarios y cumplimiento simulado
 
 - Registro con email, contraseña, aceptación de términos y privacidad, confirmación 18+.
-- Aviso visible: “Plataforma de demostración. El saldo es ficticio. No se realizan apuestas con dinero real.”
+- Entorno local de demostración documentado en README/runbook; la UI se presenta como producto (ADR-037).
 - Enlace simulado a Libro de Reclamaciones (opcional, para emular una casa peruana).
 - Aviso de juego responsable y límites configurables.
 - Admin separado, con roles y auditoría.
