@@ -20,6 +20,10 @@ scripts/gsi-capture/captures/
 collector/captures/
 collector/spool/
 
+# Demo Docker
+dist/
+infra/demo.env
+
 # IDE
 .idea/
 .vscode/

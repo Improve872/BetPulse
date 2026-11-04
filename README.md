@@ -47,6 +47,24 @@ El estado vigente (hito actual, bloqueos y próxima acción) está en [`docs/STA
 - Docker Desktop (o PostgreSQL nativo)
 - Dota 2 para la demo
 
+## Docker (demo)
+
+La demo completa de frontend + backend + PostgreSQL corre en contenedores:
+
+```powershell
+.\scripts\demo-package.ps1   # genera dist/betpulse-demo-kit
+```
+
+En la PC de la demo:
+
+```powershell
+cd C:\BetPulseDemo
+powershell -ExecutionPolicy Bypass -File .\start.ps1
+```
+
+Abre `http://localhost:3000`. Solo requiere Docker Desktop e internet para
+OpenDota. No incluye colector ni GSI. Detalle en `demo-kit/README.md`.
+
 ## Arranque
 
 ```bash
