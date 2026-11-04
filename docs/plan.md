@@ -200,6 +200,8 @@ transferencia → saldo actualizado; carrusel y menú funcionan en desktop y mó
 
 Objetivo: que no falle en clase.
 
+**Estado:** en curso. Empaquetado Docker listo para la demo del 2026-11-05.
+
 Tareas:
 
 - Headers, CSRF, rate limiting, RBAC, pruebas IDOR/XSS/CSRF.
@@ -207,7 +209,11 @@ Tareas:
 - Escaneo de dependencias y checklist de seguridad.
 - Documentación: OpenAPI, ERD, ADRs, runbook, manuales.
 - Ensayo de demo 3 veces, guion y video de respaldo.
-- Empaquetado para la laptop de presentación (Docker Compose o nativo portable).
+- Empaquetado Docker para la demo (frontend + backend + PostgreSQL):
+  - Dockerfiles multietapa y `output: "standalone"`.
+  - `infra/docker-compose.demo.yml` con healthchecks y volumen.
+  - `demo-kit/` con arranque, parada, reset y `.tar` de imágenes.
+  - Sin colector ni GSI en este paquete.
 
 Aceptación: checklist aprobado; demo de 30 min sin fallos críticos; respaldo listo.
 

@@ -599,3 +599,32 @@ Formato: contexto → decisión → consecuencias. Actualizar cuando cambie una 
 - Para volverlo real se sustituyen los formularios por el widget de la pasarela y se agrega el adaptador/webhook en `payments`; wallet, betting y settlement quedan intactos.
 - Sin Luhn se aceptan números falsos; la validación de longitud/marca sigue evitando errores evidentes.
 - Los logos son marcas de terceros usadas como indicadores; su origen queda documentado en `frontend/public/brands/README.md`.
+
+## ADR-040 — Empaquetado Docker para la demo (M7)
+
+**Estado:** aceptada (2026-11-04)
+**Relacionada:** ADR-006 (monorepo y stack), ADR-038 (experiencia de demo).
+
+**Contexto:** la presentación final se hará en otra PC con Docker e internet, sin Dota 2 ni GSI. Clonar el repositorio en esa máquina obliga a instalar Java, Node y PostgreSQL, y expone la demo a diferencias de versiones y tiempos de descarga. El proyecto final también debe presentarse como un stack reproducible.
+
+**Decisión:**
+
+- Backend y frontend se empaquetan con Dockerfiles multietapa:
+  - Backend: Maven + JDK 21 para compilar, `eclipse-temurin:21-jre-alpine` para ejecutar.
+  - Frontend: `node:24-alpine`, `npm ci`, build con `output: "standalone"` y runtime Node mínimo.
+- `infra/docker-compose.demo.yml` levanta PostgreSQL 17, backend y frontend.
+- Solo se publica el frontend (`3000`); backend y base de datos quedan en la red interna.
+- El frontend proxya `/api` a `http://backend:8081`; la URL se fija en el build de la imagen. Las cookies y CSRF siguen siendo del mismo origen.
+- PostgreSQL usa un volumen nombrado; `down` conserva datos y `down -v` los borra.
+- El demo kit (`demo-kit/`) contiene compose, `.env`, scripts de arranque/parada/reset y un `.tar` con las imágenes para cargarlas sin registro.
+- No se incluye colector ni GSI en este empaquetado; el catálogo sigue viniendo de OpenDota.
+- Los scripts de empaquetado construyen las imágenes y generan `dist/betpulse-demo-kit/`; el `.tar` no se versiona.
+
+**Consecuencias:**
+
+- La PC de la demo solo necesita Docker Desktop; no instala Java, Node ni PostgreSQL.
+- Las versiones quedan fijadas en las imágenes y el arranque es reproducible.
+- El kit funciona con internet para OpenDota y para el `docker pull` si no se usa el `.tar`; con el `.tar` no depende de un registro.
+- El stack puede evolucionar al despliegue final agregando secretos reales, HTTPS, un registro de imágenes y el colector cuando corresponda.
+- El healthcheck y `--wait` hacen que el arranque espere a que los tres servicios estén listos.
+- La base arranca limpia; para mostrar historial se restaura un dump o se generan las operaciones en vivo.

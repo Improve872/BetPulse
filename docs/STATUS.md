@@ -6,7 +6,7 @@
 
 ## Hito actual
 
-**M6 — Producto cerrado (M6a + M6b + M6c + M6d, 2026-11-04).** Siguiente: M7 (hardening/demo). M3c sigue bloqueado por falta de calendario pre-partida.
+**M6 — Producto cerrado (M6a + M6b + M6c + M6d, 2026-11-04). M7 en curso: empaquetado Docker para la demo.** Siguiente: hardening y ensayo final. M3c sigue bloqueado por falta de calendario pre-partida.
 
 Cerrados: M0 (capturas GSI reales), M1 (identidad y wallet), M2a (catálogo OpenDota + SSE), M2b (partida propia GSI), M3a y M3b (cuatro mercados en vivo con cuotas), M4 (apuestas simples con holds), M5 (liquidación, payout/void, admin y auditoría), M6a (arena visual y sistema de diseño), M6b (streaming oficial y cierre de producto), M6c (copy de producto y saldo administrativo), M6d (cuenta, rail en vivo y checkout simulado). Detalle en `docs/milestones/`.
 
@@ -28,6 +28,10 @@ Cerrados: M0 (capturas GSI reales), M1 (identidad y wallet), M2a (catálogo Open
 - M6d: `/wallet` es un checkout de pasarela en tres pasos (monto → pago → confirmar). Tarjeta con vista previa, detección Visa/Mastercard/Amex, formato, vencimiento y CVV; Yape/Plin con celular y OTP de 6 dígitos; transferencia con banco, cuenta/CCI, referencia y número de operación. Incluye resumen, procesamiento y comprobante con nuevo saldo.
 - M6d: los datos de tarjeta, OTP y cuentas viven solo en memoria del navegador; se enmascaran en la revisión y no se envían, registran ni guardan. El backend sigue recibiendo solo `amountCents` e `Idempotency-Key`.
 - M6d: logos locales de Visa, Mastercard, Amex, Yape y Plin como indicadores de método; sin sellos de certificación ni afiliación.
+- M7: backend y frontend tienen Dockerfiles multietapa; el frontend usa `output: "standalone"` y el backend corre sobre JRE 21 Alpine.
+- M7: `infra/docker-compose.demo.yml` levanta PostgreSQL 17, backend y frontend; solo se publica el frontend en `3000` y el backend queda en la red interna.
+- M7: `demo-kit/` incluye compose, `.env`, scripts de arranque/parada/reset y un `.tar` con las imágenes para cargarlas sin registro. `scripts/demo-package.ps1` genera el kit en `dist/`.
+- M7: el empaquetado de demo no incluye colector ni GSI; el catálogo sigue viniendo de OpenDota y requiere internet.
 - Catálogo con datos reales de OpenDota; sin fixtures ni datos inventados en el producto.
 - Las partidas con `league_id > 0` se priorizan sobre las ranked y muestran el nombre de liga resuelto con `/leagues/{id}` (caché 6 h).
 - Cuatro mercados base por partida en vivo (ganador, total de kills, handicap y duración) más tres de eventos GSI (primera sangre, primera torre y siguiente Roshan), con versión e historial append-only.
@@ -60,14 +64,15 @@ Cerrados: M0 (capturas GSI reales), M1 (identidad y wallet), M2a (catálogo Open
 
 ## Próxima acción
 
-1. M7: rate limiting, MFA, CSP completa, E2E, empaquetado y ensayo de demo.
-2. M8: fútbol pre-partida (ESPN/OpenLigaDB), luego NBA; sin eventos en vivo.
-3. Opcional: M3c si aparece calendario fiable; Steam `GetLiveLeagueGames` si hay API key; pulido admin (usuarios, exposición, salud).
+1. M7: rate limiting, MFA, CSP completa, E2E y ensayo de demo.
+2. Probar el kit Docker en la PC de la presentación y grabar el video de respaldo.
+3. M8: fútbol pre-partida (ESPN/OpenLigaDB), luego NBA; sin eventos en vivo.
+4. Opcional: M3c si aparece calendario fiable; Steam `GetLiveLeagueGames` si hay API key; pulido admin (usuarios, exposición, salud).
 
 ## Pendiente de entorno (opcional)
 
 - `STEAM_API_KEY` para enriquecer el feed pro con draft, torres y Roshan. No bloquea la demo.
-- Laptop de presentación: confirmar RAM/OS y probar el empaquetado.
+- PC de presentación: Docker Desktop funcionando y `dist/betpulse-demo-kit` copiado.
 
 ## Bloqueos
 
@@ -104,6 +109,10 @@ Resultados 2026-11-04 (M6d):
 - Prueba de API real: registro → `me` con `createdAt` → cambio de contraseña → depósito S/ 150.00 → admin busca al usuario y acredita S/ 50.00 (saldo final S/ 200.00).
 - QA de checkout con navegador automatizado local: recarga Yape con OTP, recarga con tarjeta Visa, recarga por transferencia, retiro por transferencia, errores de tarjeta/OTP y copy EN, a 1440 px y 390 px. Sin errores de consola.
 - Verificación de red: los POST de depósito/retiro solo llevan `amountCents`; ningún dato de tarjeta, OTP o cuenta sale del navegador.
+- M7 Docker: imágenes `betpulse-backend:demo` y `betpulse-frontend:demo` construidas; `docker compose up --wait` dejó PostgreSQL, backend y frontend `healthy`.
+- M7 Docker: lobby con SSE a través del proxy de Next (6 partidas en vivo), registro, depósito, checkout con tarjeta, cuenta, apuesta, historial, admin y ajuste de saldo probados contra el stack en `3100`.
+- M7 Docker: reinicio con `down`/`up` conservó usuario y saldo; `stop.ps1 -Volumes` + arranque dejó base limpia y admin sembrado.
+- M7 Docker: kit de 365 MB generado en `dist/betpulse-demo-kit`; `start.ps1` cargó las imágenes desde el `.tar`, levantó el stack y respondió en `3101` sin instalar Java, Node ni PostgreSQL en el host.
 - Colector: 11/11 tests verdes y `package` con shade correcto.
 - E2E real (2026-11-01): GSI mid-game → 4 mercados base + torre/Roshan → apuesta de S/ 10 a ganador → `POST_GAME` → `WON` con payout S/ 10.96; wallet disponible S/ 100.96 y retenido S/ 0. Liquidación en menos de un minuto.
 
@@ -114,7 +123,7 @@ Verificación funcional anterior (2026-10-27): 24 mercados abiertos (4 por parti
 - Windows 11 Pro, 13.9 GB de RAM visible (16 GB nominales).
 - Java 21.0.7 (Temurin); Node 24.11.1, npm 11.6.2.
 - Maven Wrapper en backend y colector.
-- Docker Desktop; PostgreSQL 17.11 en `betpulse-postgres` (puerto `5432`).
+- Docker Desktop 29.9.2; imágenes `node:24-alpine`, `eclipse-temurin:21-jre-alpine` y `postgres:17-alpine` fijadas. PostgreSQL 17.11 local en `betpulse-postgres` (puerto `5432`).
 - Dota 2 en `C:\Program Files (x86)\Steam\steamapps\common\dota 2 beta`.
 - Puerto `8080` ocupado por Jenkins; backend en `8081`.
 - Un solo desarrollador, una sola PC, local-first; empaquetado para laptop al final.

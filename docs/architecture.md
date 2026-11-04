@@ -241,10 +241,13 @@ data: {"at":"2026-10-27T03:49:26Z"}
 
 ### Presentación en laptop
 
-- Empaquetado Docker Compose o nativo portable.
-- Todo corre en la laptop; no depende de LAN.
-- Si la laptop tiene menos RAM, PostgreSQL nativo y backend/frontend nativos.
-- Probar arranque, GSI, SSE y demo completa antes de la presentación.
+- Docker Compose con PostgreSQL, backend y frontend; no requiere Java, Node ni PostgreSQL en el host.
+- Solo se publica el frontend en `3000`; backend y base de datos quedan en la red interna. El frontend proxya `/api` a `http://backend:8081`.
+- Frontend con `output: "standalone"`; backend sobre JRE 21 Alpine; PostgreSQL 17 con volumen nombrado.
+- El demo kit (`demo-kit/`) incluye compose, scripts y un `.tar` con las imágenes para cargarlas sin registro.
+- No incluye colector ni GSI en la demo; OpenDota alimenta el catálogo y requiere internet.
+- Probar arranque, SSE, flujos de cuenta/wallet/apuestas/admin y reset de base antes de la presentación.
+- Si no hay internet, la app abre pero el lobby queda vacío; usar hotspot o video de respaldo.
 
 ## Requisitos no funcionales
 

@@ -19,7 +19,33 @@ feed de torneos/ranked de OpenDota y el panel admin.
 **Demo principal:** una partida con bots o un torneo en vivo. Si no hay torneo,
 los bots dan el control total y permiten terminar la partida a voluntad.
 
-## Setup
+## Demo Docker (recomendada)
+
+La presentación usa **frontend + backend + PostgreSQL** en Docker. No incluye
+Dota 2, GSI ni colector.
+
+En la PC de la demo:
+
+```powershell
+# Copiar dist/betpulse-demo-kit a C:\BetPulseDemo
+cd C:\BetPulseDemo
+powershell -ExecutionPolicy Bypass -File .\start.ps1
+```
+
+- Abre `http://localhost:3000`.
+- Admin: `admin@betpulse.local` / `Admin123!`.
+- `stop.ps1` detiene conservando datos; `reset.ps1` deja la base limpia.
+- Si el puerto `3000` está ocupado: `.\start.ps1 -Port 3100`.
+- Requiere Docker Desktop abierto e internet para OpenDota.
+- El kit carga las imágenes desde `betpulse-demo-images.tar`; no necesita registro.
+
+Para generar el kit desde el repo:
+
+```powershell
+.\scripts\demo-package.ps1
+```
+
+## Desarrollo local
 
 ```powershell
 docker compose -f infra/docker-compose.yml up -d postgres
@@ -88,6 +114,11 @@ fallback “sin stream oficial”; no se inventa señal.
 - M6d checkout: Yape con OTP, tarjeta Visa, transferencia de recarga y retiro
   probados en navegador; el comprobante muestra método y código de operación.
   Los datos de tarjeta/OTP solo viven en el navegador.
+- M7 Docker: stack con PostgreSQL + backend + frontend `healthy`; lobby con SSE,
+  registro, depósito, checkout, apuesta, historial y admin probados.
+- M7 Docker: kit de `dist/betpulse-demo-kit` (365 MB) cargado desde el `.tar` y
+  arrancado en `3101` sin instalar Java, Node ni PostgreSQL; reset de base y
+  admin sembrado verificados.
 
 ## Riesgos
 
@@ -108,5 +139,6 @@ fallback “sin stream oficial”; no se inventa señal.
 - [x] Apuesta y liquidación probadas de punta a punta.
 - [x] Admin de mercados y auditoría probados.
 - [x] Cuenta, cambio de contraseña y checkout simulado probados.
-- [ ] Ensayo completo en la laptop de presentación.
+- [x] Kit Docker probado desde el `.tar` con base limpia.
+- [ ] Ensayo completo en la PC de la presentación.
 - [ ] Video de respaldo (opcional).
