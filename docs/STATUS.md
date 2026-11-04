@@ -15,7 +15,7 @@ Cerrados: M0 (capturas GSI reales), M1 (identidad y wallet), M2a (catálogo Open
 - Backend Spring Boot 3.5.16 / Java 21 en `8081`; compila y arranca con PostgreSQL real.
 - Frontend Next.js 15.5.28 + React 19.1 + Tailwind 4; lint y build verdes. Rutas `/`, `/wallet`, `/bets`, `/admin`, `/admin/markets`, `/admin/streams`, `/admin/users` y `/match/[id]`.
 - Lobby responsive con cards, filtros, modal de partida con mercados múltiples, bet slip y página de apuestas.
-- M6a: lobby y `/match/[id]` usan el tema arena nocturna; wallet, apuestas y admin conservan superficies claras. Header con chip DEMO, tabs En vivo/Resultados, partido destacado, escudos reales, cuotas tipo price tile, estado “en tu boleto” y boleto vacío discreto.
+- M6a: lobby y `/match/[id]` usan el tema arena nocturna; wallet, apuestas y admin conservan superficies claras. Tabs En vivo/Resultados, partido destacado, escudos reales, cuotas tipo price tile, estado “en tu boleto” y boleto vacío discreto.
 - Escudos: `LobbyTeam.teamId` desde OpenDota y proxy cacheado `GET /api/catalog/teams/{id}/logo`; fallback a monograma si el equipo o el CDN fallan.
 - Movimiento de cuota sutil mediante SSE; respeta `prefers-reduced-motion`. Sin cambios en cuotas, settlement ni wallet.
 - M6b: streaming oficial Twitch/YouTube con `match_streams` por partida o liga. `GET /api/catalog/lobby` expone `stream`; `/match/[id]` monta `StreamPlayer` click-to-load debajo del scoreboard; el lobby solo muestra CTA “Ver stream” y badges.
