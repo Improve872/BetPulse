@@ -36,6 +36,10 @@ Abrir dos perfiles del navegador:
 - usuario nuevo (regístrate con cualquier correo);
 - admin (`admin@betpulse.local` / `Admin123!`), que puede acreditarle saldo desde `/admin/users`.
 
+El header del usuario autenticado abre un menú con **Mi cuenta**, **Mi billetera**,
+**Mis apuestas**, **Admin** (si aplica) y **Salir**. En `/account` se ven los datos
+y se cambia la contraseña; en `/wallet` se prueba el checkout simulado.
+
 En `/admin/streams`, asignar un canal oficial de Twitch o un video de YouTube
 a la partida o liga que se mostrará. Sin stream asignado, la UI muestra el
 fallback “sin stream oficial”; no se inventa señal.
@@ -45,15 +49,15 @@ fallback “sin stream oficial”; no se inventa señal.
 | Minuto | Acción |
 |---|---|
 | 0–2 | Presentar BetPulse: apuestas de esports, datos reales y panel administrativo |
-| 2–4 | Registro/login, wallet en S/ y admin acreditando saldo desde `/admin/users` |
-| 4–6 | Lobby: partido destacado con escudos, tabs, cuotas, boleto y CTA “Ver stream”; abrir el detalle y reproducir el stream oficial |
-| 6–9 | "Mi partida": iniciar partida con bots en Dota 2 o entrar a DotaTV |
-| 9–12 | Mostrar `/match/[id]`: marcador, stream, mercados, timeline, Roshan y SSE |
-| 12–14 | Apostar a primera sangre o primera torre; ver hold y `/bets` |
-| 14–16 | Provocar el evento en la partida; el mercado se cierra |
-| 16–18 | Terminar la partida o esperar `POST_GAME`; liquidación automática |
-| 18–19 | Wallet actualizada, pago, estado `WON/LOST/VOID`, auditoría |
-| 19–20 | Admin: ajustar saldo, suspender/reanudar/override de cuota con motivo |
+| 2–4 | Registro/login, menú de usuario, `/account` y cambio de contraseña; wallet en S/ y admin acreditando saldo desde `/admin/users` |
+| 4–6 | Lobby: partido destacado, carrusel “En vivo ahora”, escudos, tabs, cuotas y boleto; abrir el detalle y reproducir el stream oficial |
+| 6–9 | Checkout simulado en `/wallet`: monto, Yape/Plin/transferencia/tarjeta, resumen y confirmación con nuevo saldo |
+| 9–11 | "Mi partida": iniciar partida con bots en Dota 2 o entrar a DotaTV |
+| 11–14 | Mostrar `/match/[id]`: marcador, stream, mercados, timeline, Roshan y SSE |
+| 14–16 | Apostar a primera sangre o primera torre; ver hold y `/bets` |
+| 16–18 | Provocar el evento en la partida; el mercado se cierra |
+| 18–19 | Terminar la partida o esperar `POST_GAME`; liquidación automática |
+| 19–20 | Wallet actualizada, pago, estado `WON/LOST/VOID`, auditoría y repaso del admin |
 
 ## Liquidación
 
@@ -75,6 +79,11 @@ fallback “sin stream oficial”; no se inventa señal.
   feed OpenDota a 1440 px y 390 px.
 - M6b: asignación de stream desde `/admin/streams`, CTA en el hero, player
   click-to-load en `/match/[id]` y fallback probados con Twitch.
+- M6c: admin acreditó S/ 250.00 a un usuario de test desde `/admin/users`; saldo
+  actualizado, ledger balanceado y auditoría registrada.
+- M6d: registro → cambio de contraseña → depósito simulado S/ 150.00 → ajuste
+  admin de S/ 50.00 (saldo final S/ 200.00). Menú de usuario, `/account`,
+  carrusel en vivo y checkout revisados en navegador.
 
 ## Riesgos
 
@@ -94,5 +103,6 @@ fallback “sin stream oficial”; no se inventa señal.
 - [x] Fuente principal y respaldo definidos.
 - [x] Apuesta y liquidación probadas de punta a punta.
 - [x] Admin de mercados y auditoría probados.
+- [x] Cuenta, cambio de contraseña y checkout simulado probados.
 - [ ] Ensayo completo en la laptop de presentación.
 - [ ] Video de respaldo (opcional).

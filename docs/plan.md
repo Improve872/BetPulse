@@ -110,7 +110,7 @@ Aceptación: partido termina → apuestas liquidadas una sola vez → wallet acr
 
 ### M6 — Producto: arena visual, streaming y contenido (2 semanas)
 
-**Estado:** cerrado 2026-11-04 (M6a + M6b + M6c).
+**Estado:** cerrado 2026-11-04 (M6a + M6b + M6c + M6d).
 
 Objetivo: consolidar la capa visual del producto y la jerarquía de información
 del lobby, y después añadir streaming y contenido alrededor del partido.
@@ -176,6 +176,20 @@ fallback; home con hero y contenido; flujo de pago demo; UI completa.
 
 Aceptación M6c: copy de producto sin avisos de demo; admin puede acreditar y
 debitar saldo con ledger balanceado y auditoría; 100 tests backend verdes.
+
+#### M6d — Cuenta, rail en vivo y checkout simulado
+
+- `/account`: datos del usuario, resumen de wallet y cambio de contraseña.
+- `POST /api/auth/password` con contraseña actual, política y sesión vigente.
+- Menú de usuario en el header: cuenta, billetera, apuestas, admin y salir.
+- `LiveRail`: carrusel horizontal de partidas en vivo con escudos, marcador,
+  tiempo y cuotas del mercado principal.
+- `/wallet` como checkout simulado: método, resumen, procesamiento y éxito.
+- Sin pasarela real ni captura de datos de tarjeta; ledger sin cambios.
+
+Aceptación M6d: registro → cambio de contraseña → recarga simulada → saldo
+actualizado; carrusel y menú funcionan en desktop y móvil; 101 tests backend
+verdes y lint/build verdes.
 
 ### M7 — Hardening + demo + empaquetado laptop (2 semanas)
 

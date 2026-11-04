@@ -547,3 +547,28 @@ Formato: contexto → decisión → consecuencias. Actualizar cuando cambie una 
 - Se agrega la migración V11 para permitir `ADMIN_ADJUSTMENT` en `ledger_transactions`.
 - El admin puede preparar la demo sin tocar SQL manual; cada ajuste queda auditado y balanceado.
 - No se crea un usuario demo fijo: el usuario se registra y puede recargar desde `/wallet` o recibir saldo del admin.
+
+## ADR-038 — Cuenta de usuario, rail en vivo y checkout simulado (M6d)
+
+**Estado:** aceptada (2026-11-04)
+**Relacionada:** ADR-037 (sin avisos de demo), ADR-035 (arena visual).
+
+**Contexto:** la demo necesitaba comportarse como un sitio de apuestas real: el usuario debe poder ver y editar sus datos, cambiar su contraseña, recorrer varias partidas en vivo de un vistazo y vivir un checkout de recarga/retiro con estados. Hasta M6c, `/account` no existía, el login no permitía cambiar contraseña, el lobby solo mostraba un ticker delgado y el wallet era un input de monto.
+
+**Decisión:**
+
+- `/account` (tema claro) muestra nombre, correo, fecha de alta, roles, resumen de wallet y formulario de cambio de contraseña.
+- `POST /api/auth/password` exige sesión, valida contraseña actual, política (8–72, letra y número) y que la nueva sea distinta. La sesión actual se mantiene; las credenciales viejas dejan de servir.
+- El header autenticado agrupa **Mi cuenta**, **Mi billetera**, **Mis apuestas**, **Admin** (solo rol `ADMIN`) y **Salir** en un menú desplegable; en móvil son enlaces del menú lateral.
+- El lobby incorpora `LiveRail`: carrusel horizontal de partidas en vivo (excluye la destacada) con torneo, escudos, marcador, tiempo y cuotas del mercado principal. Los partidos siguen abriendo el detalle.
+- `/wallet` se presenta como checkout simulado: monto, montos rápidos, método (Yape, Plin, transferencia, tarjeta), resumen con total y comisión, estado de procesamiento y pantalla de éxito con nuevo saldo.
+- Los métodos son etiquetas de UI: no se capturan datos de tarjeta y el backend solo recibe `amountCents` e `Idempotency-Key` como hasta M6b.
+- No se integra pasarela real para la demo; el saldo se mueve por el ledger existente.
+
+**Consecuencias:**
+
+- La cuenta queda completa sin agregar tablas: `users.created_at` ya existía y se expone en `UserResponse`.
+- El cambio de contraseña no invalida otras sesiones activas; el modelo de sesión en memoria no lo permite sin Spring Session. Se acepta en local-first y queda como deuda de M7.
+- El carrusel reutiliza cuotas y selección del boleto; no duplica lógica de apuestas.
+- El checkout no cambia contratos de wallet ni ledger; solo agrega estados de UI y copy.
+- La UI sigue sin avisos de demo (ADR-037).

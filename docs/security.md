@@ -15,11 +15,12 @@ Proteger cuentas, saldos, apuestas, cuotas, panel administrativo, datos personal
 - Infraestructura (PostgreSQL, colector, API).
 - Integridad del juego y reputación del proyecto.
 
-## Estado implementado (2026-11-03)
+## Estado implementado (2026-11-04)
 
 | Control | Estado | Evidencia |
 |---|---|---|
 | Auth con BCrypt 12, sesión HttpOnly y CSRF | Implementado | `AuthFlowTest`, `SecurityConfig` |
+| Cambio de contraseña autenticado | Implementado | `POST /api/auth/password`, `AuthFlowTest` |
 | RBAC admin con `@EnableMethodSecurity` | Implementado | `AdminBetController`, `AdminMarketController`, `AdminStreamController` |
 | Ingest GSI con HMAC-SHA256 y ventana de 5 min | Implementado | `IngestSignature`, `IngestFlowTest` |
 | Idempotencia de snapshots y eventos | Implementado | `snapshot_id` único y `UNIQUE (match_id, event_id)` |
@@ -164,12 +165,13 @@ Reglas:
 
 ### Pagos simulados
 
-- No se solicitan datos reales de tarjeta.
+- No se solicitan datos reales de tarjeta ni se captura PAN/CVV.
+- El checkout de `/wallet` es una UI de estados (método → resumen → procesando → éxito); solo envía `amountCents` e `Idempotency-Key`.
 - Proveedor fake con estados.
 - Webhooks HMAC e idempotencia.
 - Retiros con aprobación admin.
-- Aviso claro de simulación.
-- Sin PAN/CVV ni integración real.
+- Sin integración real de pasarela.
+- El contexto de entorno local se documenta en README/runbook (ADR-037).
 
 ## Secretos y configuración
 

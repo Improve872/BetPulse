@@ -68,15 +68,17 @@ En desarrollo, Next.js hace proxy de `/api` al backend para evitar CORS y compar
 - `lib/catalog.ts` consulta el backend en `BACKEND_URL` (por defecto `http://127.0.0.1:8081`) vía `GET /api/catalog/lobby`, con timeout de 7 s y `cache: "no-store"`. Si el backend no responde, devuelve lobby vacío con `feed.status=DOWN`.
 - `lib/live.ts` abre `EventSource("/api/live/stream")`, escucha `lobby`, `markets` y `heartbeat`, y expone `data`, `markets`, `connection` (`connecting|connected|disconnected`) y `retry` a `HomeLobby`.
 - `components/home-lobby.tsx` usa el snapshot inicial del servidor y lo reemplaza con cada evento SSE; muestra estado de conexión/feed en ES/EN y orquesta partido destacado, tabs En vivo/Resultados, rail de torneos, lista, bet slip, modales y navegación.
-- Componentes de arena: `featured-match`, `match-card`, `odds-button`, `team-crest`, `lobby-tabs`, `filter-rail`, `live-ticker`, `bet-slip`, `match-detail-modal`, `stream-player` y `match-detail-page`.
+- Componentes de arena: `featured-match`, `match-card`, `live-rail`, `odds-button`, `team-crest`, `lobby-tabs`, `filter-rail`, `bet-slip`, `match-detail-modal`, `stream-player` y `match-detail-page`.
 - Tokens en `app/globals.css`: arena `#070D18`, superficies `#0F1A2C`/`#142136`, líneas `#223149`, texto `#F8FAFC`, muted `#94A3B8`, naranja `#F97316`; el tema claro de cuenta conserva `--color-paper` y `--color-surface`. Tipografía local con números tabulares.
-- Superficies: lobby y `/match/[id]` son “arena” oscura; `/wallet`, `/bets`, `/admin` y `/admin/markets` son “cuenta” claras.
+- Superficies: lobby y `/match/[id]` son “arena” oscura; `/wallet`, `/account`, `/bets`, `/admin`, `/admin/markets`, `/admin/streams` y `/admin/users` son “cuenta” claras.
+- `LiveRail` muestra un carrusel horizontal de partidas en vivo (sin la destacada) con torneo, escudos, marcador, tiempo y cuotas del mercado principal; reutiliza `OddsButton` y la selección del boleto.
+- Header autenticado: menú de usuario con Mi cuenta, Mi billetera, Mis apuestas, Admin (solo `ADMIN`) y Salir; en móvil se replica en el menú lateral.
 - Escudos: `LobbyTeam.teamId` viaja desde el catálogo; `TeamCrest` consume `GET /api/catalog/teams/{id}/logo`, que redirige al CDN cacheado por `TeamLogoCache`. Fallback a monograma.
 - `OddsButton` muestra etiqueta + cuota, estado suspendido, estado “en tu boleto” y flash breve cuando la cuota cambia; respeta `prefers-reduced-motion`.
 - Streaming M6b: `LobbyMatch.stream` expone `provider`, `channelOrVideo`, `label` y `fallbackUrl`. El lobby muestra CTA/badge; `/match/[id]` monta `StreamPlayer` click-to-load debajo del scoreboard y consulta `/api/markets/live` para el panel de mercados. El embed no se carga hasta pulsar play.
 - Admin de streams: `AdminStreamsPage` en `/admin/streams`; API `GET/POST /api/admin/streams`, `POST /{id}/enabled` y `DELETE /{id}`.
 - Admin de usuarios: `AdminUsersPage` en `/admin/users`; búsqueda por email/nombre y ajuste de saldo con `ADMIN_ADJUSTMENT` (ledger `USER_AVAILABLE` contra `HOUSE`) y auditoría `WALLET_ADMIN_ADJUSTMENT`.
-- Auth y wallet implementados: modal de login/registro contra la API, sesión con cookie HttpOnly + CSRF, header autenticado y página `/wallet` con depósitos/retiros demo e historial.
+- Auth y wallet implementados: modal de login/registro contra la API, sesión con cookie HttpOnly + CSRF, header autenticado y página `/wallet` con depósitos/retiros e historial. `/account` muestra los datos del usuario, su wallet y el cambio de contraseña (`POST /api/auth/password`). El checkout de `/wallet` es simulado: método, resumen, procesamiento y éxito; no envía datos de tarjeta.
 - M3a/M3b implementados: `lib/markets.ts` obtiene `GET /api/markets/live`; cards y modal muestran cuatro mercados por partida, línea, versión y estado de suspensión.
 - M4 implementado: bet slip y modal móvil permiten elegir cuota y stake; `lib/bets.ts` llama a `/api/bets` con idempotencia. `/bets` muestra el historial privado.
 - M5 implementado: `/bets` muestra estado, pago y fecha de liquidación; `/admin` lista apuestas en revisión/pendientes y permite anular con motivo (rol `ADMIN`).
@@ -163,6 +165,7 @@ Constraints clave:
 ## API y eventos
 
 - REST para auth, catálogo, mercados, apuestas, wallet, pagos y admin.
+- Auth: `POST /api/auth/register`, `POST /api/auth/login`, `POST /api/auth/logout`, `POST /api/auth/password` y `GET /api/auth/me` (incluye `createdAt`).
 - Catálogo actual: `GET /api/catalog/lobby` (público, incluye `stream` por partida), `GET /api/catalog/teams/{teamId}/logo` (redirección cacheada al CDN de escudos), `GET /api/markets/live` (público) y `GET /api/live/health`.
 - Apuestas autenticadas: `POST /api/bets` con `Idempotency-Key`, `GET /api/bets` y `GET /api/bets/{id}`.
 - Admin de streams: `GET/POST /api/admin/streams`, `POST /api/admin/streams/{id}/enabled` y `DELETE /api/admin/streams/{id}` (rol `ADMIN`, auditado).
