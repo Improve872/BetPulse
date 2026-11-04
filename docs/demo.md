@@ -51,7 +51,7 @@ fallback “sin stream oficial”; no se inventa señal.
 | 0–2 | Presentar BetPulse: apuestas de esports, datos reales y panel administrativo |
 | 2–4 | Registro/login, menú de usuario, `/account` y cambio de contraseña; wallet en S/ y admin acreditando saldo desde `/admin/users` |
 | 4–6 | Lobby: partido destacado, carrusel “En vivo ahora”, escudos, tabs, cuotas y boleto; abrir el detalle y reproducir el stream oficial |
-| 6–9 | Checkout simulado en `/wallet`: monto, Yape/Plin/transferencia/tarjeta, resumen y confirmación con nuevo saldo |
+| 6–9 | Checkout en `/wallet`: tarjeta con vista previa, Yape/Plin con celular y OTP, o transferencia con banco/CCI; revisar y confirmar, ver el comprobante con nuevo saldo |
 | 9–11 | "Mi partida": iniciar partida con bots en Dota 2 o entrar a DotaTV |
 | 11–14 | Mostrar `/match/[id]`: marcador, stream, mercados, timeline, Roshan y SSE |
 | 14–16 | Apostar a primera sangre o primera torre; ver hold y `/bets` |
@@ -81,9 +81,12 @@ fallback “sin stream oficial”; no se inventa señal.
   click-to-load en `/match/[id]` y fallback probados con Twitch.
 - M6c: admin acreditó S/ 250.00 a un usuario de test desde `/admin/users`; saldo
   actualizado, ledger balanceado y auditoría registrada.
-- M6d: registro → cambio de contraseña → depósito simulado S/ 150.00 → ajuste
-  admin de S/ 50.00 (saldo final S/ 200.00). Menú de usuario, `/account`,
-  carrusel en vivo y checkout revisados en navegador.
+- M6d: registro → cambio de contraseña → depósito S/ 150.00 → ajuste
+  admin de S/ 50.00 (saldo final S/ 200.00). Menú de usuario y `/account`
+  revisados.
+- M6d checkout: Yape con OTP, tarjeta Visa, transferencia de recarga y retiro
+  probados en navegador; el comprobante muestra método y código de operación.
+  Los datos de tarjeta/OTP solo viven en el navegador.
 
 ## Riesgos
 

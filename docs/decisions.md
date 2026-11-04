@@ -562,7 +562,7 @@ Formato: contexto → decisión → consecuencias. Actualizar cuando cambie una 
 - El header autenticado agrupa **Mi cuenta**, **Mi billetera**, **Mis apuestas**, **Admin** (solo rol `ADMIN`) y **Salir** en un menú desplegable; en móvil son enlaces del menú lateral.
 - El lobby incorpora `LiveRail`: carrusel horizontal de partidas en vivo (excluye la destacada) con torneo, escudos, marcador, tiempo y cuotas del mercado principal. Los partidos siguen abriendo el detalle.
 - `/wallet` se presenta como checkout simulado: monto, montos rápidos, método (Yape, Plin, transferencia, tarjeta), resumen con total y comisión, estado de procesamiento y pantalla de éxito con nuevo saldo.
-- Los métodos son etiquetas de UI: no se capturan datos de tarjeta y el backend solo recibe `amountCents` e `Idempotency-Key` como hasta M6b.
+- Los métodos son etiquetas de UI: el checkout captura datos de tarjeta, celular/OTP o cuenta solo en memoria del navegador; el backend sigue recibiendo únicamente `amountCents` e `Idempotency-Key`.
 - No se integra pasarela real para la demo; el saldo se mueve por el ledger existente.
 
 **Consecuencias:**
@@ -572,3 +572,29 @@ Formato: contexto → decisión → consecuencias. Actualizar cuando cambie una 
 - El carrusel reutiliza cuotas y selección del boleto; no duplica lógica de apuestas.
 - El checkout no cambia contratos de wallet ni ledger; solo agrega estados de UI y copy.
 - La UI sigue sin avisos de demo (ADR-037).
+
+## ADR-039 — Checkout estándar: tarjeta, Yape/Plin y transferencia (M6d)
+
+**Estado:** aceptada (2026-11-04)
+**Relacionada:** ADR-038 (checkout simulado), ADR-037 (sin avisos de demo).
+
+**Contexto:** el checkout de M6d era funcional pero demasiado simple. Para la demo debía sentirse como una pasarela real: elegir método, ingresar datos con el orden y las validaciones que usan las apps de pago, revisar y confirmar. La investigación de Mercado Pago, Stripe y Baymard marca el estándar: número de tarjeta con detección de marca y formato, vencimiento, titular y CVV; Yape con celular + OTP; transferencia con banco, cuenta/CCI y número de operación.
+
+**Decisión:**
+
+- Flujo de tres pasos: **Monto → Pago → Confirmar**, con resumen fijo (monto, método, comisión y total) y estados de procesamiento y éxito.
+- Tarjeta: vista previa en vivo, detección Visa/Mastercard/Amex, formato 4-4-4-4 (Amex 4-6-5), vencimiento MM/AA con validación de fecha futura, CVV de 3 o 4 dígitos y titular.
+- Se valida longitud/formato/marca, **sin Luhn**, para aceptar cualquier número de prueba con longitud correcta.
+- Yape y Plin: celular peruano de 9 dígitos, envío de código, OTP de 6 casillas con autoavance, pegado y reenvío con cuenta regresiva.
+- Transferencia: banco, cuenta destino/CCI, referencia y número de operación en recargas; CCI y titular en retiros. Los datos de destino son de demostración.
+- Los logos de Visa, Mastercard, Amex, Yape y Plin se usan solo como indicadores de método, locales y sin modificaciones; no se usan sellos de certificación.
+- Los datos sensibles viven solo en el estado del componente, se enmascaran en la revisión y el comprobante, y se descartan al terminar. Nunca se envían al backend, no se registran y no se guardan.
+- La idempotencia incluye una huella no sensible (últimos 4 dígitos, celular, operación) para que editar datos genere una operación distinta.
+- El backend, el ledger y los contratos de wallet no cambian.
+
+**Consecuencias:**
+
+- El checkout se siente como una pasarela real sin integrar una.
+- Para volverlo real se sustituyen los formularios por el widget de la pasarela y se agrega el adaptador/webhook en `payments`; wallet, betting y settlement quedan intactos.
+- Sin Luhn se aceptan números falsos; la validación de longitud/marca sigue evitando errores evidentes.
+- Los logos son marcas de terceros usadas como indicadores; su origen queda documentado en `frontend/public/brands/README.md`.

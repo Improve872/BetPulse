@@ -14,8 +14,16 @@ simulado de recarga/retiro. Decisión: ADR-038.
   Admin (solo `ADMIN`) y Salir. En móvil, enlaces equivalentes en el menú.
 - Lobby: `LiveRail` reemplaza el ticker delgado con tarjetas horizontales de
   partidas en vivo, escudos, marcador, tiempo y cuotas del mercado principal.
-- `/wallet`: checkout simulado con método de pago, resumen, procesamiento y
-  pantalla de éxito con el nuevo saldo. Sin datos de tarjeta ni pasarela real.
+- `/wallet`: checkout de pasarela en tres pasos (monto → pago → confirmar) con
+  resumen, procesamiento y comprobante.
+  - Tarjeta con vista previa, detección Visa/Mastercard/Amex, formato, vencimiento,
+    CVV y titular; validación de longitud/marca sin Luhn.
+  - Yape/Plin con celular de 9 dígitos, OTP de 6 casillas y reenvío con cuenta
+    regresiva.
+  - Transferencia con banco, cuenta/CCI, referencia y número de operación.
+  - Datos sensibles solo en memoria, enmascarados en la revisión y descartados al
+    terminar; el backend solo recibe `amountCents` e `Idempotency-Key`.
+  - Logos locales de métodos como indicadores, sin sellos de certificación.
 - Copy de producto revisado: sin “ficticio”, “académico”, “soles peruanos” ni
   “demo” en la interfaz; footer solo con copyright.
 
@@ -27,8 +35,12 @@ simulado de recarga/retiro. Decisión: ADR-038.
 - Prueba de API real contra el entorno local: registro → `me` con `createdAt` →
   cambio de contraseña → depósito S/ 150.00 → consulta de saldo → admin busca al
   usuario y acredita S/ 50.00 (saldo final S/ 200.00).
-- QA manual: dropdown del header, `/account`, carrusel en vivo, checkout y
-  `/admin/users`.
+- QA de checkout con navegador automatizado: Yape + OTP, tarjeta Visa,
+  transferencia de recarga, transferencia de retiro, errores de tarjeta/OTP y
+  copy EN, a 1440 px y 390 px. Sin errores de consola.
+- Red: los POST de wallet solo llevan `amountCents`; ningún dato sensible sale
+  del navegador.
+- QA manual: dropdown del header, `/account`, carrusel en vivo y `/admin/users`.
 
 ## Deuda trasladada
 

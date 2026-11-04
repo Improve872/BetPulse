@@ -24,7 +24,9 @@ Cerrados: M0 (capturas GSI reales), M1 (identidad y wallet), M2a (catálogo Open
 - Admin `/admin/users` busca usuarios y acredita/debita saldo con motivo, ledger `ADMIN_ADJUSTMENT` y auditoría `WALLET_ADMIN_ADJUSTMENT`; el usuario se registra solo, sin cuenta demo fija.
 - M6d: `/account` muestra nombre, correo, alta, rol, resumen de wallet y cambio de contraseña (`POST /api/auth/password`). El header autenticado agrupa cuenta, billetera, apuestas, admin y salir; en móvil son enlaces del menú.
 - M6d: el lobby incorpora `LiveRail`, un carrusel horizontal de partidas en vivo (sin la destacada) con torneo, escudos, marcador, tiempo y cuotas del mercado principal.
-- M6d: `/wallet` funciona como checkout simulado con método (Yape/Plin/transferencia/tarjeta), resumen, procesamiento y éxito con nuevo saldo. No captura datos de tarjeta ni usa pasarela real; el backend sigue recibiendo solo `amountCents` e `Idempotency-Key`.
+- M6d: `/wallet` es un checkout de pasarela en tres pasos (monto → pago → confirmar). Tarjeta con vista previa, detección Visa/Mastercard/Amex, formato, vencimiento y CVV; Yape/Plin con celular y OTP de 6 dígitos; transferencia con banco, cuenta/CCI, referencia y número de operación. Incluye resumen, procesamiento y comprobante con nuevo saldo.
+- M6d: los datos de tarjeta, OTP y cuentas viven solo en memoria del navegador; se enmascaran en la revisión y no se envían, registran ni guardan. El backend sigue recibiendo solo `amountCents` e `Idempotency-Key`.
+- M6d: logos locales de Visa, Mastercard, Amex, Yape y Plin como indicadores de método; sin sellos de certificación ni afiliación.
 - Catálogo con datos reales de OpenDota; sin fixtures ni datos inventados en el producto.
 - Las partidas con `league_id > 0` se priorizan sobre las ranked y muestran el nombre de liga resuelto con `/leagues/{id}` (caché 6 h).
 - Cuatro mercados base por partida en vivo (ganador, total de kills, handicap y duración) más tres de eventos GSI (primera sangre, primera torre y siguiente Roshan), con versión e historial append-only.
@@ -99,7 +101,8 @@ Resultados 2026-11-04 (M6d):
 - Flyway: V1–V11 aplicadas en Testcontainers.
 - Frontend: lint y build verdes; rutas `/`, `/account`, `/admin`, `/admin/markets`, `/admin/streams`, `/admin/users`, `/bets`, `/match/[id]` y `/wallet` generadas.
 - Prueba de API real: registro → `me` con `createdAt` → cambio de contraseña → depósito S/ 150.00 → admin busca al usuario y acredita S/ 50.00 (saldo final S/ 200.00).
-- QA manual local: menú de usuario, `/account`, carrusel “En vivo ahora”, checkout con estados y `/admin/users` a 1440 px y 390 px. Sin tests visuales automatizados todavía.
+- QA de checkout con navegador automatizado local: recarga Yape con OTP, recarga con tarjeta Visa, recarga por transferencia, retiro por transferencia, errores de tarjeta/OTP y copy EN, a 1440 px y 390 px. Sin errores de consola.
+- Verificación de red: los POST de depósito/retiro solo llevan `amountCents`; ningún dato de tarjeta, OTP o cuenta sale del navegador.
 - Colector: 11/11 tests verdes y `package` con shade correcto.
 - E2E real (2026-11-01): GSI mid-game → 4 mercados base + torre/Roshan → apuesta de S/ 10 a ganador → `POST_GAME` → `WON` con payout S/ 10.96; wallet disponible S/ 100.96 y retenido S/ 0. Liquidación en menos de un minuto.
 

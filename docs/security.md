@@ -165,8 +165,11 @@ Reglas:
 
 ### Pagos simulados
 
-- No se solicitan datos reales de tarjeta ni se captura PAN/CVV.
-- El checkout de `/wallet` es una UI de estados (método → resumen → procesando → éxito); solo envía `amountCents` e `Idempotency-Key`.
+- No se solicitan datos reales de tarjeta ni se captura PAN/CVV en el backend.
+- El checkout captura número, vencimiento, CVV, titular, celular/OTP o CCI **solo en memoria del navegador**.
+- Esos datos no se envían a la API, no se registran en logs y no se guardan; se enmascaran en la revisión y el comprobante, y se descartan al terminar o cambiar de operación.
+- El backend recibe únicamente `amountCents` e `Idempotency-Key`.
+- La idempotencia usa una huella no sensible (últimos 4 dígitos, celular u operación), nunca el número completo.
 - Proveedor fake con estados.
 - Webhooks HMAC e idempotencia.
 - Retiros con aprobación admin.
