@@ -36,9 +36,10 @@ Abrir dos perfiles del navegador:
 - usuario nuevo (regístrate con cualquier correo);
 - admin (`admin@betpulse.local` / `Admin123!`), que puede acreditarle saldo desde `/admin/users`.
 
-El header del usuario autenticado abre un menú con **Mi cuenta**, **Mi billetera**,
-**Mis apuestas**, **Admin** (si aplica) y **Salir**. En `/account` se ven los datos
-y se cambia la contraseña; en `/wallet` se prueba el checkout simulado.
+El header del usuario autenticado muestra el saldo junto al nombre, con un ojo
+para ocultarlo, y abre un menú con **Mi cuenta**, **Mi billetera**, **Mis apuestas**,
+**Admin** (si aplica) y **Salir**. En `/account` se ven los datos y se cambia la
+contraseña; en `/wallet` se prueba el checkout.
 
 En `/admin/streams`, asignar un canal oficial de Twitch o un video de YouTube
 a la partida o liga que se mostrará. Sin stream asignado, la UI muestra el

@@ -560,6 +560,7 @@ Formato: contexto → decisión → consecuencias. Actualizar cuando cambie una 
 - `/account` (tema claro) muestra nombre, correo, fecha de alta, roles, resumen de wallet y formulario de cambio de contraseña.
 - `POST /api/auth/password` exige sesión, valida contraseña actual, política (8–72, letra y número) y que la nueva sea distinta. La sesión actual se mantiene; las credenciales viejas dejan de servir.
 - El header autenticado agrupa **Mi cuenta**, **Mi billetera**, **Mis apuestas**, **Admin** (solo rol `ADMIN`) y **Salir** en un menú desplegable; en móvil son enlaces del menú lateral.
+- El header muestra el saldo disponible junto al usuario con un botón de ojo para ocultarlo; la preferencia persiste en `localStorage` y el saldo se refresca al operar la billetera, al apostar, al recuperar foco y cada 30 s.
 - El lobby incorpora `LiveRail`: carrusel horizontal de partidas en vivo (excluye la destacada) con torneo, escudos, marcador, tiempo y cuotas del mercado principal. Los partidos siguen abriendo el detalle.
 - `/wallet` se presenta como checkout simulado: monto, montos rápidos, método (Yape, Plin, transferencia, tarjeta), resumen con total y comisión, estado de procesamiento y pantalla de éxito con nuevo saldo.
 - Los métodos son etiquetas de UI: el checkout captura datos de tarjeta, celular/OTP o cuenta solo en memoria del navegador; el backend sigue recibiendo únicamente `amountCents` e `Idempotency-Key`.

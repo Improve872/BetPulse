@@ -12,6 +12,8 @@ simulado de recarga/retiro. Decisión: ADR-038.
   política y contraseña distinta; `UserResponse` expone `createdAt`.
 - Header autenticado con menú de usuario: Mi cuenta, Mi billetera, Mis apuestas,
   Admin (solo `ADMIN`) y Salir. En móvil, enlaces equivalentes en el menú.
+- Saldo disponible junto al usuario con botón de ojo para ocultarlo; preferencia
+  persistida y refresco al operar la billetera, apostar, recuperar foco y cada 30 s.
 - Lobby: `LiveRail` reemplaza el ticker delgado con tarjetas horizontales de
   partidas en vivo, escudos, marcador, tiempo y cuotas del mercado principal.
 - `/wallet`: checkout de pasarela en tres pasos (monto → pago → confirmar) con
