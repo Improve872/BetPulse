@@ -55,8 +55,8 @@ Cerrados: M0 (capturas GSI reales), M1 (identidad y wallet), M2a (catálogo Open
 - Colector Javalin definitivo: expone `/health` y `/`, recibe `/gsi`, normaliza, deduplica, firma con HMAC y reenvía al backend con spool ante caídas.
 - Liquidación implementada: `settlements` único por apuesta, payout/void, ledger y auditoría. Las apuestas ya no quedan abiertas para siempre.
 - Steam `GetLiveLeagueGames` no integrado: falta `STEAM_API_KEY` (rate limit de generación). No bloquea la demo.
-- CI: ejecución `41326f4` en verde para backend, colector y frontend; M6d cierra con 101 tests backend locales.
-  `https://github.com/Improve872/BetPulse/actions/runs/41774351627`
+- CI: ejecución `6ec1215` en verde para backend, colector y frontend; M6d cierra con 101 tests backend locales.
+  `https://github.com/Improve872/BetPulse/actions/runs/41776035425`
 
 ## Próxima acción
 
