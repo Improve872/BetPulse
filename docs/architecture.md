@@ -59,6 +59,7 @@ En desarrollo, Next.js hace proxy de `/api` al backend para evitar CORS y compar
 | `settlement` | Liquidación exactly-once, payout, void y anulación administrativa |
 | `payments` | Abstracción de proveedor simulado |
 | `admin` | Suspender/reanudar mercados, override de cuota, anulación de apuestas y auditoría |
+| `sports` | Catálogo pre-partida de fútbol desde ESPN: fixtures, caché y feed |
 | `audit` | Bitácora inmutable de acciones |
 | `shared` | Errores, dinero, eventos, utilidades |
 
@@ -86,6 +87,7 @@ En desarrollo, Next.js hace proxy de `/api` al backend para evitar CORS y compar
 - M5 implementado: `/bets` muestra estado, pago y fecha de liquidación; `/admin` lista apuestas en revisión/pendientes y permite anular con motivo (rol `ADMIN`).
 - M2b implementado: `/match/[id]` muestra la partida propia en vivo por SSE (marcador, jugadores, net worth, timeline y Roshan). El enlace aparece en la card de "Mi partida".
 - Admin de mercados implementado: `/admin/markets` lista mercados y permite suspender, reanudar o cambiar cuota; cada acción se audita y, en override, sube versión e inserta `odds_history`.
+- `/sports` (M8a): página arena con calendario real de fútbol desde `lib/sports.ts`; agrupa fixtures por liga, filtra por liga, muestra escudos con fallback y cuenta atrás. Enlazada desde el header. Sin cuotas ni apuestas.
 
 ## Flujo de datos
 
@@ -100,6 +102,7 @@ En desarrollo, Next.js hace proxy de `/api` al backend para evitar CORS y compar
 9. `MarketResultService` convierte ese resultado en un resultado por mercado (`market_results`): `SETTLED` con selección ganadora o `VOID`, y cierra el mercado como `SETTLED`/`VOID`. Es idempotente.
 10. `SettlementService` liquida cada apuesta una sola vez desde `market_results`: paga al ganador, mueve el stake a la casa o reembolsa el void, actualiza `bets` y escribe `audit_logs`. El admin puede anular con motivo.
 11. Depósitos/retiros simulados pasan por la abstracción de pagos y el ledger.
+12. En paralelo, `sports` consulta el scoreboard de ESPN para las cinco grandes ligas de fútbol, normaliza los partidos programados y los publica en `/api/sports/fixtures`; `/sports` los muestra con escudos y cuenta atrás. El fútbol todavía no tiene mercados ni apuestas (M8b).
 
 ## Fuente híbrida
 
@@ -169,6 +172,7 @@ Constraints clave:
 - REST para auth, catálogo, mercados, apuestas, wallet, pagos y admin.
 - Auth: `POST /api/auth/register`, `POST /api/auth/login`, `POST /api/auth/logout`, `POST /api/auth/password` y `GET /api/auth/me` (incluye `createdAt`).
 - Catálogo actual: `GET /api/catalog/lobby` (público, incluye `stream` por partida), `GET /api/catalog/teams/{teamId}/logo` (redirección cacheada al CDN de escudos), `GET /api/markets/live` (público) y `GET /api/live/health`.
+- Fútbol pre-partida: `GET /api/sports/fixtures` (público) devuelve las ligas con partidos programados, escudos y estado del feed (ADR-043).
 - Apuestas autenticadas: `POST /api/bets` con `Idempotency-Key`, `GET /api/bets` y `GET /api/bets/{id}`.
 - Admin de streams: `GET/POST /api/admin/streams`, `POST /api/admin/streams/{id}/enabled` y `DELETE /api/admin/streams/{id}` (rol `ADMIN`, auditado).
 - Admin de usuarios: `GET /api/admin/users?query=` y `POST /api/admin/users/{userId}/wallet-adjustments` con `Idempotency-Key` (rol `ADMIN`, ledger y auditoría).

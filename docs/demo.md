@@ -293,7 +293,8 @@ simulado están documentados en README/runbook (ADR-037).
 ## Lo que no se debe afirmar
 
 - No decir que se procesan pagos reales: no hay pasarela.
-- No decir que el fútbol o la NBA están integrados: son M8, no existen aún.
+- No decir que el fútbol o la NBA tienen cuotas o apuestas: solo existe el
+  calendario de fútbol de `/sports`, sin mercados.
 - No decir que OpenDota es tiempo real: tiene delay y se etiqueta.
 - No decir que el stream es propio: se embebe el canal oficial.
 - No decir que los bots generan datos completos: en práctica solo hay jugador
@@ -309,7 +310,7 @@ simulado están documentados en README/runbook (ADR-037).
 - [ ] Tarjeta de prueba verificada en `/wallet` con los datos de la tabla.
 - [ ] Dota 2 con `-gamestateintegration` y el `.cfg` instalado (si se usa GSI).
 - [ ] Stream oficial asignado en `/admin/streams` (si se va a mostrar).
-- [ ] Pestañas listas: lobby, partido, wallet, apuestas, admin, Dota 2.
+- [ ] Pestañas listas: lobby, partido, `/sports`, wallet, apuestas, admin, Dota 2.
 - [ ] Fuente de energía y notificaciones silenciadas.
 
 ## Riesgos

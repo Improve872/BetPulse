@@ -219,6 +219,9 @@ Aceptación: checklist aprobado y flujos críticos verificados (checkout, apuest
 
 ### M8 — Deportes pre-partida: fútbol y NBA (2–3 semanas)
 
+**Estado:** M8a (calendario de fútbol con ESPN) cerrado 2026-11-16. M8b
+(mercados 1X2, over/under y liquidación con empates) pendiente.
+
 Objetivo: ampliar contenido sin depender de ver el partido en vivo.
 
 Se implementa **después de M6 y M7**. No incluye feed de eventos al segundo ni
@@ -231,6 +234,7 @@ Tareas:
   - Ligas: Premier League, La Liga, Bundesliga, Serie A y Ligue 1.
   - Fuente: ESPN (no oficial) y OpenLigaDB como respaldo de Bundesliga.
   - Caché, backoff y fallback; documentar que no hay SLA.
+  - Hecho en M8a: cliente ESPN, caché en memoria y `/sports` con fixtures reales.
 - Mercados de fútbol: `1X2` (local/empate/visitante) y `over/under` de goles.
 - Motor de cuotas pre-partida con modelo transparente tipo Poisson/Elo.
 - Liquidación con marcador final; empate posible; void si se postpona o abandona.

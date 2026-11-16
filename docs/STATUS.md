@@ -6,14 +6,14 @@
 
 ## Hito actual
 
-**M7: hardening base cerrado (rate limiting, CSP, headers, RBAC/IDOR y tests de checkout).** Siguiente: E2E de flujos de dinero y M8. M3c sigue bloqueado por falta de calendario pre-partida.
+**M7: hardening base cerrado. M8a cerrado: calendario de fútbol con ESPN.** Siguiente: M8b (mercados 1X2 y over/under con liquidación). M3c sigue bloqueado por falta de calendario pre-partida.
 
 Cerrados: M0 (capturas GSI reales), M1 (identidad y wallet), M2a (catálogo OpenDota + SSE), M2b (partida propia GSI), M3a y M3b (cuatro mercados en vivo con cuotas), M4 (apuestas simples con holds), M5 (liquidación, payout/void, admin y auditoría), M6a (arena visual y sistema de diseño), M6b (streaming oficial y cierre de producto), M6c (copy de producto y saldo administrativo), M6d (cuenta, rail en vivo y checkout simulado). Detalle en `docs/milestones/`.
 
 ## Estado del sistema
 
 - Backend Spring Boot 3.5.16 / Java 21 en `8081`; compila y arranca con PostgreSQL real.
-- Frontend Next.js 15.5.28 + React 19.1 + Tailwind 4; lint y build verdes. Rutas `/`, `/account`, `/wallet`, `/bets`, `/admin`, `/admin/markets`, `/admin/streams`, `/admin/users` y `/match/[id]`.
+- Frontend Next.js 15.5.28 + React 19.1 + Tailwind 4; lint y build verdes. Rutas `/`, `/account`, `/wallet`, `/bets`, `/sports`, `/admin`, `/admin/markets`, `/admin/streams`, `/admin/users` y `/match/[id]`.
 - Lobby responsive con cards, filtros, modal de partida con mercados múltiples, bet slip y página de apuestas.
 - M6a: lobby y `/match/[id]` usan el tema arena nocturna; wallet, apuestas y admin conservan superficies claras. Tabs En vivo/Resultados, partido destacado, escudos reales, cuotas tipo price tile, estado “en tu boleto” y boleto vacío discreto.
 - Escudos: `LobbyTeam.teamId` desde OpenDota y proxy cacheado `GET /api/catalog/teams/{id}/logo`; fallback a monograma si el equipo o el CDN fallan.
@@ -38,6 +38,9 @@ Cerrados: M0 (capturas GSI reales), M1 (identidad y wallet), M2a (catálogo Open
 - M7 (2026-11-16): rate limiting en memoria por ruta y método (`RateLimitFilter`, `RateLimitProperties`): login 10/min, registro 5/min, contraseña 5/min, apuestas 30/min, wallet 20/min, admin 60/min e ingesta 1200/min. Responde `429` con `Retry-After` (ADR-042).
 - M7 (2026-11-16): CSP completa sin nonce y headers de seguridad (`nosniff`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`); `frame-src` queda limitado a Twitch y YouTube.
 - M7 (2026-11-16): tests de control de acceso. Un `USER` recibe `403` en todos los paneles y acciones de admin; anónimo recibe `401`. El test destapó que `@PreAuthorize` devolvía `500` en lugar de `403` y que un parámetro con tipo inválido devolvía `500`; ambos casos se corrigen en `GlobalExceptionHandler`.
+- M8a (2026-11-16): `/sports` muestra el calendario real de las cinco grandes ligas con datos de ESPN (`eng.1`, `esp.1`, `ger.1`, `ita.1`, `fra.1`), agrupado por liga, con escudos, sede y cuenta atrás. Solo se publican partidos programados: no hay cobertura ni apuestas en vivo de fútbol (ADR-043).
+- M8a: `GET /api/sports/fixtures` público; caché en memoria con refresco cada 5 min, stale a los 20 min y horizonte de 10 días. Si una liga falla se conserva su última copia y el feed se marca `STALE`/`DOWN`.
+- M8a: ESPN exige un `User-Agent` no-Java; se envía `BetPulse/0.1` y se documenta el `403` como riesgo. Escudos desde `a.espncdn.com` permitidos en `img-src`.
 - Catálogo con datos reales de OpenDota; sin fixtures ni datos inventados en el producto.
 - Las partidas con `league_id > 0` se priorizan sobre las ranked y muestran el nombre de liga resuelto con `/leagues/{id}` (caché 6 h).
 - Cuatro mercados base por partida en vivo (ganador, total de kills, handicap y duración) más tres de eventos GSI (primera sangre, primera torre y siguiente Roshan), con versión e historial append-only.
@@ -65,14 +68,15 @@ Cerrados: M0 (capturas GSI reales), M1 (identidad y wallet), M2a (catálogo Open
 - Colector Javalin definitivo: expone `/health` y `/`, recibe `/gsi`, normaliza, deduplica, firma con HMAC y reenvía al backend con spool ante caídas.
 - Liquidación implementada: `settlements` único por apuesta, payout/void, ledger y auditoría. Las apuestas ya no quedan abiertas para siempre.
 - Steam `GetLiveLeagueGames` no integrado: falta `STEAM_API_KEY` (rate limit de generación). No bloquea la demo.
-- CI: última ejecución en verde `f7e1bae` para backend, colector, frontend y build de imágenes Docker. El frontend ahora corre lint, test y build; el backend local suma 110 tests. El commit de M7 queda pendiente de la nueva ejecución de CI.
+- CI: última ejecución en verde `f7e1bae` para backend, colector, frontend y build de imágenes Docker. El frontend ahora corre lint, test y build; el backend local suma 116 tests. El commit de M8a queda pendiente de la nueva ejecución de CI.
   `https://github.com/Improve872/BetPulse/actions/runs/41782427003`
 
 ## Próxima acción
 
-1. M7: E2E de flujos de dinero con Playwright y escaneo de dependencias en CI.
-2. M8: fútbol pre-partida (ESPN/OpenLigaDB), luego NBA; sin eventos en vivo.
-3. Opcional: M3c si aparece calendario fiable; Steam `GetLiveLeagueGames` si hay API key; pulido admin (usuarios, exposición, salud).
+1. M8b: mercados 1X2 y over/under de goles para fútbol, con cuotas Poisson y liquidación con empates.
+2. M7 pendiente: E2E de flujos de dinero con Playwright (opcional tras la demo).
+3. M8c: NBA con la misma tubería de ESPN.
+4. Opcional: M3c si aparece calendario fiable; Steam `GetLiveLeagueGames` si hay API key; pulido admin (usuarios, exposición, salud).
 
 ## Pendiente de entorno (opcional)
 
@@ -84,6 +88,7 @@ Cerrados: M0 (capturas GSI reales), M1 (identidad y wallet), M2a (catálogo Open
 - OpenDota no ofrece calendario futuro fiable para M3c.
 - Sin `STEAM_API_KEY` no hay draft, torres ni Roshan en vivo; el feed pro funciona con OpenDota.
 - `npm audit`: 2 vulnerabilidades en dependencias de producción (PostCSS embebido en Next 15) y 6 en desarrollo (Vite/esbuild); sin críticas tras subir Vitest 5. Se resolverán con la actualización mayor de Next en M7.
+- ESPN es una API no oficial y sin SLA; exige `User-Agent` propio. Si cambia el esquema o cae, el calendario de fútbol queda vacío o `STALE` sin afectar Dota.
 
 ## Restricción de diseño vigente
 
@@ -109,10 +114,11 @@ npm run build
 
 Resultados 2026-11-16 (M7):
 
-- Backend: 110/110 tests verdes (M7 suma rate limiting, control de acceso y la corrección de 403/400 en el manejador global).
+- Backend: 116/116 tests verdes (M7 suma rate limiting y control de acceso; M8a suma el mapeo de ESPN y la caché de fixtures).
 - Frontend: 18/18 tests de checkout en Vitest; lint y build verdes.
 - Regresión cubierta: `12/25` ya no bloquea la recarga; `12/2026` y `1/26` se aceptan.
 - Headers verificados en `next start`: CSP completa, `nosniff`, `X-Frame-Options`, `Referrer-Policy` y `Permissions-Policy`.
+- M8a verificado con backend real: `GET /api/sports/fixtures` devolvió 14 partidos en 5 ligas (`LIVE`), con escudos de `a.espncdn.com`; `/sports` renderizó título, fixture y escudo desde el servidor.
 - Audit: sin vulnerabilidades críticas; quedan las de Next/PostCSS y las de desarrollo.
 
 Resultados 2026-11-04 (M6d):

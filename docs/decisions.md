@@ -708,3 +708,43 @@ y riesgo de romper la demo por un beneficio marginal en este contexto.
   como mejora futura.
 - Los tests de integración desactivan el limitador; `RateLimitFlowTest` lo
   activa en un contexto propio para no contaminar el resto de la suite.
+
+## ADR-043 — Fútbol pre-partida con ESPN (M8a)
+
+**Estado:** aceptada (2026-11-16)
+**Relacionada:** ADR-002 (monolito modular), ADR-042 (CSP y headers), M8 del
+plan.
+
+**Contexto:** M8 amplía el catálogo a deportes pre-partida. OpenDota solo cubre
+Dota 2 y no hay presupuesto para una API deportiva de pago. ESPN publica un
+scoreboard JSON sin clave para las cinco grandes ligas, con equipos, escudos,
+fechas y resultados, pero es una API no oficial y sin SLA.
+
+**Decisión:**
+
+- Fuente: `site.api.espn.com/.../sports/soccer/{liga}/scoreboard` para
+  `eng.1`, `esp.1`, `ger.1`, `ita.1` y `fra.1`.
+- El backend consulta cada liga, normaliza y cachea en memoria
+  (`FixturesService`): poll cada 5 min, datos stale a los 20 min, horizonte de
+  10 días. Si una liga falla se conserva su última copia buena.
+- Se publican **solo partidos `SCHEDULED`**. BetPulse no ofrece cobertura en
+  vivo ni apuestas en vivo de fútbol; mostrar un partido en curso implicaría
+  una promesa que el producto no cumple.
+- Se envía un `User-Agent` explícito (`BetPulse/0.1`) porque ESPN responde
+  `403` al User-Agent por defecto de Java.
+- `GET /api/sports/fixtures` es público y devuelve las ligas agrupadas. La UI
+  vive en `/sports` (tema arena) y enlaza desde el header.
+- Los escudos se cargan directamente desde `a.espncdn.com`; la CSP permite ese
+  origen en `img-src` y la UI cae a un monograma si la imagen falla.
+- Sin mercados ni apuestas de fútbol todavía: M8b añadirá `1X2` y
+  over/under de goles con un modelo Poisson, y la liquidación con empates.
+
+**Consecuencias:**
+
+- El calendario funciona sin API key, pero depende de internet y de una API no
+  oficial; no hay SLA ni compromiso de disponibilidad.
+- Si ESPN cambia el esquema, el subconjunto de DTOs ignora campos
+  desconocidos y el feed pasa a `STALE`/`DOWN` sin romper la app.
+- La misma tubería sirve para NBA y otros deportes con otro path de ESPN.
+- Los fixtures no son apostables hasta M8b; la UI no muestra cuotas ni CTA de
+  apuesta en esta pantalla.

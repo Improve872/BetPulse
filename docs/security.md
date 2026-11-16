@@ -153,12 +153,24 @@ Reglas:
 - Validación de respuestas.
 - No usar como única fuente de settlement sin verificación.
 
+### ESPN (fútbol pre-partida)
+
+- API no oficial y sin SLA; solo se usa para fixtures programados.
+- `User-Agent` propio obligatorio: el de Java recibe `403`.
+- Caché en memoria con stale a los 20 min y horizonte de 10 días.
+- Solo partidos `SCHEDULED`: no se muestran partidos en vivo ni se ofrecen
+  apuestas de fútbol todavía (ADR-043).
+- Escudos desde `a.espncdn.com`, único origen externo permitido en `img-src`
+  además del propio.
+
 ### Streaming
 
 - Solo iframes oficiales de Twitch/YouTube; sin re-transmisión ni scraping.
 - `match_streams` guarda `provider` + `channel_or_video`; el frontend construye la URL y no acepta un embed arbitrario.
 - Admin con `ROLE_ADMIN`; cada alta, toggle o borrado se audita en `audit_logs`.
 - CSP `frame-src` limitado a `player.twitch.tv`, YouTube y `youtube-nocookie.com`.
+- `img-src` permite `a.espncdn.com` para los escudos de fútbol; el resto de
+  imágenes son propias, `data:` o `blob:`.
 - Click-to-load: no se carga el iframe hasta que el usuario lo pide.
 - `fallback_url` validada como HTTP(S) para evitar cajas negras.
 - Twitch usa `parent` del hostname actual; en local es `localhost`/`127.0.0.1`.
