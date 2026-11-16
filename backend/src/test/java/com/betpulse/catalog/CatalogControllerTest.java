@@ -15,6 +15,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -27,9 +28,12 @@ import com.betpulse.catalog.LobbyDtos.LobbyResponse;
 import com.betpulse.catalog.LobbyDtos.LobbyTeam;
 import com.betpulse.live.LiveFeedController;
 import com.betpulse.live.LiveFeedService;
+import com.betpulse.shared.ratelimit.RateLimitProperties;
+import com.betpulse.shared.ratelimit.RateLimiter;
 
 @WebMvcTest(controllers = { CatalogController.class, LiveFeedController.class })
 @AutoConfigureMockMvc(addFilters = false)
+@Import({ RateLimiter.class, RateLimitProperties.class })
 class CatalogControllerTest {
 
 	@Autowired

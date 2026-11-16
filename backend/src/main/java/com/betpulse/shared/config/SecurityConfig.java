@@ -5,6 +5,7 @@ import java.nio.charset.StandardCharsets;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -13,7 +14,10 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.security.web.context.SecurityContextRepository;
+import org.springframework.security.web.csrf.CsrfFilter;
 import org.springframework.security.web.csrf.HttpSessionCsrfTokenRepository;
+
+import com.betpulse.shared.ratelimit.RateLimitFilter;
 
 import jakarta.servlet.http.HttpServletResponse;
 
@@ -26,8 +30,22 @@ public class SecurityConfig {
 		return new HttpSessionSecurityContextRepository();
 	}
 
+	/**
+	 * El filtro solo debe ejecutarse dentro de la cadena de seguridad, después
+	 * de CSRF y con el contexto ya cargado. Sin esto, Spring Boot lo registra
+	 * además como filtro de servlet y correría antes, perdiendo la identidad
+	 * del usuario y saltándose CSRF.
+	 */
 	@Bean
-	SecurityFilterChain securityFilterChain(HttpSecurity http, SecurityContextRepository securityContextRepository)
+	FilterRegistrationBean<RateLimitFilter> rateLimitFilterRegistration(RateLimitFilter rateLimitFilter) {
+		FilterRegistrationBean<RateLimitFilter> registration = new FilterRegistrationBean<>(rateLimitFilter);
+		registration.setEnabled(false);
+		return registration;
+	}
+
+	@Bean
+	SecurityFilterChain securityFilterChain(HttpSecurity http, SecurityContextRepository securityContextRepository,
+			RateLimitFilter rateLimitFilter)
 			throws Exception {
 		return http
 				.csrf(csrf -> csrf
@@ -35,6 +53,7 @@ public class SecurityConfig {
 						.ignoringRequestMatchers("/api/health", "/actuator/health", "/internal/**"))
 				.securityContext(context -> context.securityContextRepository(securityContextRepository))
 				.sessionManagement(session -> session.sessionFixation(fixation -> fixation.migrateSession()))
+				.addFilterAfter(rateLimitFilter, CsrfFilter.class)
 				.authorizeHttpRequests(auth -> auth
 						.requestMatchers("/api/health", "/actuator/health", "/api/auth/csrf", "/api/auth/login",
 								"/api/auth/register", "/api/catalog/**", "/api/live/**", "/api/markets/**",

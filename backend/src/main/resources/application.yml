@@ -67,3 +67,12 @@ betpulse:
     max-stake-cents: 100000
     practice-max-stake-cents: ${BETTING_PRACTICE_MAX_STAKE_CENTS:10000}
     max-payout-cents: 1000000
+  rate-limit:
+    enabled: ${RATE_LIMIT_ENABLED:true}
+    login-per-minute: 10
+    register-per-minute: 5
+    password-per-minute: 5
+    bet-per-minute: 30
+    wallet-per-minute: 20
+    admin-per-minute: 60
+    ingest-per-minute: 1200

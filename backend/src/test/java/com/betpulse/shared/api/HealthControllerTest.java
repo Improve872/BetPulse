@@ -11,9 +11,11 @@ import org.springframework.context.annotation.Import;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.betpulse.shared.config.SecurityConfig;
+import com.betpulse.shared.ratelimit.RateLimitProperties;
+import com.betpulse.shared.ratelimit.RateLimiter;
 
 @WebMvcTest(HealthController.class)
-@Import(SecurityConfig.class)
+@Import({ SecurityConfig.class, RateLimiter.class, RateLimitProperties.class })
 class HealthControllerTest {
 
 	@Autowired

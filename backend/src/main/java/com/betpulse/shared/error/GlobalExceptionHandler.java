@@ -9,11 +9,14 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.async.AsyncRequestNotUsableException;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -24,6 +27,23 @@ public class GlobalExceptionHandler {
 	public ResponseEntity<ErrorResponse> handleApiException(ApiException exception) {
 		return ResponseEntity.status(exception.getStatus())
 				.body(new ErrorResponse(exception.getCode(), exception.getMessage()));
+	}
+
+	/**
+	 * Las denegaciones de {@code @PreAuthorize} ocurren dentro del controlador,
+	 * así que no las ve el ExceptionTranslationFilter de Spring Security y hay
+	 * que traducirlas aquí para no devolver 500.
+	 */
+	@ExceptionHandler(AccessDeniedException.class)
+	public ResponseEntity<ErrorResponse> handleAccessDenied(AccessDeniedException exception) {
+		return ResponseEntity.status(HttpStatus.FORBIDDEN)
+				.body(new ErrorResponse("FORBIDDEN", "No tienes permiso para esta acción."));
+	}
+
+	@ExceptionHandler(AuthenticationException.class)
+	public ResponseEntity<ErrorResponse> handleAuthentication(AuthenticationException exception) {
+		return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+				.body(new ErrorResponse("UNAUTHENTICATED", "Autenticación requerida."));
 	}
 
 	@ExceptionHandler(MethodArgumentNotValidException.class)
@@ -45,6 +65,12 @@ public class GlobalExceptionHandler {
 	public ResponseEntity<ErrorResponse> handleUnreadableBody(HttpMessageNotReadableException exception) {
 		return ResponseEntity.badRequest()
 				.body(new ErrorResponse("INVALID_BODY", "El cuerpo de la solicitud no es válido."));
+	}
+
+	@ExceptionHandler(MethodArgumentTypeMismatchException.class)
+	public ResponseEntity<ErrorResponse> handleTypeMismatch(MethodArgumentTypeMismatchException exception) {
+		return ResponseEntity.badRequest()
+				.body(new ErrorResponse("INVALID_PARAMETER", "El parámetro " + exception.getName() + " no es válido."));
 	}
 
 	@ExceptionHandler(AsyncRequestNotUsableException.class)
