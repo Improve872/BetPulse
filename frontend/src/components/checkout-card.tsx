@@ -147,19 +147,28 @@ export function CheckoutCard({
                 id="card-expiry"
                 value={expiry}
                 onChange={(event) =>
-                  onChange({ cardExpiry: onlyDigits(event.target.value, 4) })
+                  onChange({
+                    cardExpiry: onlyDigits(formatExpiry(event.target.value), 6),
+                  })
                 }
                 inputMode="numeric"
                 autoComplete="cc-exp"
                 placeholder={t("checkout.cardExpiryPlaceholder")}
                 aria-invalid={Boolean(errors.cardExpiry)}
-                aria-describedby={errors.cardExpiry ? "card-expiry-error" : undefined}
+                aria-describedby={
+                  errors.cardExpiry ? "card-expiry-error" : "card-expiry-hint"
+                }
                 className="mt-1.5"
               />
               <FieldError
                 id="card-expiry-error"
                 message={errors.cardExpiry ? t(errors.cardExpiry) : null}
               />
+              {errors.cardExpiry ? null : (
+                <p id="card-expiry-hint" className="mt-1.5 text-[11px] leading-4 text-muted">
+                  {t("checkout.cardExpiryHint")}
+                </p>
+              )}
             </div>
             <div>
               <label htmlFor="card-cvv" className="text-xs font-semibold text-ink">
@@ -175,9 +184,11 @@ export function CheckoutCard({
                   }
                   inputMode="numeric"
                   autoComplete="cc-csc"
-                  placeholder={t("checkout.cardCvvPlaceholder")}
+                  placeholder={brand === "amex" ? "1234" : t("checkout.cardCvvPlaceholder")}
                   aria-invalid={Boolean(errors.cardCvv)}
-                  aria-describedby={errors.cardCvv ? "card-cvv-error" : undefined}
+                  aria-describedby={
+                    errors.cardCvv ? "card-cvv-error" : "card-cvv-hint"
+                  }
                   className="pr-10"
                 />
                 <button
@@ -197,6 +208,11 @@ export function CheckoutCard({
                 id="card-cvv-error"
                 message={errors.cardCvv ? t(errors.cardCvv) : null}
               />
+              {errors.cardCvv ? null : (
+                <p id="card-cvv-hint" className="mt-1.5 text-[11px] leading-4 text-muted">
+                  {t("checkout.cardCvvHint")}
+                </p>
+              )}
             </div>
           </>
         ) : null}

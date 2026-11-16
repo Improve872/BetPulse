@@ -628,3 +628,38 @@ Formato: contexto → decisión → consecuencias. Actualizar cuando cambie una 
 - El stack puede evolucionar al despliegue final agregando secretos reales, HTTPS, un registro de imágenes y el colector cuando corresponda.
 - El healthcheck y `--wait` hacen que el arranque espere a que los tres servicios estén listos.
 - La base arranca limpia; para mostrar historial se restaura un dump o se generan las operaciones en vivo.
+
+## ADR-041 — Validación del checkout: formato sobre cronología (M7)
+
+**Estado:** aceptada (2026-11-16)
+**Relacionada:** ADR-039 (checkout estándar), ADR-037 (superficie de producto).
+
+**Contexto:** en la demo del 2026-11-09 el checkout de tarjeta rechazó el
+vencimiento y bloqueó la recarga. El campo truncaba el año a cuatro dígitos
+(`12/2026` → `12/20`), concatenaba mal un mes de un dígito escrito con barra
+(`1/26` → `12/6`) y comparaba contra el reloj real: con el sistema en 2026,
+`12/25` ya figuraba vencida y el mensaje genérico ("Ingresa un vencimiento
+válido") no explicaba el motivo. La lógica de `lib/checkout.ts` no tenía tests.
+
+**Decisión:**
+
+- El vencimiento se formatea en cliente y acepta `MM/AA` y `MM/AAAA`, con o sin
+  barra escrita por el usuario. No se trunca el año.
+- La validación exige estructura correcta y mes entre 01 y 12. **No se compara
+  contra la fecha actual**: el checkout es simulado y no procesa pagos reales
+  (ADR-039); rechazar tarjetas de ejemplo vencidas solo añade fricción sin
+  valor de producto.
+- El CVV exige tres dígitos, o cuatro para Amex, con pista visible.
+- Se agrega Vitest al frontend: `npm test` cubre formateadores, validaciones y
+  el flujo de tarjeta en `src/lib/checkout.test.ts`.
+- `docs/demo.md` fija los datos de demo válidos para no improvisar tarjetas.
+
+**Consecuencias:**
+
+- La recarga funciona con cualquier fecha bien escrita, incluidas `12/24` o
+  `12/25`.
+- El formulario deja de ser un punto de fallo en la presentación.
+- La lógica de checkout gana cobertura real; antes no había ningún test de
+  frontend.
+- Si se integra una pasarela real, la validación de vencimiento se delega al
+  proveedor y este ADR se revisa.

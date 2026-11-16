@@ -115,8 +115,24 @@ export function formatCardNumber(value: string): string {
   return number.replace(/(.{4})/g, "$1 ").trim();
 }
 
+/**
+ * Formatea el vencimiento mientras se escribe. Admite año de 2 o 4 dígitos y
+ * también el separador escrito por el usuario:
+ *   `1226` → `12/26`, `122026` → `12/2026`, `1/26` → `01/26`.
+ * Si el primer dígito del mes es mayor que 1 se completa con `0`
+ * (`926` → `09/26`).
+ */
 export function formatExpiry(value: string): string {
-  let digits = onlyDigits(value, 4);
+  const [monthPart, ...yearParts] = value.split("/");
+  const hasSeparator = yearParts.length > 0;
+  const typedYear = onlyDigits(yearParts.join(""), 4);
+
+  if (hasSeparator) {
+    const month = onlyDigits(monthPart, 2).padStart(2, "0");
+    return month ? `${month}/${typedYear}` : "";
+  }
+
+  let digits = onlyDigits(value, 6);
   if (digits.length === 1 && Number(digits) > 1) {
     digits = `0${digits}`;
   }
@@ -155,20 +171,35 @@ export function isValidCardNumber(value: string): boolean {
   return digits.length >= 13 && digits.length <= 19;
 }
 
-export function isValidExpiry(value: string): boolean {
-  const match = /^(\d{2})\/(\d{2})$/.exec(formatExpiry(value));
-  if (!match) {
-    return false;
+/**
+ * Extrae mes y año de un vencimiento ya formateado. Acepta `MM/AA` y
+ * `MM/AAAA`; devuelve `null` si la estructura o el mes no son válidos.
+ */
+export function parseExpiry(
+  value: string,
+): { month: number; year: number } | null {
+  const digits = onlyDigits(formatExpiry(value), 6);
+  if (digits.length !== 4 && digits.length !== 6) {
+    return null;
   }
-  const month = Number(match[1]);
-  const year = 2000 + Number(match[2]);
+  const month = Number(digits.slice(0, 2));
   if (month < 1 || month > 12) {
-    return false;
+    return null;
   }
-  const now = new Date();
-  const currentYear = now.getFullYear();
-  const currentMonth = now.getMonth() + 1;
-  return year > currentYear || (year === currentYear && month >= currentMonth);
+  const yearDigits = digits.slice(2);
+  const year =
+    yearDigits.length === 2 ? 2000 + Number(yearDigits) : Number(yearDigits);
+  return { month, year };
+}
+
+/**
+ * El checkout es simulado y no procesa pagos reales: basta con que la fecha
+ * tenga forma válida (`MM/AA` o `MM/AAAA`) y un mes entre 01 y 12. No se
+ * compara contra la fecha actual para no bloquear la demo con tarjetas de
+ * ejemplo vencidas.
+ */
+export function isValidExpiry(value: string): boolean {
+  return parseExpiry(value) !== null;
 }
 
 export function isValidCvv(value: string, brand: CardBrand): boolean {
