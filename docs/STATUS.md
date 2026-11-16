@@ -6,7 +6,7 @@
 
 ## Hito actual
 
-**M6d corregido tras la demo del 2026-11-09. M7 en curso: hardening.** Siguiente: rate limiting y CSP. M3c sigue bloqueado por falta de calendario pre-partida.
+**M7: hardening base cerrado (rate limiting, CSP, headers, RBAC/IDOR y tests de checkout).** Siguiente: E2E de flujos de dinero y M8. M3c sigue bloqueado por falta de calendario pre-partida.
 
 Cerrados: M0 (capturas GSI reales), M1 (identidad y wallet), M2a (catálogo OpenDota + SSE), M2b (partida propia GSI), M3a y M3b (cuatro mercados en vivo con cuotas), M4 (apuestas simples con holds), M5 (liquidación, payout/void, admin y auditoría), M6a (arena visual y sistema de diseño), M6b (streaming oficial y cierre de producto), M6c (copy de producto y saldo administrativo), M6d (cuenta, rail en vivo y checkout simulado). Detalle en `docs/milestones/`.
 
@@ -35,6 +35,9 @@ Cerrados: M0 (capturas GSI reales), M1 (identidad y wallet), M2a (catálogo Open
 - M7 (2026-11-16): corregido el checkout de tarjeta que bloqueó la demo. El vencimiento acepta `MM/AA` y `MM/AAAA`, tolera el mes de un dígito y no se compara contra el reloj (ADR-041). El CVV muestra su regla (3 dígitos, 4 en Amex).
 - M7 (2026-11-16): Vitest añadido al frontend; `npm test` cubre `lib/checkout.ts` con 18 casos, incluida la regresión de fecha vencida. Entra al flujo de verificación y al CI junto a lint y build.
 - `docs/demo.md` reescrito como guion técnico: arquitectura, cuatro flujos, invariantes de dinero, datos de demo válidos y preguntas del jurado.
+- M7 (2026-11-16): rate limiting en memoria por ruta y método (`RateLimitFilter`, `RateLimitProperties`): login 10/min, registro 5/min, contraseña 5/min, apuestas 30/min, wallet 20/min, admin 60/min e ingesta 1200/min. Responde `429` con `Retry-After` (ADR-042).
+- M7 (2026-11-16): CSP completa sin nonce y headers de seguridad (`nosniff`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`); `frame-src` queda limitado a Twitch y YouTube.
+- M7 (2026-11-16): tests de control de acceso. Un `USER` recibe `403` en todos los paneles y acciones de admin; anónimo recibe `401`. El test destapó que `@PreAuthorize` devolvía `500` en lugar de `403` y que un parámetro con tipo inválido devolvía `500`; ambos casos se corrigen en `GlobalExceptionHandler`.
 - Catálogo con datos reales de OpenDota; sin fixtures ni datos inventados en el producto.
 - Las partidas con `league_id > 0` se priorizan sobre las ranked y muestran el nombre de liga resuelto con `/leagues/{id}` (caché 6 h).
 - Cuatro mercados base por partida en vivo (ganador, total de kills, handicap y duración) más tres de eventos GSI (primera sangre, primera torre y siguiente Roshan), con versión e historial append-only.
@@ -62,15 +65,14 @@ Cerrados: M0 (capturas GSI reales), M1 (identidad y wallet), M2a (catálogo Open
 - Colector Javalin definitivo: expone `/health` y `/`, recibe `/gsi`, normaliza, deduplica, firma con HMAC y reenvía al backend con spool ante caídas.
 - Liquidación implementada: `settlements` único por apuesta, payout/void, ledger y auditoría. Las apuestas ya no quedan abiertas para siempre.
 - Steam `GetLiveLeagueGames` no integrado: falta `STEAM_API_KEY` (rate limit de generación). No bloquea la demo.
-- CI: ejecución `f7e1bae` en verde para backend, colector, frontend y build de imágenes Docker; M6d cierra con 101 tests backend locales.
+- CI: última ejecución en verde `f7e1bae` para backend, colector, frontend y build de imágenes Docker. El frontend ahora corre lint, test y build; el backend local suma 110 tests. El commit de M7 queda pendiente de la nueva ejecución de CI.
   `https://github.com/Improve872/BetPulse/actions/runs/41782427003`
 
 ## Próxima acción
 
-1. M7: rate limiting y CSP con nonce.
-2. M7: tests RBAC/IDOR sobre endpoints existentes.
-3. M8: fútbol pre-partida (ESPN/OpenLigaDB), luego NBA; sin eventos en vivo.
-4. Opcional: M3c si aparece calendario fiable; Steam `GetLiveLeagueGames` si hay API key; pulido admin (usuarios, exposición, salud).
+1. M7: E2E de flujos de dinero con Playwright y escaneo de dependencias en CI.
+2. M8: fútbol pre-partida (ESPN/OpenLigaDB), luego NBA; sin eventos en vivo.
+3. Opcional: M3c si aparece calendario fiable; Steam `GetLiveLeagueGames` si hay API key; pulido admin (usuarios, exposición, salud).
 
 ## Pendiente de entorno (opcional)
 
@@ -107,8 +109,10 @@ npm run build
 
 Resultados 2026-11-16 (M7):
 
+- Backend: 110/110 tests verdes (M7 suma rate limiting, control de acceso y la corrección de 403/400 en el manejador global).
 - Frontend: 18/18 tests de checkout en Vitest; lint y build verdes.
 - Regresión cubierta: `12/25` ya no bloquea la recarga; `12/2026` y `1/26` se aceptan.
+- Headers verificados en `next start`: CSP completa, `nosniff`, `X-Frame-Options`, `Referrer-Policy` y `Permissions-Policy`.
 - Audit: sin vulnerabilidades críticas; quedan las de Next/PostCSS y las de desarrollo.
 
 Resultados 2026-11-04 (M6d):

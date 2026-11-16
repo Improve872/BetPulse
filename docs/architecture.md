@@ -70,6 +70,7 @@ En desarrollo, Next.js hace proxy de `/api` al backend para evitar CORS y compar
 - `components/home-lobby.tsx` usa el snapshot inicial del servidor y lo reemplaza con cada evento SSE; muestra estado de conexión/feed en ES/EN y orquesta partido destacado, tabs En vivo/Resultados, rail de torneos, lista, bet slip, modales y navegación.
 - Componentes de arena: `featured-match`, `match-card`, `live-rail`, `odds-button`, `team-crest`, `lobby-tabs`, `filter-rail`, `bet-slip`, `match-detail-modal`, `stream-player` y `match-detail-page`.
 - Tokens en `app/globals.css`: arena `#070D18`, superficies `#0F1A2C`/`#142136`, líneas `#223149`, texto `#F8FAFC`, muted `#94A3B8`, naranja `#F97316`; el tema claro de cuenta conserva `--color-paper` y `--color-surface`. Tipografía local con números tabulares.
+- Headers de seguridad en `next.config.ts`: CSP (default-src self, frame-src Twitch/YouTube, frame-ancestors none), `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy` y `Permissions-Policy` (ADR-042).
 - Superficies: lobby y `/match/[id]` son “arena” oscura; `/wallet`, `/account`, `/bets`, `/admin`, `/admin/markets`, `/admin/streams` y `/admin/users` son “cuenta” claras.
 - `LiveRail` muestra un carrusel horizontal de partidas en vivo (sin la destacada) con torneo, escudos, marcador, tiempo y cuotas del mercado principal; reutiliza `OddsButton` y la selección del boleto.
 - Header autenticado: saldo disponible junto al usuario con toggle de visibilidad persistido en `localStorage`; menú con Mi cuenta, Mi billetera, Mis apuestas, Admin (solo `ADMIN`) y Salir. En móvil se replica en el menú lateral y el saldo sigue visible. El saldo se refresca al abrir/operar la billetera, al apostar, al recuperar foco y cada 30 s.
@@ -174,6 +175,7 @@ Constraints clave:
 - SSE actual: `GET /api/live/stream` con eventos `lobby`, `markets` y `heartbeat`. Los eventos de mercados se emiten después del commit de la sincronización.
 - Endpoint interno `/internal/ingest` con HMAC para el colector (M2b).
 - `Idempotency-Key` en apuestas, depósitos y retiros.
+- Rate limiting en memoria por ruta y método (`RateLimitFilter`, ADR-042): login, registro, cambio de contraseña, apuestas, wallet, admin e ingesta.
 - OpenAPI como contrato.
 - Errores estandarizados sin filtrar detalles internos.
 

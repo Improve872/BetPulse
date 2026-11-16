@@ -15,13 +15,13 @@ Proteger cuentas, saldos, apuestas, cuotas, panel administrativo, datos personal
 - Infraestructura (PostgreSQL, colector, API).
 - Integridad del juego y reputación del proyecto.
 
-## Estado implementado (2026-11-04)
+## Estado implementado (2026-11-16)
 
 | Control | Estado | Evidencia |
 |---|---|---|
 | Auth con BCrypt 12, sesión HttpOnly y CSRF | Implementado | `AuthFlowTest`, `SecurityConfig` |
 | Cambio de contraseña autenticado | Implementado | `POST /api/auth/password`, `AuthFlowTest` |
-| RBAC admin con `@EnableMethodSecurity` | Implementado | `AdminBetController`, `AdminMarketController`, `AdminStreamController` |
+| RBAC admin con `@EnableMethodSecurity` | Implementado | `AccessControlFlowTest`: `USER` recibe 403 y anónimo 401 en todos los paneles |
 | Ingest GSI con HMAC-SHA256 y ventana de 5 min | Implementado | `IngestSignature`, `IngestFlowTest` |
 | Idempotencia de snapshots y eventos | Implementado | `snapshot_id` único y `UNIQUE (match_id, event_id)` |
 | Ledger de doble entrada y saldos no negativos | Implementado | `WalletFlowTest`, constraints V2 |
@@ -29,16 +29,16 @@ Proteger cuentas, saldos, apuestas, cuotas, panel administrativo, datos personal
 | Auditoría append-only | Implementado | `audit_logs`, ADR-030/ADR-033 |
 | Suspensión por feed, pausa y eventos | Implementado | `FEED_STALE`, `MATCH_PAUSED`, `EVENT_SUSPENSION` |
 | Límite de stake en práctica | Implementado | S/ 100 vía `practice-max-stake-cents` |
-| Rate limiting | **No implementado** | Pendiente M7 |
-| MFA para admin | **No implementado** | Pendiente M7 |
-| CSP `frame-src` para streaming | Implementado | `next.config.ts`; CSP completa pendiente M7 |
+| Rate limiting en login, registro, apuestas, wallet, admin e ingesta | Implementado | `RateLimitFilter`, `RateLimitFlowTest`, ADR-042 |
+| MFA para admin | **Fuera de alcance** | Local-first, un usuario, sin acceso remoto (ADR-042) |
+| CSP completa y headers de seguridad | Implementado | `next.config.ts`: CSP, `nosniff`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy` |
 | Admin de streams con RBAC y auditoría | Implementado | `AdminStreamController`, `audit_logs`, `AdminStreamFlowTest` |
 | Ajuste de saldo admin con ledger y auditoría | Implementado | `AdminUserController`, `ADMIN_ADJUSTMENT`, `AdminUserFlowTest` |
 | URLs de streaming validadas | Implementado | Provider Twitch/YouTube, canal/video obligatorio y fallback HTTP(S) |
 | Rol `TRADER` operativo | **No implementado** | El rol existe; no hay endpoints/UI |
 | Rol `AUDITOR` operativo | **No implementado** | El rol existe; no hay endpoints/UI |
 | Backups y restauración probados | **No implementado** | Pendiente de entorno |
-| Escaneo de dependencias | Parcial | `npm audit` reporta 2 transitivas |
+| Escaneo de dependencias | Parcial | `npm audit`: 8 vulnerabilidades (2 de producción en Next/PostCSS, 6 de desarrollo en Vite/esbuild); sin críticas |
 
 ## Roles y permisos
 
@@ -249,16 +249,17 @@ Reglas:
 
 ## Checklist mínimo
 
-- [ ] Auth con hash fuerte y sesiones seguras.
-- [ ] RBAC y rutas admin protegidas.
-- [ ] CSRF, CSP y headers.
-- [ ] Rate limiting en login/apuestas/pagos.
-- [ ] Validación de entrada y consultas parametrizadas.
-- [ ] Ledger con constraints e idempotencia.
-- [ ] Suspensión por lag/evento.
-- [ ] Auditoría de acciones críticas.
-- [ ] Secretos fuera del repo.
+- [x] Auth con hash fuerte y sesiones seguras.
+- [x] RBAC y rutas admin protegidas.
+- [x] CSRF, CSP y headers.
+- [x] Rate limiting en login/apuestas/pagos.
+- [x] Validación de entrada y consultas parametrizadas.
+- [x] Ledger con constraints e idempotencia.
+- [x] Suspensión por lag/evento.
+- [x] Auditoría de acciones críticas.
+- [x] Secretos fuera del repo.
+- [x] RBAC e IDOR probados (`AccessControlFlowTest`, `BetFlowTest`).
 - [ ] Backups y restauración probados.
-- [ ] Escaneo de dependencias.
-- [ ] Pruebas de concurrencia y seguridad.
-- [ ] Aviso de demo y juego responsable.
+- [ ] Escaneo de dependencias en CI (paso de `npm audit` añadido; Dependabot configurado).
+- [ ] Pruebas XSS y DAST.
+- [x] Documentación de entorno local y juego responsable.

@@ -663,3 +663,48 @@ válido") no explicaba el motivo. La lógica de `lib/checkout.ts` no tenía test
   frontend.
 - Si se integra una pasarela real, la validación de vencimiento se delega al
   proveedor y este ADR se revisa.
+
+## ADR-042 — Rate limiting en memoria y CSP estática (M7)
+
+**Estado:** aceptada (2026-11-16)
+**Relacionada:** ADR-002 (monolito modular), ADR-036 (streaming y CSP de
+frames), ADR-037 (superficie de producto).
+
+**Contexto:** el plan de seguridad pedía rate limiting, headers completos y
+CSP. La demo corre en una sola instancia local y sin Redis, y la rúbrica no
+exige MFA. Un limitador distribuido o una CSP con nonce añaden infraestructura
+y riesgo de romper la demo por un beneficio marginal en este contexto.
+
+**Decisión:**
+
+- Rate limiting con **ventana fija en memoria** (`RateLimiter`), clave por
+  usuario autenticado y, si no hay sesión, por IP.
+- Reglas por ruta y método, configurables en `betpulse.rate-limit`:
+  login 10/min, registro 5/min, cambio de contraseña 5/min, apuestas 30/min,
+  depósitos/retiros 20/min, admin 60/min e ingesta GSI 1200/min (tolera el
+  drenaje del spool tras una caída).
+- El filtro se registra **después de CSRF**: una petición sin token no consume
+  cuota y el ataque de fuerza bruta real queda limitado.
+- Respuesta `429` con `Retry-After` y cuerpo `RATE_LIMITED`.
+- CSP completa pero **sin nonce**: `script-src 'self' 'unsafe-inline'` porque
+  Next inyecta el bootstrap de React inline y el nonce obligaría a renderizado
+  dinámico en todas las rutas. Se restringen `object-src`, `base-uri`,
+  `form-action`, `frame-ancestors` y `frame-src` (Twitch/YouTube).
+- Se añaden `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy` y
+  `Permissions-Policy`.
+- MFA para admin queda **fuera de alcance**: entorno local-first, un solo
+  usuario en la presentación y sin acceso remoto.
+
+**Consecuencias:**
+
+- El limitador no se comparte entre instancias y se reinicia con el backend.
+  Es aceptable para una sola instancia; si se despliega en clúster se migra a
+  Redis y este ADR se revisa.
+- El límite por IP agrupa a los navegadores que pasan por el proxy de Next en
+  local; los límites son holgados para la demo y las rutas sensibles usan la
+  identidad del usuario.
+- `'unsafe-inline'` deja la puerta abierta a XSS inline. React escapa por
+  defecto y no hay HTML generado por usuarios; aun así, una CSP con nonce queda
+  como mejora futura.
+- Los tests de integración desactivan el limitador; `RateLimitFlowTest` lo
+  activa en un contexto propio para no contaminar el resto de la suite.
