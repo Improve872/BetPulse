@@ -1,124 +1,316 @@
 # Demo — BetPulse
 
+> Guion técnico para presentar el sistema, no solo la pantalla. Cada bloque
+> tiene **qué se muestra**, **qué se dice** y **qué demuestra**.
+
 ## Objetivo
 
-Demostrar en una sola laptop el ciclo completo: partida real de Dota 2 →
-GSI → cuotas propias → apuesta → liquidación → wallet → auditoría, más el
-feed de torneos/ranked de OpenDota y el panel admin.
+Mostrar en una sola laptop el ciclo completo del dinero:
 
-## Fuentes (decisión M0)
+```text
+partida real de Dota 2 → datos GSI → mercado → cuota → apuesta → hold
+→ resultado final → liquidación exactly-once → wallet → auditoría
+```
 
-| Fuente | Uso | Estado |
+Alrededor de ese núcleo: catálogo OpenDota, streaming oficial, checkout
+simulado y panel administrativo.
+
+## La idea en cinco frases
+
+1. BetPulse es una casa de apuestas **simulada**: el dinero es ficticio, pero
+   la contabilidad es real y verificable.
+2. Las cuotas las calcula **solo el servidor**; el navegador nunca decide un
+   precio.
+3. El saldo no es una columna que se edita: es la **suma de un ledger de doble
+   entrada** que siempre cuadra en cero.
+4. Cada apuesta se liquida **una sola vez**, aunque el proceso se reintente.
+5. Todo lo que pasa con dinero queda en una **bitácora inmutable**.
+
+## Arquitectura en 60 segundos
+
+```text
+Dota 2 (espectador o bots)
+   │ GSI HTTP POST
+   ▼
+Colector Javalin ── HMAC ──► Spring Boot /internal/ingest
+   │                              │
+   │                              ├─► PostgreSQL (snapshots, eventos, ledger)
+   │                              └─► SSE ──► Next.js (lobby / partido)
+   │
+OpenDota /live ◄── poller 30 s ───┤
+OpenDota /matches/{id} ◄──────────┘
+
+Navegador ── REST + cookies ──► Next.js proxy ──► Spring Boot
+```
+
+| Pieza | Tecnología | Papel |
 |---|---|---|
-| DotaTV en vivo | Partida espectada completa: 10 jugadores, Roshan, torneos | Probada |
-| Bots en local | Partida controlable para primera sangre/torre y final rápido | Probada |
-| OpenDota `/live` | Torneos y ranked sin espectar; cuotas que fluctúan | Implementada |
-| OpenDota `/matches/{id}` | Verificación y objetivos post-partida | Implementada |
-| Replay | Descartado por producto | No se usa |
+| Frontend | Next.js 15 + React 19 + Tailwind 4 | Lobby, partido, wallet, admin |
+| Backend | Spring Boot 3.5 + Java 21 | Dominio, cuotas, ledger, liquidación |
+| Colector | Java 21 + Javalin | Recibe GSI, normaliza, firma, reintenta |
+| Base de datos | PostgreSQL 17 + Flyway | Ledger, apuestas, mercados, auditoría |
+| Fuente externa | OpenDota | Catálogo y verificación de resultados |
 
-**Demo principal:** una partida con bots o un torneo en vivo. Si no hay torneo,
-los bots dan el control total y permiten terminar la partida a voluntad.
+**Módulos del backend:** `identity`, `catalog`, `live`, `markets`, `odds`,
+`betting`, `wallet`, `settlement`, `payments`, `admin`, `audit`, `shared`.
 
-## Demo Docker (recomendada)
+Es un **monolito modular**: una sola transacción ACID puede mover ledger,
+apuesta y liquidación sin coordinación distribuida. Para un solo desarrollador
+y una demo local, eso es una ventaja, no una limitación.
 
-La presentación usa **frontend + backend + PostgreSQL** en Docker. No incluye
-Dota 2, GSI ni colector.
+## Los cuatro flujos que hay que saber explicar
 
-En la PC de la demo:
+### 1. Del partido al lobby
 
-```powershell
-# Copiar dist/betpulse-demo-kit a C:\BetPulseDemo
-cd C:\BetPulseDemo
-powershell -ExecutionPolicy Bypass -File .\start.ps1
+- **GSI** (Game State Integration) es el mecanismo oficial de Dota 2: el juego
+  hace `POST` a un endpoint local con el estado de la partida.
+- El colector valida el token, **normaliza** el payload, **deduplica** eventos
+  por `matchId:tipo:clock:playerIds`, envía snapshots a 1 Hz, firma con **HMAC**
+  y guarda en **spool** si el backend está caído.
+- El backend valida firma y ventana de 5 minutos, guarda `game_snapshots` y
+  `game_events`, y fusiona la partida en el lobby con `source=GSI`.
+- Además, un poller consulta **OpenDota `/live`** cada 30 s para partidas de
+  torneo y ranked. Esas partidas tienen delay; sus mercados son más
+  conservadores y se marcan como tales.
+- El lobby se difunde por **SSE** (`/api/live/stream`): el cliente recibe
+  `lobby`, `markets` y `heartbeat`. El `/_match/[id]` tiene su propio stream.
+
+**Qué demuestra:** datos reales, dos fuentes con calidades distintas y una UI
+que se actualiza sola sin polling del navegador.
+
+### 2. De los datos a la cuota
+
+- Cuota decimal con 3 decimales; probabilidad con 8.
+- `odds = 1 / (p × (1 + margen))`, margen inicial 6%.
+- Mercados base: `MATCH_WINNER`, `TOTAL_KILLS`, `KILL_HANDICAP`, `DURATION`.
+- Mercados de evento (solo GSI): `FIRST_BLOOD`, `FIRST_TOWER`, `NEXT_ROSHAN`,
+  con cuotas 50/50 y el mismo margen.
+- Cada cambio sube `markets.version` y agrega una fila a **`odds_history`**
+  (append-only) con la fuente (`MODEL` o `ADMIN_OVERRIDE`).
+- Suspensión automática: kill, torre, Roshan, pausa, lag o fin de partida.
+  Los eventos críticos suspenden 3 s (`EVENT_SUSPENSION`); una pausa usa
+  `MATCH_PAUSED`; `close-grace` de 120 s evita cerrar por una desaparición
+  transitoria del feed.
+
+**Qué demuestra:** el precio no se inventa en el cliente y toda variación es
+auditable y versionada.
+
+### 3. Del clic a la apuesta
+
+El cliente envía:
+
+```json
+{
+  "marketId": "uuid",
+  "selectionId": "radiant",
+  "stakeCents": 1000,
+  "expectedOdds": 1.72,
+  "marketVersion": 5,
+  "idempotencyKey": "bet-..."
+}
 ```
 
-- Abre `http://localhost:3000`.
-- Admin: `admin@betpulse.local` / `Admin123!`.
-- `stop.ps1` detiene conservando datos; `reset.ps1` deja la base limpia.
-- Si el puerto `3000` está ocupado: `.\start.ps1 -Port 3100`.
-- Requiere Docker Desktop abierto e internet para OpenDota.
-- El kit carga las imágenes desde `betpulse-demo-images.tar`; no necesita registro.
+El servidor valida, en este orden:
 
-Para generar el kit desde el repo:
+1. sesión y usuario;
+2. mercado abierto y no suspendido;
+3. `marketVersion` vigente;
+4. `expectedOdds` coincide con la cuota actual;
+5. stake dentro de límites (en partidas de práctica, máximo S/ 100);
+6. saldo disponible suficiente.
 
-```powershell
-.\scripts\demo-package.ps1
+Si algo falla, **no se mueve dinero**. Si todo pasa, en una sola transacción:
+
+- `USER_AVAILABLE -stake`, `USER_HELD +stake`;
+- se crea `bets` en `PLACED` con snapshot de mercado, selección, versión y
+  cuota aceptada;
+- se registra `bet_status_history`.
+
+La clave de idempotencia es `UNIQUE (user_id, idempotency_key)`: el doble clic
+devuelve la misma apuesta, no crea dos.
+
+**Qué demuestra:** consistencia bajo concurrencia y rechazo explícito de cuota
+vieja.
+
+### 4. Del final del partido al dinero
+
+Este es el flujo que hay que explicar despacio, porque es el corazón del
+sistema:
+
+```text
+partido termina
+   → match_results      (resultado verificado: ganador, scores, duración, objetivos)
+   → market_results     (cada mercado: SETTLED con selección | VOID)
+   → settlements        (una fila por apuesta, unique bet_id)
+   → ledger + wallets   (pago, pérdida o reembolso)
+   → audit_logs         (append-only)
 ```
 
-## Desarrollo local
+- `match_results` viene de GSI (`POST_GAME`) o de OpenDota `/matches/{id}`, con
+  backoff e idempotencia.
+- `market_results` resuelve **una sola vez** por mercado. Sin resultado válido
+  → `VOID`.
+- `settlements.bet_id` es clave única: aunque el scheduler corra dos veces, la
+  apuesta se liquida una sola vez.
+- El payout usa la **cuota aceptada**, no la cuota final:
+  `round_half_up(stake_cents × odds)`.
 
-```powershell
-docker compose -f infra/docker-compose.yml up -d postgres
-cd backend; .\mvnw.cmd spring-boot:run
-cd ..\collector; java -jar target\collector-0.1.0-SNAPSHOT-shaded.jar
-cd ..\frontend; npm run dev
-```
+**Qué demuestra:** el settlement es agnóstico a la fuente. Agregar un deporte
+nuevo no toca el núcleo de pagos.
 
-Dota 2: `-gamestateintegration` y el `.cfg` instalado con
-`scripts/install-gsi-config.ps1`.
+## El dinero: cuentas y movimientos
 
-Abrir dos perfiles del navegador:
+Cuentas del ledger: `USER_AVAILABLE`, `USER_HELD`, `HOUSE`,
+`HOUSE_REVENUE`, `PENDING_PAYOUT`, `EXTERNAL`.
 
-- usuario nuevo (regístrate con cualquier correo);
-- admin (`admin@betpulse.local` / `Admin123!`), que puede acreditarle saldo desde `/admin/users`.
-
-El header del usuario autenticado muestra el saldo junto al nombre, con un ojo
-para ocultarlo, y abre un menú con **Mi cuenta**, **Mi billetera**, **Mis apuestas**,
-**Admin** (si aplica) y **Salir**. En `/account` se ven los datos y se cambia la
-contraseña; en `/wallet` se prueba el checkout.
-
-En `/admin/streams`, asignar un canal oficial de Twitch o un video de YouTube
-a la partida o liga que se mostrará. Sin stream asignado, la UI muestra el
-fallback “sin stream oficial”; no se inventa señal.
-
-## Guion (15–20 min)
-
-| Minuto | Acción |
+| Operación | Movimiento |
 |---|---|
-| 0–2 | Presentar BetPulse: apuestas de esports, datos reales y panel administrativo |
-| 2–4 | Registro/login, menú de usuario, `/account` y cambio de contraseña; wallet en S/ y admin acreditando saldo desde `/admin/users` |
-| 4–6 | Lobby: partido destacado, carrusel “En vivo ahora”, escudos, tabs, cuotas y boleto; abrir el detalle y reproducir el stream oficial |
-| 6–9 | Checkout en `/wallet`: tarjeta con vista previa, Yape/Plin con celular y OTP, o transferencia con banco/CCI; revisar y confirmar, ver el comprobante con nuevo saldo |
-| 9–11 | "Mi partida": iniciar partida con bots en Dota 2 o entrar a DotaTV |
-| 11–14 | Mostrar `/match/[id]`: marcador, stream, mercados, timeline, Roshan y SSE |
-| 14–16 | Apostar a primera sangre o primera torre; ver hold y `/bets` |
-| 16–18 | Provocar el evento en la partida; el mercado se cierra |
-| 18–19 | Terminar la partida o esperar `POST_GAME`; liquidación automática |
-| 19–20 | Wallet actualizada, pago, estado `WON/LOST/VOID`, auditoría y repaso del admin |
+| Depósito | `EXTERNAL` → `USER_AVAILABLE` |
+| Apuesta | `USER_AVAILABLE` → `USER_HELD` |
+| Apuesta ganada | `USER_HELD -stake`, `USER_AVAILABLE +payout`, `HOUSE -(payout - stake)` |
+| Apuesta perdida | `USER_HELD -stake`, `HOUSE +stake` |
+| Void | `USER_HELD -stake`, `USER_AVAILABLE +stake` |
+| Retiro | `USER_AVAILABLE` → `EXTERNAL` |
+| Ajuste admin | `USER_AVAILABLE` ↔ `HOUSE` |
 
-## Liquidación
+Invariantes que la base de datos impone, no la aplicación:
 
-- La partida con bots se puede terminar cuando quieras: al llegar `POST_GAME`
-  el backend guarda `match_results` y los schedulers resuelven y pagan en menos
-  de un minuto.
-- En DotaTV, elegir un partido cerca del final o mostrar la liquidación de uno
-  ya terminado, claramente etiquetado.
-- No usar resultados inventados.
+- `wallets.available_cents >= 0` y `held_cents >= 0` (`CHECK`).
+- Cada transacción del ledger **suma cero**.
+- `bets` único por `(user_id, idempotency_key)`.
+- `settlements` único por `bet_id`.
+- `odds_history` y `audit_logs` son **append-only**.
 
-## Verificación real ya realizada
+**Frase para el jurado:** el saldo no se guarda como verdad; se deriva de
+asientos que no pueden dejar de cuadrar.
 
-- Payload GSI → colector → backend → lobby con 1 partida GSI y 6 mercados.
-- Pausa → 6 mercados `SUSPENDED` con `MATCH_PAUSED`.
-- Apuesta S/ 10 a ganador en una partida GSI → `POST_GAME` → liquidación `WON`
-  con payout S/ 10.96 y wallet actualizada.
-- Admin: suspender, reanudar y override auditados.
-- M6a: lobby con partido destacado, escudos reales, tabs y boleto revisado con
-  feed OpenDota a 1440 px y 390 px.
-- M6b: asignación de stream desde `/admin/streams`, CTA en el hero, player
-  click-to-load en `/match/[id]` y fallback probados con Twitch.
-- M6c: admin acreditó S/ 250.00 a un usuario de test desde `/admin/users`; saldo
-  actualizado, ledger balanceado y auditoría registrada.
-- M6d: registro → cambio de contraseña → depósito S/ 150.00 → ajuste
-  admin de S/ 50.00 (saldo final S/ 200.00). Menú de usuario y `/account`
-  revisados.
-- M6d checkout: Yape con OTP, tarjeta Visa, transferencia de recarga y retiro
-  probados en navegador; el comprobante muestra método y código de operación.
-  Los datos de tarjeta/OTP solo viven en el navegador.
-- M7 Docker: stack con PostgreSQL + backend + frontend `healthy`; lobby con SSE,
-  registro, depósito, checkout, apuesta, historial y admin probados.
-- M7 Docker: kit de `dist/betpulse-demo-kit` (365 MB) cargado desde el `.tar` y
-  arrancado en `3101` sin instalar Java, Node ni PostgreSQL; reset de base y
-  admin sembrado verificados.
+## Seguridad y control
+
+- Sesión con cookie **HttpOnly** y **CSRF**; roles `USER` / `ADMIN`.
+- RBAC en admin: solo `ADMIN` suspende mercados, anula apuestas, ajusta saldo,
+  asigna streams.
+- Toda acción admin exige **motivo** y escribe en `audit_logs`.
+- El checkout **no envía datos de tarjeta**: el backend recibe únicamente
+  `amountCents` e `Idempotency-Key`. Tarjeta, OTP y CCI viven solo en memoria
+  del navegador.
+- CSP limita `frame-src` a Twitch y YouTube.
+- El endpoint interno del colector exige **HMAC** y ventana de 5 minutos.
+
+## Guion de 20 minutos
+
+| Min | Pantalla | Qué decir | Qué demuestra |
+|---|---|---|---|
+| 0–2 | Lobby | "Dota 2 en vivo, cuotas propias, apuestas contra la casa, saldo en soles" | Producto y propuesta |
+| 2–4 | Registro → `/account` | "Sesión HttpOnly, CSRF, roles; la cuenta se crea con wallet propia" | Identidad |
+| 4–6 | Lobby | Partido destacado, rail en vivo, escudos, tabs, cuotas que se mueven solas | OpenDota + SSE |
+| 6–8 | `/match/[id]` | Marcador, timeline, mercados, stream oficial click-to-load | Ingesta y detalle |
+| 8–11 | `/wallet` | Checkout en 3 pasos: monto → pago → confirmar; tarjeta/Yape/transferencia | Producto de pagos |
+| 11–13 | `/wallet` comprobante | "El backend solo recibió monto y clave de idempotencia" | Privacidad de datos |
+| 13–15 | Detalle | Abrir apuesta, ver hold y saldo retenido | Ledger en vivo |
+| 15–17 | Dota 2 | Provocar primera sangre o torre; el mercado se cierra y versiona | Suspensión y motor de cuotas |
+| 17–18 | Dota 2 | Terminar la partida con bots (`POST_GAME`) | Resultado real |
+| 18–19 | `/bets` y wallet | Estado `WON/LOST/VOID`, payout, saldo actualizado | Liquidación exactly-once |
+| 19–20 | `/admin` | Suspender, override con motivo, anular apuesta, ver auditoría | Control y trazabilidad |
+
+## Datos de demo (usar estos, no improvisar)
+
+| Campo | Valor |
+|---|---|
+| Tarjeta | `4111 1111 1111 1111` |
+| Titular | `ANA PEREZ` |
+| Vencimiento | `12/29` (también acepta `12/2029`) |
+| CVV | `123` |
+| Yape/Plin | `987 654 321`, OTP `123456` |
+| Transferencia | BCP, operación `12345678` |
+| Monto | `150.00` |
+
+> El checkout acepta cualquier fecha con formato válido y mes entre 01 y 12;
+> no compara contra el reloj para no bloquear la demo con tarjetas de ejemplo
+> vencidas (ADR-041).
+
+## Cómo explicar el sistema según el tiempo disponible
+
+**30 segundos.** "Es una casa de apuestas de Dota 2 con dinero simulado. Los
+datos vienen de GSI y OpenDota, las cuotas se calculan en el servidor y el
+saldo vive en un ledger de doble entrada que garantiza que no se pierda ni se
+cree dinero."
+
+**3 minutos.** Añadir el ciclo: partido → mercado → apuesta con hold →
+resultado → `market_results` → `settlements` → pago → auditoría. Mencionar la
+idempotencia y el unique por apuesta.
+
+**15 minutos.** Recorrer los cuatro flujos de este documento en orden, con la
+pantalla correspondiente, y cerrar con el panel admin y la auditoría.
+
+## Preguntas probables del jurado
+
+**¿Por qué dinero simulado?**
+Porque operar con dinero real exige licencia, cumplimiento y pasarela. El
+objetivo académico es demostrar el sistema de dinero, no captar apuestas.
+
+**¿Cómo evitan que alguien apueste dos veces con doble clic?**
+`Idempotency-Key` única por usuario y `UNIQUE (user_id, idempotency_key)` en la
+base. El segundo request devuelve la misma apuesta.
+
+**¿Qué pasa si la cuota cambia mientras el usuario apuesta?**
+El cliente manda `marketVersion` y `expectedOdds`; el servidor compara contra
+el estado actual y rechaza con la cuota nueva. Nunca se acepta a ciegas.
+
+**¿Cómo garantizan una sola liquidación?**
+`settlements.bet_id` es clave primaria y el proceso corre en una transacción.
+Un reintento choca contra la restricción y no duplica el pago.
+
+**¿Puede quedar saldo negativo?**
+No: hay `CHECK` en la base y la operación de débito es condicional. El test de
+concurrencia intenta doble gasto y falla como debe.
+
+**¿De dónde salen las cuotas?**
+De un modelo propio: Elo pre-partida y regresión logística en vivo sobre oro,
+XP, kills, torres, racks, Roshan y tiempo, más un margen del 6%. Se versionan y
+se guardan en `odds_history`.
+
+**¿Qué pasa si el feed se cae?**
+El colector guarda en spool y reintenta; el backend suspende mercados por lag y
+aplica `close-grace` de 120 s; la UI reconecta el SSE y muestra el estado del
+feed.
+
+**¿Qué pasa si OpenDota no responde?**
+El catálogo queda vacío pero la app abre; los mercados GSI se crean igual. Hay
+caché y backoff.
+
+**¿Cómo saben que el resultado es correcto?**
+`match_results` se toma de GSI y se verifica con OpenDota cuando hay `match_id`.
+Ante discrepancia, la apuesta queda en `NEEDS_REVIEW` y decide el admin.
+
+**¿Escala?**
+No es el objetivo. Es un monolito modular local-first. La consistencia
+transaccional vale más que el escalado horizontal para este caso.
+
+**¿La UI muestra que es una demo?**
+No: la app se presenta como producto. El contexto académico y el saldo
+simulado están documentados en README/runbook (ADR-037).
+
+## Lo que no se debe afirmar
+
+- No decir que se procesan pagos reales: no hay pasarela.
+- No decir que el fútbol o la NBA están integrados: son M8, no existen aún.
+- No decir que OpenDota es tiempo real: tiene delay y se etiqueta.
+- No decir que el stream es propio: se embebe el canal oficial.
+- No decir que los bots generan datos completos: en práctica solo hay jugador
+  local, sin edificios rivales ni Roshan.
+
+## Checklist técnico previo
+
+- [ ] Docker Desktop abierto y `dist/betpulse-demo-kit` copiado.
+- [ ] `start.ps1` levanta PostgreSQL, backend y frontend `healthy`.
+- [ ] Internet disponible para OpenDota (o hotspot).
+- [ ] Admin: `admin@betpulse.local` / `Admin123!`.
+- [ ] Usuario de demo con saldo cargado desde `/admin/users`.
+- [ ] Tarjeta de prueba verificada en `/wallet` con los datos de la tabla.
+- [ ] Dota 2 con `-gamestateintegration` y el `.cfg` instalado (si se usa GSI).
+- [ ] Stream oficial asignado en `/admin/streams` (si se va a mostrar).
+- [ ] Pestañas listas: lobby, partido, wallet, apuestas, admin, Dota 2.
+- [ ] Fuente de energía y notificaciones silenciadas.
 
 ## Riesgos
 
@@ -126,19 +318,8 @@ fallback “sin stream oficial”; no se inventa señal.
 |---|---|
 | No hay torneo en vivo | Bots o ranked de OpenDota |
 | GSI no envía | Revisar `.cfg`, launch option y modo espectador |
-| Dota 2 no arranca en la laptop | Probar el setup con antelación |
 | El partido no termina | Usar bots y cerrar la partida |
 | SSE no actualiza | Verificar proxy y reconexión |
-| Stream oficial offline o embed bloqueado | Usar `fallback_url`; probar Twitch/YouTube antes de la demo |
-| Steam key ausente | No hace falta para la demo con OpenDota/GSI |
-
-## Checklist
-
-- [x] GSI configurado y probado.
-- [x] Fuente principal y respaldo definidos.
-- [x] Apuesta y liquidación probadas de punta a punta.
-- [x] Admin de mercados y auditoría probados.
-- [x] Cuenta, cambio de contraseña y checkout simulado probados.
-- [x] Kit Docker probado desde el `.tar` con base limpia.
-- [ ] Ensayo completo en la PC de la presentación.
-- [ ] Video de respaldo (opcional).
+| Stream oficial offline | Usar `fallback_url`; probar Twitch/YouTube antes |
+| Sin internet | Hotspot; la app abre con lobby vacío y mercados GSI si hay partida |
+| Fecha de tarjeta rechazada | Ya corregido: se acepta cualquier fecha válida (ADR-041) |

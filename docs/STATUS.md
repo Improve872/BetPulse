@@ -1,12 +1,12 @@
 # Estado del proyecto
 
-Última actualización: 2026-11-04
+Última actualización: 2026-11-16
 
 > Estado vigente únicamente. El histórico de hitos cerrados vive en `docs/milestones/`.
 
 ## Hito actual
 
-**M6 — Producto cerrado (M6a + M6b + M6c + M6d, 2026-11-04). M7 en curso: empaquetado Docker para la demo.** Siguiente: hardening y ensayo final. M3c sigue bloqueado por falta de calendario pre-partida.
+**M6d corregido tras la demo del 2026-11-09. M7 en curso: hardening.** Siguiente: rate limiting y CSP. M3c sigue bloqueado por falta de calendario pre-partida.
 
 Cerrados: M0 (capturas GSI reales), M1 (identidad y wallet), M2a (catálogo OpenDota + SSE), M2b (partida propia GSI), M3a y M3b (cuatro mercados en vivo con cuotas), M4 (apuestas simples con holds), M5 (liquidación, payout/void, admin y auditoría), M6a (arena visual y sistema de diseño), M6b (streaming oficial y cierre de producto), M6c (copy de producto y saldo administrativo), M6d (cuenta, rail en vivo y checkout simulado). Detalle en `docs/milestones/`.
 
@@ -32,6 +32,9 @@ Cerrados: M0 (capturas GSI reales), M1 (identidad y wallet), M2a (catálogo Open
 - M7: `infra/docker-compose.demo.yml` levanta PostgreSQL 17, backend y frontend; solo se publica el frontend en `3000` y el backend queda en la red interna.
 - M7: `demo-kit/` incluye compose, `.env`, scripts de arranque/parada/reset y un `.tar` con las imágenes para cargarlas sin registro. `scripts/demo-package.ps1` genera el kit en `dist/`.
 - M7: el empaquetado de demo no incluye colector ni GSI; el catálogo sigue viniendo de OpenDota y requiere internet.
+- M7 (2026-11-16): corregido el checkout de tarjeta que bloqueó la demo. El vencimiento acepta `MM/AA` y `MM/AAAA`, tolera el mes de un dígito y no se compara contra el reloj (ADR-041). El CVV muestra su regla (3 dígitos, 4 en Amex).
+- M7 (2026-11-16): Vitest añadido al frontend; `npm test` cubre `lib/checkout.ts` con 18 casos, incluida la regresión de fecha vencida. Entra al flujo de verificación y al CI junto a lint y build.
+- `docs/demo.md` reescrito como guion técnico: arquitectura, cuatro flujos, invariantes de dinero, datos de demo válidos y preguntas del jurado.
 - Catálogo con datos reales de OpenDota; sin fixtures ni datos inventados en el producto.
 - Las partidas con `league_id > 0` se priorizan sobre las ranked y muestran el nombre de liga resuelto con `/leagues/{id}` (caché 6 h).
 - Cuatro mercados base por partida en vivo (ganador, total de kills, handicap y duración) más tres de eventos GSI (primera sangre, primera torre y siguiente Roshan), con versión e historial append-only.
@@ -64,21 +67,21 @@ Cerrados: M0 (capturas GSI reales), M1 (identidad y wallet), M2a (catálogo Open
 
 ## Próxima acción
 
-1. M7: rate limiting, MFA, CSP completa, E2E y ensayo de demo.
-2. Probar el kit Docker en la PC de la presentación y grabar el video de respaldo.
+1. M7: rate limiting y CSP con nonce.
+2. M7: tests RBAC/IDOR sobre endpoints existentes.
 3. M8: fútbol pre-partida (ESPN/OpenLigaDB), luego NBA; sin eventos en vivo.
 4. Opcional: M3c si aparece calendario fiable; Steam `GetLiveLeagueGames` si hay API key; pulido admin (usuarios, exposición, salud).
 
 ## Pendiente de entorno (opcional)
 
 - `STEAM_API_KEY` para enriquecer el feed pro con draft, torres y Roshan. No bloquea la demo.
-- PC de presentación: Docker Desktop funcionando y `dist/betpulse-demo-kit` copiado.
+- Demo kit `dist/betpulse-demo-kit` ya probado; sirve en cualquier equipo con Docker Desktop.
 
 ## Bloqueos
 
 - OpenDota no ofrece calendario futuro fiable para M3c.
 - Sin `STEAM_API_KEY` no hay draft, torres ni Roshan en vivo; el feed pro funciona con OpenDota.
-- `npm audit` reporta 2 vulnerabilidades transitivas de Next.js/PostCSS; se resolverán en M7 o con una actualización mayor planificada.
+- `npm audit`: 2 vulnerabilidades en dependencias de producción (PostCSS embebido en Next 15) y 6 en desarrollo (Vite/esbuild); sin críticas tras subir Vitest 5. Se resolverán con la actualización mayor de Next en M7.
 
 ## Restricción de diseño vigente
 
@@ -98,8 +101,15 @@ cd backend
 
 cd ..\frontend
 npm run lint
+npm test
 npm run build
 ```
+
+Resultados 2026-11-16 (M7):
+
+- Frontend: 18/18 tests de checkout en Vitest; lint y build verdes.
+- Regresión cubierta: `12/25` ya no bloquea la recarga; `12/2026` y `1/26` se aceptan.
+- Audit: sin vulnerabilidades críticas; quedan las de Next/PostCSS y las de desarrollo.
 
 Resultados 2026-11-04 (M6d):
 

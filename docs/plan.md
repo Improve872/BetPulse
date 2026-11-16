@@ -200,22 +200,22 @@ transferencia → saldo actualizado; carrusel y menú funcionan en desktop y mó
 
 Objetivo: que no falle en clase.
 
-**Estado:** en curso. Empaquetado Docker listo para la demo del 2026-11-05.
+**Estado:** en curso. Empaquetado Docker cerrado; hardening en curso tras la demo del 2026-11-09.
 
 Tareas:
 
 - Headers, CSRF, rate limiting, RBAC, pruebas IDOR/XSS/CSRF.
 - Tests de concurrencia, carga y E2E con Playwright.
 - Escaneo de dependencias y checklist de seguridad.
-- Documentación: OpenAPI, ERD, ADRs, runbook, manuales.
-- Ensayo de demo 3 veces, guion y video de respaldo.
+- Documentación: OpenAPI, ERD, ADRs, runbook, manuales y guion técnico.
+- Checklist técnico previo a la demo; sin video de respaldo ni ensayos múltiples.
 - Empaquetado Docker para la demo (frontend + backend + PostgreSQL):
   - Dockerfiles multietapa y `output: "standalone"`.
   - `infra/docker-compose.demo.yml` con healthchecks y volumen.
   - `demo-kit/` con arranque, parada, reset y `.tar` de imágenes.
   - Sin colector ni GSI en este paquete.
 
-Aceptación: checklist aprobado; demo de 30 min sin fallos críticos; respaldo listo.
+Aceptación: checklist aprobado y flujos críticos verificados (checkout, apuesta, liquidación).
 
 ### M8 — Deportes pre-partida: fútbol y NBA (2–3 semanas)
 
