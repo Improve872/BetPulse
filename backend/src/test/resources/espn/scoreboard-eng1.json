@@ -1,0 +1,225 @@
+{
+  "leagues": [
+    {
+      "id": "700",
+      "name": "English Premier League",
+      "slug": "eng.1",
+      "abbreviation": "Premier League"
+    }
+  ],
+  "events": [
+    {
+      "id": "401879233",
+      "date": "2026-11-21T12:30Z",
+      "name": "Fulham at Manchester City",
+      "status": {
+        "clock": 0,
+        "displayClock": "0'",
+        "type": {
+          "id": "1",
+          "name": "STATUS_SCHEDULED",
+          "state": "pre",
+          "completed": false,
+          "description": "Scheduled",
+          "detail": "Sat, November 21st at 7:30 AM EST",
+          "shortDetail": "Scheduled"
+        }
+      },
+      "competitions": [
+        {
+          "id": "401879233",
+          "date": "2026-11-21T12:30Z",
+          "venue": {
+            "id": "4036",
+            "fullName": "Etihad Stadium",
+            "address": {
+              "city": "Manchester",
+              "country": "England"
+            }
+          },
+          "status": {
+            "clock": 0,
+            "displayClock": "0'",
+            "type": {
+              "id": "1",
+              "name": "STATUS_SCHEDULED",
+              "state": "pre",
+              "completed": false,
+              "description": "Scheduled",
+              "detail": "Sat, November 21st at 7:30 AM EST",
+              "shortDetail": "Scheduled"
+            }
+          },
+          "competitors": [
+            {
+              "homeAway": "home",
+              "score": "0",
+              "winner": false,
+              "team": {
+                "id": "382",
+                "displayName": "Manchester City",
+                "shortDisplayName": "Man City",
+                "abbreviation": "MNC",
+                "logo": "https://a.espncdn.com/i/teamlogos/soccer/500/382.png"
+              }
+            },
+            {
+              "homeAway": "away",
+              "score": "0",
+              "winner": false,
+              "team": {
+                "id": "370",
+                "displayName": "Fulham",
+                "shortDisplayName": "Fulham",
+                "abbreviation": "FUL",
+                "logo": "https://a.espncdn.com/i/teamlogos/soccer/500/370.png"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "401879238",
+      "date": "2026-11-21T15:00Z",
+      "name": "Nottingham Forest at AFC Bournemouth",
+      "status": {
+        "clock": 0,
+        "displayClock": "0'",
+        "type": {
+          "id": "1",
+          "name": "STATUS_SCHEDULED",
+          "state": "pre",
+          "completed": false,
+          "description": "Scheduled",
+          "detail": "Sat, November 21st at 10:00 AM EST",
+          "shortDetail": "Scheduled"
+        }
+      },
+      "competitions": [
+        {
+          "id": "401879238",
+          "date": "2026-11-21T15:00Z",
+          "venue": {
+            "id": "6020",
+            "fullName": "Vitality Stadium",
+            "address": {
+              "city": "Bournemouth",
+              "country": "England"
+            }
+          },
+          "status": {
+            "clock": 0,
+            "displayClock": "0'",
+            "type": {
+              "id": "1",
+              "name": "STATUS_SCHEDULED",
+              "state": "pre",
+              "completed": false,
+              "description": "Scheduled",
+              "detail": "Sat, November 21st at 10:00 AM EST",
+              "shortDetail": "Scheduled"
+            }
+          },
+          "competitors": [
+            {
+              "homeAway": "home",
+              "score": "0",
+              "winner": false,
+              "team": {
+                "id": "349",
+                "displayName": "AFC Bournemouth",
+                "shortDisplayName": "Bournemouth",
+                "abbreviation": "BOU",
+                "logo": "https://a.espncdn.com/i/teamlogos/soccer/500/349.png"
+              }
+            },
+            {
+              "homeAway": "away",
+              "score": "0",
+              "winner": false,
+              "team": {
+                "id": "393",
+                "displayName": "Nottingham Forest",
+                "shortDisplayName": "Nottm Forest",
+                "abbreviation": "NFO",
+                "logo": "https://a.espncdn.com/i/teamlogos/soccer/500/393.png"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "401878756",
+      "date": "2026-11-21T15:00Z",
+      "name": "Sunderland at Aston Villa",
+      "status": {
+        "clock": 0,
+        "displayClock": "0'",
+        "type": {
+          "id": "1",
+          "name": "STATUS_SCHEDULED",
+          "state": "pre",
+          "completed": false,
+          "description": "Scheduled",
+          "detail": "Sat, November 21st at 10:00 AM EST",
+          "shortDetail": "Scheduled"
+        }
+      },
+      "competitions": [
+        {
+          "id": "401878756",
+          "date": "2026-11-21T15:00Z",
+          "venue": {
+            "id": "307",
+            "fullName": "Villa Park",
+            "address": {
+              "city": "Birmingham",
+              "country": "England"
+            }
+          },
+          "status": {
+            "clock": 0,
+            "displayClock": "0'",
+            "type": {
+              "id": "1",
+              "name": "STATUS_SCHEDULED",
+              "state": "pre",
+              "completed": false,
+              "description": "Scheduled",
+              "detail": "Sat, November 21st at 10:00 AM EST",
+              "shortDetail": "Scheduled"
+            }
+          },
+          "competitors": [
+            {
+              "homeAway": "home",
+              "score": "0",
+              "winner": false,
+              "team": {
+                "id": "362",
+                "displayName": "Aston Villa",
+                "shortDisplayName": "Aston Villa",
+                "abbreviation": "AVL",
+                "logo": "https://a.espncdn.com/i/teamlogos/soccer/500/362.png"
+              }
+            },
+            {
+              "homeAway": "away",
+              "score": "0",
+              "winner": false,
+              "team": {
+                "id": "366",
+                "displayName": "Sunderland",
+                "shortDisplayName": "Sunderland",
+                "abbreviation": "SUN",
+                "logo": "https://a.espncdn.com/i/teamlogos/soccer/500/366.png"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -11,7 +11,7 @@ const contentSecurityPolicy = [
   "default-src 'self'",
   `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""}`,
   "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data: blob:",
+  "img-src 'self' data: blob: https://a.espncdn.com",
   "font-src 'self' data:",
   `connect-src 'self'${isDev ? " ws:" : ""}`,
   "frame-src https://player.twitch.tv https://www.youtube.com https://www.youtube-nocookie.com",

@@ -57,7 +57,7 @@ public class SecurityConfig {
 				.authorizeHttpRequests(auth -> auth
 						.requestMatchers("/api/health", "/actuator/health", "/api/auth/csrf", "/api/auth/login",
 								"/api/auth/register", "/api/catalog/**", "/api/live/**", "/api/markets/**",
-								"/api/matches/**", "/internal/**")
+								"/api/matches/**", "/api/sports/**", "/internal/**")
 						.permitAll()
 						.anyRequest().authenticated())
 				.exceptionHandling(exceptions -> exceptions

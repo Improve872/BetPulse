@@ -208,6 +208,12 @@ export function SiteHeader({
           >
             {t("nav.arena")}
           </button>
+          <Link
+            href="/sports"
+            className={cn(navBase, "text-white/60 hover:bg-white/5 hover:text-white")}
+          >
+            {t("nav.football")}
+          </Link>
           {user ? (
             <Link
               href="/bets"
@@ -443,6 +449,13 @@ export function SiteHeader({
               >
                 {t("nav.arena")}
               </button>
+              <Link
+                href="/sports"
+                onClick={() => setMenuOpen(false)}
+                className="rounded-lg border border-arena-line bg-white/[0.03] px-3 py-2.5 text-left text-sm font-medium text-arena-ink transition hover:bg-white/[0.06]"
+              >
+                {t("nav.football")}
+              </Link>
               {user ? (
                 <Link
                   href="/bets"
