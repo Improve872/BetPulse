@@ -92,7 +92,10 @@ export function FeaturedMatch({
     match.source === "GSI" ? t("featured.own") : t("featured.label");
 
   return (
-    <section className="relative overflow-hidden rounded-3xl border border-white/10 bg-arena-surface shadow-arena">
+    <section
+      data-testid="featured-match"
+      className="relative overflow-hidden rounded-3xl border border-white/10 bg-arena-surface shadow-arena"
+    >
       <div className="arena-grid absolute inset-0 opacity-70" />
       <div className="arena-glow absolute inset-0" />
       <PulseMark className="pointer-events-none absolute -right-10 top-1/2 h-72 w-72 -translate-y-1/2 text-white/[0.035]" />
