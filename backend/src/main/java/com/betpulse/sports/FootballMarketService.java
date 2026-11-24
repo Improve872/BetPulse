@@ -145,8 +145,7 @@ public class FootballMarketService {
 					""", matchId, kind.name(), kind.name(), kind.title(), line, OPEN, ESPN, SOCCER);
 			market = findMarket(matchId, kind);
 		}
-		if (market == null || SETTLED.equals(market.status()) || VOID.equals(market.status())
-				|| CLOSED.equals(market.status())) {
+		if (market == null || SETTLED.equals(market.status()) || VOID.equals(market.status())) {
 			return;
 		}
 

@@ -323,7 +323,7 @@ public class MarketService {
 	private void closeMissing(Set<String> liveMatchIds) {
 		java.time.Instant now = clock.instant();
 		List<String> tracked = jdbcTemplate.queryForList("""
-				SELECT DISTINCT match_id FROM markets WHERE status IN (?, ?)
+				SELECT DISTINCT match_id FROM markets WHERE status IN (?, ?) AND sport = 'DOTA'
 				""", String.class, OPEN, SUSPENDED);
 		List<String> expired = new ArrayList<>();
 		for (String matchId : tracked) {
@@ -352,7 +352,7 @@ public class MarketService {
 				UPDATE markets
 				SET status = ?, suspension_reason = NULL, suspended_at = NULL, closed_at = now(),
 				    updated_at = now()
-				WHERE status IN (?, ?) AND match_id IN (%s)
+				WHERE status IN (?, ?) AND sport = 'DOTA' AND match_id IN (%s)
 				""".formatted(placeholders), arguments.toArray());
 		expired.forEach(lastSeen::remove);
 		if (updated > 0) {

@@ -142,6 +142,28 @@ class MarketServiceTest extends IntegrationTestBase {
 
 	@Test
 	@Transactional
+	void doesNotCloseFootballMarketsWhenDotaCatalogChanges() {
+		String matchId = "FB:test-" + UUID.randomUUID().toString().substring(0, 18);
+		jdbcTemplate.update("""
+				INSERT INTO sport_results (match_id, sport, league_slug, event_id, kickoff_at)
+				VALUES (?, 'SOCCER', 'eng.1', ?, now() + interval '1 day')
+				""", matchId, matchId.substring(3));
+		UUID marketId = jdbcTemplate.queryForObject("""
+				INSERT INTO markets (match_id, market_key, market_type, title, status, source, practice, sport,
+				    opened_at)
+				VALUES (?, 'MATCH_RESULT_1X2', 'MATCH_RESULT_1X2', 'Resultado (1X2)', 'OPEN', 'ESPN', false,
+				    'SOCCER', now())
+				RETURNING id
+				""", UUID.class, matchId);
+
+		marketService.sync(lobby(null, 0, 0, 0, "LIVE", false));
+
+		assertThat(jdbcTemplate.queryForObject("SELECT status FROM markets WHERE id = ?", String.class, marketId))
+				.isEqualTo("OPEN");
+	}
+
+	@Test
+	@Transactional
 	void closesDeterministicTotalKillsMarket() {
 		String matchId = uniqueMatchId();
 		marketService.sync(lobby(matchId, 30, 25, 1800, "LIVE", false));
