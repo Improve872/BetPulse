@@ -32,15 +32,23 @@ type BetSelectionRef = {
   selectionKey: string;
 };
 
-export function SportsBoard({ data }: { data: FixturesResponse }) {
+export function SportsBoard({
+  soccer,
+  basketball,
+}: {
+  soccer: FixturesResponse;
+  basketball: FixturesResponse;
+}) {
   const { t, language } = useLanguage();
   const router = useRouter();
+  const [sport, setSport] = useState<"soccer" | "basketball">("soccer");
   const [selected, setSelected] = useState<string>("all");
   const [now, setNow] = useState<number | null>(null);
   const [loginOpen, setLoginOpen] = useState(false);
   const [loginMode, setLoginMode] = useState<LoginMode>("login");
   const [betSelection, setBetSelection] = useState<BetSelectionRef | null>(null);
   const [betPanelOpen, setBetPanelOpen] = useState(false);
+  const data = sport === "soccer" ? soccer : basketball;
 
   useEffect(() => {
     setNow(Date.now());
@@ -51,6 +59,15 @@ export function SportsBoard({ data }: { data: FixturesResponse }) {
   const openLogin = (mode: LoginMode) => {
     setLoginMode(mode);
     setLoginOpen(true);
+  };
+
+  const selectSport = (next: "soccer" | "basketball") => {
+    if (next === sport) {
+      return;
+    }
+    setSport(next);
+    setSelected("all");
+    setBetSelection(null);
   };
 
   const leagues = useMemo(
@@ -139,9 +156,15 @@ export function SportsBoard({ data }: { data: FixturesResponse }) {
               {t("nav.arena")}
             </Link>
             <h1 className="mt-2 text-2xl font-semibold tracking-tight sm:text-3xl">
-              {t("sports.title")}
+              {sport === "soccer"
+                ? t("sports.title")
+                : t("sports.titleBasketball")}
             </h1>
-            <p className="mt-1 max-w-2xl text-sm text-arena-muted">{t("sports.subtitle")}</p>
+            <p className="mt-1 max-w-2xl text-sm text-arena-muted">
+              {sport === "soccer"
+                ? t("sports.subtitle")
+                : t("sports.subtitleBasketball")}
+            </p>
           </div>
           <div className="text-right text-xs text-arena-muted">
             <p>
@@ -155,8 +178,21 @@ export function SportsBoard({ data }: { data: FixturesResponse }) {
           </div>
         </div>
 
+        <div className="mt-6 inline-flex rounded-xl border border-arena-line bg-arena-surface/60 p-1">
+          <SportTab
+            active={sport === "soccer"}
+            label={t("sports.sport.soccer")}
+            onClick={() => selectSport("soccer")}
+          />
+          <SportTab
+            active={sport === "basketball"}
+            label={t("sports.sport.basketball")}
+            onClick={() => selectSport("basketball")}
+          />
+        </div>
+
         {leagues.length > 0 ? (
-          <div className="mt-6 flex flex-wrap gap-2">
+          <div className="mt-4 flex flex-wrap gap-2">
             <FilterChip
               active={selected === "all"}
               label={t("sports.allLeagues")}
@@ -280,6 +316,32 @@ function toMarket(fixture: Fixture, market: FixtureMarket): Market {
     updatedAt: new Date().toISOString(),
     selections: market.selections,
   };
+}
+
+function SportTab({
+  active,
+  label,
+  onClick,
+}: {
+  active: boolean;
+  label: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className={cn(
+        "rounded-lg px-4 py-1.5 text-xs font-semibold transition",
+        active
+          ? "bg-accent text-navy"
+          : "text-arena-muted hover:bg-white/5 hover:text-arena-ink",
+      )}
+    >
+      {label}
+    </button>
+  );
 }
 
 function FilterChip({

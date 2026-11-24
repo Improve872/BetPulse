@@ -119,6 +119,10 @@ export function marketTitleForType(
       return t("market.title.MATCH_RESULT_1X2");
     case "TOTAL_GOALS":
       return t("market.title.TOTAL_GOALS");
+    case "MATCH_RESULT_2WAY":
+      return t("market.title.MATCH_RESULT_2WAY");
+    case "TOTAL_POINTS":
+      return t("market.title.TOTAL_POINTS");
     default:
       return fallback;
   }
@@ -135,7 +139,9 @@ export function betSelectionLabel(
 ): string {
   if (
     bet.marketType === "MATCH_RESULT_1X2" ||
-    bet.marketType === "TOTAL_GOALS"
+    bet.marketType === "TOTAL_GOALS" ||
+    bet.marketType === "MATCH_RESULT_2WAY" ||
+    bet.marketType === "TOTAL_POINTS"
   ) {
     return bet.selectionLabel;
   }
@@ -183,6 +189,14 @@ export function selectionLabelForType(
       return selectionKey === "OVER"
         ? t("market.overLine", { line: lineLabel })
         : t("market.underLine", { line: lineLabel });
+    case "MATCH_RESULT_2WAY":
+      return selectionKey === "HOME"
+        ? (teams?.home ?? t("sports.selection.home"))
+        : (teams?.away ?? t("sports.selection.away"));
+    case "TOTAL_POINTS":
+      return selectionKey === "OVER"
+        ? t("market.overPoints", { line: lineLabel })
+        : t("market.underPoints", { line: lineLabel });
     case "MATCH_WINNER":
     case "FIRST_BLOOD":
     case "FIRST_TOWER":

@@ -1,10 +1,13 @@
 import { SportsBoard } from "@/components/sports-board";
-import { getFixtures } from "@/lib/sports";
+import { getBasketballFixtures, getFixtures } from "@/lib/sports";
 
 export const dynamic = "force-dynamic";
 
 export default async function SportsPage() {
-  const data = await getFixtures();
+  const [soccer, basketball] = await Promise.all([
+    getFixtures(),
+    getBasketballFixtures(),
+  ]);
 
-  return <SportsBoard data={data} />;
+  return <SportsBoard soccer={soccer} basketball={basketball} />;
 }

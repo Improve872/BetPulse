@@ -59,20 +59,31 @@ export type FixturesResponse = {
 };
 
 export async function getFixtures(): Promise<FixturesResponse> {
+  return fetchFixtures("/api/sports/fixtures", "SOCCER");
+}
+
+export async function getBasketballFixtures(): Promise<FixturesResponse> {
+  return fetchFixtures("/api/sports/basketball/fixtures", "BASKETBALL");
+}
+
+async function fetchFixtures(
+  path: string,
+  sport: string,
+): Promise<FixturesResponse> {
   try {
-    const response = await fetch(`${BACKEND_URL}/api/sports/fixtures`, {
+    const response = await fetch(`${BACKEND_URL}${path}`, {
       headers: { Accept: "application/json" },
       cache: "no-store",
       signal: AbortSignal.timeout(7000),
     });
 
     if (!response.ok) {
-      return unavailableFixtures();
+      return unavailableFixtures(sport);
     }
 
     const data = (await response.json()) as FixturesResponse;
     return {
-      sport: data.sport ?? "SOCCER",
+      sport: data.sport ?? sport,
       updatedAt: data.updatedAt ?? new Date().toISOString(),
       status: data.status ?? "DOWN",
       lastSuccessAt: data.lastSuccessAt ?? null,
@@ -91,13 +102,13 @@ export async function getFixtures(): Promise<FixturesResponse> {
         : [],
     };
   } catch {
-    return unavailableFixtures();
+    return unavailableFixtures(sport);
   }
 }
 
-function unavailableFixtures(): FixturesResponse {
+function unavailableFixtures(sport: string): FixturesResponse {
   return {
-    sport: "SOCCER",
+    sport,
     updatedAt: new Date().toISOString(),
     status: "DOWN",
     lastSuccessAt: null,
