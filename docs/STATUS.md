@@ -80,8 +80,8 @@ Cerrados: M0 (capturas GSI reales), M1 (identidad y wallet), M2a (catálogo Open
 - Colector Javalin definitivo: expone `/health` y `/`, recibe `/gsi`, normaliza, deduplica, firma con HMAC y reenvía al backend con spool ante caídas.
 - Liquidación implementada: `settlements` único por apuesta, payout/void, ledger y auditoría. Las apuestas ya no quedan abiertas para siempre.
 - Steam `GetLiveLeagueGames` no integrado: falta `STEAM_API_KEY` (rate limit de generación). No bloquea la demo.
-- CI: ejecución verde `750bece` para backend (139 tests), colector, frontend (lint, test, build) e imágenes Docker.
-  `https://github.com/Improve872/BetPulse/actions/runs/45306938270`
+- CI: ejecución verde `e16d1ff` con backend (139 tests), colector, frontend, imágenes Docker y **E2E money flow**.
+  `https://github.com/Improve872/BetPulse/actions/runs/45500109878`
 - CI: `frontend/package-lock.json` regenerado con npm 10 para que `npm ci` funcione en Node 22/Linux (faltaban `@emnapi/core` y `@emnapi/runtime`); sin cambios de versión.
 
 ## Próxima acción
@@ -134,6 +134,9 @@ cd ..
 Resultados 2026-11-24 (E2E de dinero):
 
 - Playwright (Chromium) en local: registro por API con sesión compartida, depósito S/ 100, partida GSI firmada, apuesta S/ 10 en el boleto, `POST_GAME` y liquidación `WON`; saldo final = 9 000 + payout y retenido 0.
+- Verificado también con frontend de producción (`npm run build` + `npm start`) y base nueva, igual que el CI.
+- CI: job `e2e` verde en `e16d1ff` junto a backend, colector, frontend y Docker.
+  `https://github.com/Improve872/BetPulse/actions/runs/45500109878`
 - El script `scripts/e2e.ps1` levanta PostgreSQL, backend y frontend, ejecuta la prueba y limpia los procesos; verde y reproducible en ~14 s.
 - CI: nuevo job `e2e` con PostgreSQL como servicio, backend y frontend nativos y Chromium de Playwright.
 
