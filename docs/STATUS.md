@@ -78,15 +78,15 @@ Cerrados: M0 (capturas GSI reales), M1 (identidad y wallet), M2a (catálogo Open
 - Colector Javalin definitivo: expone `/health` y `/`, recibe `/gsi`, normaliza, deduplica, firma con HMAC y reenvía al backend con spool ante caídas.
 - Liquidación implementada: `settlements` único por apuesta, payout/void, ledger y auditoría. Las apuestas ya no quedan abiertas para siempre.
 - Steam `GetLiveLeagueGames` no integrado: falta `STEAM_API_KEY` (rate limit de generación). No bloquea la demo.
-- CI: última ejecución verde registrada `f7e1bae` para backend, colector, frontend y build de imágenes Docker. Los commits de M8a, M8b y M8c quedan pendientes de la nueva ejecución de CI.
-  `https://github.com/Improve872/BetPulse/actions/runs/41782427003`
+- CI: ejecución verde `750bece` para backend (139 tests), colector, frontend (lint, test, build) e imágenes Docker.
+  `https://github.com/Improve872/BetPulse/actions/runs/45306938270`
+- CI: `frontend/package-lock.json` regenerado con npm 10 para que `npm ci` funcione en Node 22/Linux (faltaban `@emnapi/core` y `@emnapi/runtime`); sin cambios de versión.
 
 ## Próxima acción
 
-1. Ejecutar CI de M8a + M8b + M8c y anotar la URL verde.
-2. M7 pendiente: E2E de flujos de dinero con Playwright (opcional tras la demo).
-3. Opcional: M3c si aparece calendario fiable; Steam `GetLiveLeagueGames` si hay API key; pulido admin (usuarios, exposición, salud).
-4. M8 cerrado; siguiente hito a definir en `docs/plan.md`.
+1. M7 pendiente: E2E de flujos de dinero con Playwright (opcional tras la demo).
+2. Opcional: M3c si aparece calendario fiable; Steam `GetLiveLeagueGames` si hay API key; pulido admin (usuarios, exposición, salud).
+3. M8 cerrado; siguiente hito a definir en `docs/plan.md`.
 
 ## Pendiente de entorno (opcional)
 
@@ -127,6 +127,7 @@ npm run build
 
 Resultados 2026-11-23 (M8c):
 
+- CI `750bece`: backend (139/139), colector, frontend (lint, 18/18 tests y build) e imágenes Docker en verde.
 - Backend: 139/139 tests verdes (M8c suma el modelo normal, la resolución 2-way/total de puntos y el flujo NBA → resultado → settlement).
 - Frontend: 18/18 tests de checkout; lint y build verdes.
 - Flyway: V1–V13 aplicadas en Testcontainers y en el PostgreSQL local.
