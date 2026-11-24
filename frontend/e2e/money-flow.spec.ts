@@ -86,7 +86,10 @@ test("depósito, apuesta, liquidación y saldo final", async ({ page, context })
     .toBe("OPEN");
 
   await page.goto("/");
-  const featured = page.getByTestId("featured-match");
+  // La hidratación de React puede dejar por un instante el árbol SSR y el
+  // hidratado a la vez; se espera y se limita al contenido de `main`.
+  await page.waitForTimeout(2_000);
+  const featured = page.locator('main [data-testid="featured-match"]').first();
   await expect(featured).toBeVisible({ timeout: 30_000 });
 
   // Mercado principal: ganador del mapa. Radiant es la selección local.
