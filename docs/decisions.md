@@ -738,6 +738,7 @@ fechas y resultados, pero es una API no oficial y sin SLA.
   origen en `img-src` y la UI cae a un monograma si la imagen falla.
 - Sin mercados ni apuestas de fútbol todavía: M8b añadirá `1X2` y
   over/under de goles con un modelo Poisson, y la liquidación con empates.
+  *(Superado por ADR-044.)*
 
 **Consecuencias:**
 

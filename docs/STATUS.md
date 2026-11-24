@@ -34,7 +34,7 @@ Cerrados: M0 (capturas GSI reales), M1 (identidad y wallet), M2a (catálogo Open
 - M7: el empaquetado de demo no incluye colector ni GSI; el catálogo sigue viniendo de OpenDota y requiere internet.
 - M7 (2026-11-16): corregido el checkout de tarjeta que bloqueó la demo. El vencimiento acepta `MM/AA` y `MM/AAAA`, tolera el mes de un dígito y no se compara contra el reloj (ADR-041). El CVV muestra su regla (3 dígitos, 4 en Amex).
 - M7 (2026-11-16): Vitest añadido al frontend; `npm test` cubre `lib/checkout.ts` con 18 casos, incluida la regresión de fecha vencida. Entra al flujo de verificación y al CI junto a lint y build.
-- `docs/demo.md` reescrito como guion técnico: arquitectura, cuatro flujos, invariantes de dinero, datos de demo válidos y preguntas del jurado.
+- `docs/demo.md` reescrito como guion técnico: arquitectura, flujos, invariantes de dinero, datos de demo válidos y preguntas del jurado.
 - M7 (2026-11-16): rate limiting en memoria por ruta y método (`RateLimitFilter`, `RateLimitProperties`): login 10/min, registro 5/min, contraseña 5/min, apuestas 30/min, wallet 20/min, admin 60/min e ingesta 1200/min. Responde `429` con `Retry-After` (ADR-042).
 - M7 (2026-11-16): CSP completa sin nonce y headers de seguridad (`nosniff`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`); `frame-src` queda limitado a Twitch y YouTube.
 - M7 (2026-11-16): tests de control de acceso. Un `USER` recibe `403` en todos los paneles y acciones de admin; anónimo recibe `401`. El test destapó que `@PreAuthorize` devolvía `500` en lugar de `403` y que un parámetro con tipo inválido devolvía `500`; ambos casos se corrigen en `GlobalExceptionHandler`.

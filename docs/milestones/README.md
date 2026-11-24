@@ -15,3 +15,5 @@ El estado vigente está siempre en `docs/STATUS.md`.
 | M6b — Streaming oficial y cierre de producto | `M6b-streaming.md` | 2026-11-03 |
 | M6c — Copy de producto y saldo administrativo | `M6c-cuenta-admin.md` | 2026-11-04 |
 | M6d — Cuenta, rail en vivo y checkout simulado | `M6d-cuenta-checkout.md` | 2026-11-04 |
+| M7 — Hardening y empaquetado de demo | `M7-hardening-demo.md` | 2026-11-16 |
+| M8 — Deportes pre-partida: fútbol y NBA | `M8-deportes-prepartida.md` | 2026-11-23 |

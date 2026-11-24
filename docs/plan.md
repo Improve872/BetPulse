@@ -200,7 +200,8 @@ transferencia → saldo actualizado; carrusel y menú funcionan en desktop y mó
 
 Objetivo: que no falle en clase.
 
-**Estado:** en curso. Empaquetado Docker cerrado; hardening en curso tras la demo del 2026-11-09.
+**Estado:** cerrado 2026-11-16 en su base (hardening y empaquetado Docker).
+Queda pendiente el E2E de flujos de dinero con Playwright.
 
 Tareas:
 

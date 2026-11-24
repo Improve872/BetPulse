@@ -15,7 +15,7 @@ Proteger cuentas, saldos, apuestas, cuotas, panel administrativo, datos personal
 - Infraestructura (PostgreSQL, colector, API).
 - Integridad del juego y reputación del proyecto.
 
-## Estado implementado (2026-11-16)
+## Estado implementado (2026-11-24)
 
 | Control | Estado | Evidencia |
 |---|---|---|
@@ -35,10 +35,15 @@ Proteger cuentas, saldos, apuestas, cuotas, panel administrativo, datos personal
 | Admin de streams con RBAC y auditoría | Implementado | `AdminStreamController`, `audit_logs`, `AdminStreamFlowTest` |
 | Ajuste de saldo admin con ledger y auditoría | Implementado | `AdminUserController`, `ADMIN_ADJUSTMENT`, `AdminUserFlowTest` |
 | URLs de streaming validadas | Implementado | Provider Twitch/YouTube, canal/video obligatorio y fallback HTTP(S) |
+| Deportes públicos de solo lectura (`/api/sports/*`) | Implementado | Datos de ESPN, sin datos de usuario ni escrituras |
 | Rol `TRADER` operativo | **No implementado** | El rol existe; no hay endpoints/UI |
 | Rol `AUDITOR` operativo | **No implementado** | El rol existe; no hay endpoints/UI |
 | Backups y restauración probados | **No implementado** | Pendiente de entorno |
 | Escaneo de dependencias | Parcial | `npm audit`: 8 vulnerabilidades (2 de producción en Next/PostCSS, 6 de desarrollo en Vite/esbuild); sin críticas |
+
+Los endpoints públicos `/api/sports/*` solo leen datos de ESPN y no exponen
+datos de usuario. No tienen rate limiting específico: el coste lo absorbe la
+caché en memoria; si la API se expone fuera de la demo local, se añadirá.
 
 ## Roles y permisos
 
