@@ -101,7 +101,7 @@ public class MarketService {
 				       s.selection_key, s.label, s.probability, s.odds
 				FROM markets m
 				JOIN selections s ON s.market_id = m.id
-				WHERE m.status IN (?, ?)
+				WHERE m.status IN (?, ?) AND m.sport = 'DOTA'
 				ORDER BY m.match_id,
 				         CASE m.market_key
 				             WHEN 'MATCH_WINNER' THEN 0

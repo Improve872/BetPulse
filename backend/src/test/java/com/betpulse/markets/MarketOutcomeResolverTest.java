@@ -109,6 +109,31 @@ class MarketOutcomeResolverTest {
 		assertThat(resolution.voided()).isTrue();
 	}
 
+	@Test
+	void football1x2ResolvesWinDrawAndLoss() {
+		assertThat(resolver.resolveFootball("MATCH_RESULT_1X2", null, "READY", 2, 1)
+				.winningSelectionKey()).isEqualTo("HOME");
+		assertThat(resolver.resolveFootball("MATCH_RESULT_1X2", null, "READY", 1, 1)
+				.winningSelectionKey()).isEqualTo("DRAW");
+		assertThat(resolver.resolveFootball("MATCH_RESULT_1X2", null, "READY", 0, 3)
+				.winningSelectionKey()).isEqualTo("AWAY");
+	}
+
+	@Test
+	void footballTotalGoalsComparesFinalScore() {
+		assertThat(resolver.resolveFootball("TOTAL_GOALS", new BigDecimal("2.5"), "READY", 2, 1)
+				.winningSelectionKey()).isEqualTo("OVER");
+		assertThat(resolver.resolveFootball("TOTAL_GOALS", new BigDecimal("3.5"), "READY", 0, 1)
+				.winningSelectionKey()).isEqualTo("UNDER");
+	}
+
+	@Test
+	void footballWithoutScoreOrVoidResultIsVoided() {
+		assertThat(resolver.resolveFootball("MATCH_RESULT_1X2", null, "VOID", 2, 1).voided()).isTrue();
+		assertThat(resolver.resolveFootball("MATCH_RESULT_1X2", null, "READY", null, 1).voided()).isTrue();
+		assertThat(resolver.resolveFootball("UNKNOWN", null, "READY", 1, 0).voided()).isTrue();
+	}
+
 	private Resolution resolve(MarketKind kind, BigDecimal line, Boolean radiantWin, int radiantScore,
 			int direScore, int durationSeconds) {
 		return resolver.resolve(kind, line, radiantWin, radiantScore, direScore, durationSeconds);

@@ -38,9 +38,12 @@ public class MarketResultService {
 		List<ResolvableMarket> markets = store.findResolvable(BATCH_SIZE);
 		int resolved = 0;
 		for (ResolvableMarket market : markets) {
-			Resolution resolution = resolver.resolve(market.marketKey(), market.line(), market.matchStatus(),
-					market.radiantWin(), market.radiantScore(), market.direScore(), market.durationSeconds(),
-					market.objectivesJson(), market.openedAt());
+			Resolution resolution = "SOCCER".equals(market.sport())
+					? resolver.resolveFootball(market.marketKey(), market.line(), market.matchStatus(),
+							market.homeScore(), market.awayScore())
+					: resolver.resolve(market.marketKey(), market.line(), market.matchStatus(),
+							market.radiantWin(), market.radiantScore(), market.direScore(),
+							market.durationSeconds(), market.objectivesJson(), market.openedAt());
 			String outcome = resolution.voided() ? "VOID" : "SETTLED";
 			store.save(new ResolvedMarket(market.marketId(), market.matchId(), outcome,
 					resolution.winningSelectionKey(), detailsJson(market, resolution)));
@@ -59,6 +62,9 @@ public class MarketResultService {
 		details.put("radiantScore", market.radiantScore());
 		details.put("direScore", market.direScore());
 		details.put("durationSeconds", market.durationSeconds());
+		details.put("sport", market.sport());
+		details.put("homeScore", market.homeScore());
+		details.put("awayScore", market.awayScore());
 		details.put("outcome", resolution.voided() ? "VOID" : "SETTLED");
 		details.put("winningSelectionKey", resolution.winningSelectionKey());
 		try {

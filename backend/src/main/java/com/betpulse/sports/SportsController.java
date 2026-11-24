@@ -11,14 +11,16 @@ import com.betpulse.sports.SportsDtos.FixturesResponse;
 public class SportsController {
 
 	private final FixturesService fixturesService;
+	private final FootballMarketService footballMarketService;
 
-	public SportsController(FixturesService fixturesService) {
+	public SportsController(FixturesService fixturesService, FootballMarketService footballMarketService) {
 		this.fixturesService = fixturesService;
+		this.footballMarketService = footballMarketService;
 	}
 
 	@GetMapping("/fixtures")
 	public FixturesResponse fixtures() {
-		return fixturesService.getFixtures();
+		return footballMarketService.withMarkets(fixturesService.getFixtures());
 	}
 
 }

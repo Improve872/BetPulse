@@ -25,16 +25,29 @@ public class JdbcMarketResultStore implements MarketResultStore {
 	@Override
 	public List<ResolvableMarket> findResolvable(int limit) {
 		return jdbcTemplate.query("""
-				SELECT m.id, m.match_id, m.market_key, m.line, m.opened_at,
+				SELECT m.id, m.match_id, m.market_key, m.line, m.opened_at, m.sport,
 				       r.status AS match_status, r.radiant_win, r.radiant_score, r.dire_score, r.duration_seconds,
-				       r.objectives::text AS objectives_json
+				       r.objectives::text AS objectives_json, NULL::integer AS home_score,
+				       NULL::integer AS away_score
 				FROM markets m
 				JOIN match_results r ON r.match_id = m.match_id
 				LEFT JOIN market_results mr ON mr.market_id = m.id
 				WHERE r.status IN ('READY', 'VOID')
 				  AND mr.market_id IS NULL
 				  AND m.status IN ('OPEN', 'SUSPENDED', 'CLOSED')
-				ORDER BY m.match_id, m.market_key
+				  AND m.sport = 'DOTA'
+				UNION ALL
+				SELECT m.id, m.match_id, m.market_key, m.line, m.opened_at, m.sport,
+				       r.status AS match_status, NULL, NULL, NULL, NULL, NULL,
+				       r.home_score, r.away_score
+				FROM markets m
+				JOIN sport_results r ON r.match_id = m.match_id
+				LEFT JOIN market_results mr ON mr.market_id = m.id
+				WHERE r.status IN ('READY', 'VOID')
+				  AND mr.market_id IS NULL
+				  AND m.status IN ('OPEN', 'SUSPENDED', 'CLOSED')
+				  AND m.sport = 'SOCCER'
+				ORDER BY match_id, market_key
 				LIMIT ?
 				""", (resultSet, rowNumber) -> mapResolvable(resultSet), limit);
 	}
@@ -89,7 +102,10 @@ public class JdbcMarketResultStore implements MarketResultStore {
 				resultSet.getObject("duration_seconds", Integer.class),
 				resultSet.getTimestamp("opened_at") == null ? null
 						: resultSet.getTimestamp("opened_at").toInstant(),
-				resultSet.getString("objectives_json"));
+				resultSet.getString("objectives_json"),
+				resultSet.getString("sport"),
+				resultSet.getObject("home_score", Integer.class),
+				resultSet.getObject("away_score", Integer.class));
 	}
 
 }

@@ -70,7 +70,8 @@ public class EspnFixtureMapper {
 				team(away),
 				started ? parseScore(home.score()) : null,
 				started ? parseScore(away.score()) : null,
-				competition.venue() != null ? competition.venue().fullName() : null);
+				competition.venue() != null ? competition.venue().fullName() : null,
+				List.of());
 	}
 
 	private static Competitor find(Competition competition, String side) {

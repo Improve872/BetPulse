@@ -16,7 +16,8 @@ public interface MarketResultStore {
 
 	record ResolvableMarket(UUID marketId, String matchId, String marketKey, BigDecimal line,
 			String matchStatus, Boolean radiantWin, Integer radiantScore, Integer direScore,
-			Integer durationSeconds, Instant openedAt, String objectivesJson) {
+			Integer durationSeconds, Instant openedAt, String objectivesJson, String sport,
+			Integer homeScore, Integer awayScore) {
 	}
 
 	record ResolvedMarket(UUID marketId, String matchId, String outcome, String winningSelectionKey,

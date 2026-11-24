@@ -22,7 +22,15 @@ public class EspnScoreboardClient {
 	}
 
 	public Scoreboard fetch(String leagueSlug) {
-		String path = "/soccer/" + leagueSlug + "/scoreboard";
+		return get("/soccer/" + leagueSlug + "/scoreboard", leagueSlug);
+	}
+
+	public Scoreboard fetch(String leagueSlug, java.time.LocalDate date) {
+		String day = java.time.format.DateTimeFormatter.BASIC_ISO_DATE.format(date);
+		return get("/soccer/" + leagueSlug + "/scoreboard?dates=" + day, leagueSlug);
+	}
+
+	private Scoreboard get(String path, String leagueSlug) {
 		try {
 			Scoreboard body = restClient.get().uri(path).retrieve().body(Scoreboard.class);
 			if (body == null) {

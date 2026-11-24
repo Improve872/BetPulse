@@ -60,6 +60,44 @@ public class MarketOutcomeResolver {
 		};
 	}
 
+	/**
+	 * Resuelve un mercado pre-partida de fútbol con el marcador final. El
+	 * empate es un resultado válido de 1X2; sin marcador o con partido anulado
+	 * el mercado se anula.
+	 */
+	public Resolution resolveFootball(String marketKey, BigDecimal line, String resultStatus, Integer homeScore,
+			Integer awayScore) {
+		if ("VOID".equals(resultStatus)) {
+			return Resolution.voidedResolution();
+		}
+		FootballMarketKind kind;
+		try {
+			kind = FootballMarketKind.valueOf(marketKey);
+		} catch (RuntimeException exception) {
+			return Resolution.voidedResolution();
+		}
+		return switch (kind) {
+			case MATCH_RESULT_1X2 -> matchResult1X2(homeScore, awayScore);
+			case TOTAL_GOALS -> totalGoals(line, homeScore, awayScore);
+		};
+	}
+
+	private Resolution matchResult1X2(Integer homeScore, Integer awayScore) {
+		if (homeScore == null || awayScore == null) {
+			return Resolution.voidedResolution();
+		}
+		int comparison = Integer.compare(homeScore, awayScore);
+		return Resolution.settled(comparison > 0 ? "HOME" : comparison < 0 ? "AWAY" : "DRAW");
+	}
+
+	private Resolution totalGoals(BigDecimal line, Integer homeScore, Integer awayScore) {
+		if (line == null || homeScore == null || awayScore == null) {
+			return Resolution.voidedResolution();
+		}
+		BigDecimal total = BigDecimal.valueOf((long) homeScore + awayScore);
+		return Resolution.settled(total.compareTo(line) > 0 ? "OVER" : "UNDER");
+	}
+
 	private Resolution matchWinner(Boolean radiantWin) {
 		if (radiantWin == null) {
 			return Resolution.voidedResolution();

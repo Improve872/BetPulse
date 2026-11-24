@@ -11,6 +11,7 @@ public class EspnProperties {
 
 	private boolean schedulerEnabled = true;
 	private String baseUrl = "https://site.api.espn.com/apis/site/v2/sports";
+	private String standingsBaseUrl = "https://site.api.espn.com/apis/v2/sports";
 	private Duration requestTimeout = Duration.ofSeconds(7);
 	private Duration pollInterval = Duration.ofMinutes(5);
 	private Duration staleAfter = Duration.ofMinutes(20);
@@ -36,6 +37,14 @@ public class EspnProperties {
 
 	public void setBaseUrl(String baseUrl) {
 		this.baseUrl = baseUrl;
+	}
+
+	public String getStandingsBaseUrl() {
+		return standingsBaseUrl;
+	}
+
+	public void setStandingsBaseUrl(String standingsBaseUrl) {
+		this.standingsBaseUrl = standingsBaseUrl;
 	}
 
 	public Duration getRequestTimeout() {

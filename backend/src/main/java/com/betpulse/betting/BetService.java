@@ -7,6 +7,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.Clock;
 import java.time.Instant;
 import java.util.HexFormat;
 import java.util.List;
@@ -33,11 +34,14 @@ public class BetService {
 	private final JdbcTemplate jdbcTemplate;
 	private final WalletService walletService;
 	private final BettingProperties properties;
+	private final Clock clock;
 
-	public BetService(JdbcTemplate jdbcTemplate, WalletService walletService, BettingProperties properties) {
+	public BetService(JdbcTemplate jdbcTemplate, WalletService walletService, BettingProperties properties,
+			Clock clock) {
 		this.jdbcTemplate = jdbcTemplate;
 		this.walletService = walletService;
 		this.properties = properties;
+		this.clock = clock;
 	}
 
 	@Transactional
@@ -148,9 +152,11 @@ public class BetService {
 		try {
 			return jdbcTemplate.queryForObject("""
 					SELECT m.id AS market_id, m.match_id, m.market_type, m.title AS market_title, m.line,
-					       m.status, m.version, m.practice, s.selection_key, s.label AS selection_label, s.odds
+					       m.status, m.version, m.practice, m.sport, s.selection_key, s.label AS selection_label,
+					       s.odds, r.kickoff_at
 					FROM markets m
 					JOIN selections s ON s.market_id = m.id
+					LEFT JOIN sport_results r ON r.match_id = m.match_id
 					WHERE m.id = ? AND s.selection_key = ?
 					FOR SHARE OF m, s
 					""", (resultSet, rowNumber) -> new MarketSelection(
@@ -162,17 +168,25 @@ public class BetService {
 					resultSet.getString("status"),
 					resultSet.getInt("version"),
 					resultSet.getBoolean("practice"),
+					resultSet.getString("sport"),
 					resultSet.getString("selection_key"),
 					resultSet.getString("selection_label"),
-					resultSet.getBigDecimal("odds")), marketId, selectionKey);
+					resultSet.getBigDecimal("odds"),
+					resultSet.getTimestamp("kickoff_at") == null ? null
+							: resultSet.getTimestamp("kickoff_at").toInstant()), marketId, selectionKey);
 		} catch (EmptyResultDataAccessException exception) {
 			throw ApiException.notFound("MARKET_NOT_FOUND", "El mercado o la selección no existe.");
 		}
 	}
 
-	private static void validateMarket(MarketSelection market, PlaceBetRequest request) {
+	private void validateMarket(MarketSelection market, PlaceBetRequest request) {
 		if (!OPEN.equals(market.status())) {
 			throw ApiException.conflict("MARKET_NOT_OPEN", "El mercado no está abierto para apuestas.");
+		}
+		if ("SOCCER".equals(market.sport())
+				&& (market.kickoffAt() == null || !clock.instant().isBefore(market.kickoffAt()))) {
+			throw ApiException.conflict("MATCH_STARTED",
+					"El partido ya comenzó. El mercado no acepta más apuestas.");
 		}
 		if (market.version() != request.marketVersion()) {
 			throw ApiException.conflict("MARKET_VERSION_CHANGED",
@@ -257,8 +271,8 @@ public class BetService {
 	}
 
 	private record MarketSelection(UUID marketId, String matchId, String marketType, String marketTitle,
-			BigDecimal line, String status, int version, boolean practice, String selectionKey, String selectionLabel,
-			BigDecimal odds) {
+			BigDecimal line, String status, int version, boolean practice, String sport, String selectionKey,
+			String selectionLabel, BigDecimal odds, Instant kickoffAt) {
 	}
 
 	private record BetRecord(UUID id, UUID marketId, String matchId, String marketType, String marketTitle,

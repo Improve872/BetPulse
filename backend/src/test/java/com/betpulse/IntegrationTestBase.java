@@ -16,7 +16,8 @@ import org.testcontainers.containers.PostgreSQLContainer;
 		"betpulse.markets.close-grace=0s",
 		"betpulse.settlement.scheduler-enabled=false",
 		"betpulse.rate-limit.enabled=false",
-		"betpulse.espn.scheduler-enabled=false"
+		"betpulse.espn.scheduler-enabled=false",
+		"betpulse.football.scheduler-enabled=false"
 })
 public abstract class IntegrationTestBase {
 
