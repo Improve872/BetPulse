@@ -12,8 +12,15 @@ partida real de Dota 2 → datos GSI → mercado → cuota → apuesta → hold
 → resultado final → liquidación exactly-once → wallet → auditoría
 ```
 
-Alrededor de ese núcleo: catálogo OpenDota, streaming oficial, checkout
-simulado y panel administrativo.
+Y el mismo ciclo, sin cobertura en vivo, para deportes pre-partida:
+
+```text
+calendario de fútbol/NBA → tabla real de ESPN → modelo → cuota → apuesta
+→ resultado final de ESPN → la misma liquidación
+```
+
+Alrededor de ese núcleo: catálogo OpenDota, deportes pre-partida, streaming
+oficial, checkout simulado y panel administrativo.
 
 ## La idea en cinco frases
 
@@ -38,18 +45,20 @@ Colector Javalin ── HMAC ──► Spring Boot /internal/ingest
    │                              └─► SSE ──► Next.js (lobby / partido)
    │
 OpenDota /live ◄── poller 30 s ───┤
-OpenDota /matches/{id} ◄──────────┘
+OpenDota /matches/{id} ◄──────────┤
+ESPN (fútbol/NBA) ◄── 2–5 min ────┘
 
 Navegador ── REST + cookies ──► Next.js proxy ──► Spring Boot
 ```
 
 | Pieza | Tecnología | Papel |
 |---|---|---|
-| Frontend | Next.js 15 + React 19 + Tailwind 4 | Lobby, partido, wallet, admin |
+| Frontend | Next.js 15 + React 19 + Tailwind 4 | Lobby, partido, deportes, wallet, admin |
 | Backend | Spring Boot 3.5 + Java 21 | Dominio, cuotas, ledger, liquidación |
 | Colector | Java 21 + Javalin | Recibe GSI, normaliza, firma, reintenta |
 | Base de datos | PostgreSQL 17 + Flyway | Ledger, apuestas, mercados, auditoría |
 | Fuente externa | OpenDota | Catálogo y verificación de resultados |
+| Fuente externa | ESPN | Calendario, tablas y resultados de fútbol/NBA |
 
 **Módulos del backend:** `identity`, `catalog`, `live`, `markets`, `odds`,
 `betting`, `wallet`, `settlement`, `payments`, `admin`, `audit`, `shared`.
@@ -58,7 +67,7 @@ Es un **monolito modular**: una sola transacción ACID puede mover ledger,
 apuesta y liquidación sin coordinación distribuida. Para un solo desarrollador
 y una demo local, eso es una ventaja, no una limitación.
 
-## Los cuatro flujos que hay que saber explicar
+## Los cinco flujos que hay que saber explicar
 
 ### 1. Del partido al lobby
 
@@ -158,6 +167,26 @@ partido termina
 **Qué demuestra:** el settlement es agnóstico a la fuente. Agregar un deporte
 nuevo no toca el núcleo de pagos.
 
+### 5. Deportes pre-partida: fútbol y NBA
+
+- `/sports` consulta **ESPN** y publica solo partidos programados de las cinco
+  grandes ligas y de la NBA. No hay cobertura en vivo.
+- Dos mercados por partido:
+  - Fútbol: `MATCH_RESULT_1X2` (local/empate/visitante) y `TOTAL_GOALS`.
+  - NBA: `MATCH_RESULT_2WAY` (local/visitante, sin empate) y `TOTAL_POINTS`.
+- Las cuotas salen de la **tabla real de ESPN**:
+  - Fútbol: Poisson con goles esperados por ataque/defensa y ventaja de local.
+  - NBA: normal sobre margen y total; la prórroga cuenta en el marcador final.
+- El mercado se **cierra en el kickoff**. El backend rechaza cualquier apuesta
+  posterior con `MATCH_STARTED` aunque el mercado siga `OPEN`.
+- El resultado final llega de ESPN a **`sport_results`** (`READY`/`VOID`).
+  `MarketResultService` y `SettlementService` no saben que existe ESPN.
+- Si el partido se postpone/cancela o pasan 12 h sin resultado: `VOID` y
+  reembolso.
+
+**Qué demuestra:** el mismo motor de cuotas, apuestas y liquidación sirve para
+un segundo y tercer deporte sin duplicar el núcleo de pagos.
+
 ## El dinero: cuentas y movimientos
 
 Cuentas del ledger: `USER_AVAILABLE`, `USER_HELD`, `HOUSE`,
@@ -212,6 +241,25 @@ asientos que no pueden dejar de cuadrar.
 | 18–19 | `/bets` y wallet | Estado `WON/LOST/VOID`, payout, saldo actualizado | Liquidación exactly-once |
 | 19–20 | `/admin` | Suspender, override con motivo, anular apuesta, ver auditoría | Control y trazabilidad |
 
+### Segmento opcional: deportes pre-partida (2–3 min)
+
+Se inserta entre `/wallet` y la partida de Dota, o al final si sobra tiempo.
+
+1. Abrir `/sports` y mostrar el selector **Fútbol / NBA**.
+2. Fútbol: señalar `1X2` y total de goles con cuotas del servidor y cuenta
+   atrás. Mencionar que salen de la tabla real, no de una API de cuotas.
+3. Elegir una selección; el boleto muestra equipos, mercado, versión y cuota.
+4. Apostar `S/ 10` con el usuario de demo y volver a `/bets` para ver `PLACED`
+   y el hold.
+5. NBA: repetir con ganador o total de puntos y explicar que no hay empate.
+6. Cerrar diciendo que la liquidación ocurre al terminar el partido y usa el
+   mismo motor ya mostrado con Dota. **No hay que esperar** a que termine un
+   partido para demostrar el dinero.
+
+> Si en la corrida anterior quedó una apuesta pre-partida ya liquidada, sirve
+> como evidencia real del pase ESPN → `sport_results` → `market_results` →
+> `settlements`.
+
 ## Datos de demo (usar estos, no improvisar)
 
 | Campo | Valor |
@@ -223,6 +271,7 @@ asientos que no pueden dejar de cuadrar.
 | Yape/Plin | `987 654 321`, OTP `123456` |
 | Transferencia | BCP, operación `12345678` |
 | Monto | `150.00` |
+| Apuesta pre-partida | Cualquier partido de `/sports`, stake `10.00` |
 
 > El checkout acepta cualquier fecha con formato válido y mes entre 01 y 12;
 > no compara contra el reloj para no bloquear la demo con tarjetas de ejemplo
@@ -230,16 +279,14 @@ asientos que no pueden dejar de cuadrar.
 
 ## Cómo explicar el sistema según el tiempo disponible
 
-**30 segundos.** "Es una casa de apuestas de Dota 2 con dinero simulado. Los
-datos vienen de GSI y OpenDota, las cuotas se calculan en el servidor y el
-saldo vive en un ledger de doble entrada que garantiza que no se pierda ni se
-cree dinero."
+**30 segundos.** "Es una casa de apuestas con dinero simulado. Los datos vienen de GSI, OpenDota y ESPN; las cuotas se calculan en el servidor y el saldo vive en un ledger de doble entrada que garantiza que no se pierda ni se cree dinero."
 
 **3 minutos.** Añadir el ciclo: partido → mercado → apuesta con hold →
 resultado → `market_results` → `settlements` → pago → auditoría. Mencionar la
-idempotencia y el unique por apuesta.
+idempotencia y el unique por apuesta, y que el mismo ciclo funciona para
+fútbol y NBA pre-partida.
 
-**15 minutos.** Recorrer los cuatro flujos de este documento en orden, con la
+**15 minutos.** Recorrer los cinco flujos de este documento en orden, con la
 pantalla correspondiente, y cerrar con el panel admin y la auditoría.
 
 ## Preguntas probables del jurado
@@ -265,9 +312,24 @@ No: hay `CHECK` en la base y la operación de débito es condicional. El test de
 concurrencia intenta doble gasto y falla como debe.
 
 **¿De dónde salen las cuotas?**
-De un modelo propio: Elo pre-partida y regresión logística en vivo sobre oro,
-XP, kills, torres, racks, Roshan y tiempo, más un margen del 6%. Se versionan y
-se guardan en `odds_history`.
+De un modelo propio. En Dota: Elo pre-partida y regresión logística en vivo
+sobre oro, XP, kills, torres, racks, Roshan y tiempo. En fútbol: Poisson con la
+tabla real de ESPN. En NBA: normal sobre margen y total. Siempre con margen del
+6%, versionadas y guardadas en `odds_history`.
+
+**¿Por qué no hay apuestas en vivo de fútbol o NBA?**
+Porque no hay feed de eventos al segundo. Prometerlo sería mentir. Los mercados
+son pre-partida y se cierran en el kickoff; el backend rechaza apuestas
+posteriores con `MATCH_STARTED`.
+
+**¿Cómo se liquidan fútbol y NBA?**
+ESPN deja el marcador final en `sport_results` (`READY` o `VOID`). Desde ahí el
+mismo `MarketResultService` resuelve 1X2, total de goles, ganador y total de
+puntos, y el settlement paga o reembolsa sin consultar ESPN.
+
+**¿Y si ESPN cambia o se cae?**
+Es una API no oficial y sin SLA. Si falla, el calendario queda vacío o `STALE`
+y, sin tabla, se publican cuotas planas de liga. Dota no se ve afectado.
 
 **¿Qué pasa si el feed se cae?**
 El colector guarda en spool y reintenta; el backend suspende mercados por lag y
@@ -293,8 +355,10 @@ simulado están documentados en README/runbook (ADR-037).
 ## Lo que no se debe afirmar
 
 - No decir que se procesan pagos reales: no hay pasarela.
-- No decir que el fútbol o la NBA tienen cuotas o apuestas: solo existe el
-  calendario de fútbol de `/sports`, sin mercados.
+- No decir que hay cobertura o apuestas en vivo de fútbol/NBA: solo
+  pre-partida, con cierre en el kickoff.
+- No decir que las cuotas de fútbol/NBA son de mercado: son propias, basadas
+  en la tabla de ESPN.
 - No decir que OpenDota es tiempo real: tiene delay y se etiqueta.
 - No decir que el stream es propio: se embebe el canal oficial.
 - No decir que los bots generan datos completos: en práctica solo hay jugador
@@ -304,10 +368,12 @@ simulado están documentados en README/runbook (ADR-037).
 
 - [ ] Docker Desktop abierto y `dist/betpulse-demo-kit` copiado.
 - [ ] `start.ps1` levanta PostgreSQL, backend y frontend `healthy`.
-- [ ] Internet disponible para OpenDota (o hotspot).
+- [ ] Internet disponible para OpenDota y ESPN (o hotspot).
 - [ ] Admin: `admin@betpulse.local` / `Admin123!`.
 - [ ] Usuario de demo con saldo cargado desde `/admin/users`.
 - [ ] Tarjeta de prueba verificada en `/wallet` con los datos de la tabla.
+- [ ] `/sports` con pestañas Fútbol y NBA y cuotas visibles (esperar ~30 s tras arrancar).
+- [ ] Una apuesta pre-partida de prueba registrada con hold.
 - [ ] Dota 2 con `-gamestateintegration` y el `.cfg` instalado (si se usa GSI).
 - [ ] Stream oficial asignado en `/admin/streams` (si se va a mostrar).
 - [ ] Pestañas listas: lobby, partido, `/sports`, wallet, apuestas, admin, Dota 2.
@@ -323,4 +389,5 @@ simulado están documentados en README/runbook (ADR-037).
 | SSE no actualiza | Verificar proxy y reconexión |
 | Stream oficial offline | Usar `fallback_url`; probar Twitch/YouTube antes |
 | Sin internet | Hotspot; la app abre con lobby vacío y mercados GSI si hay partida |
+| ESPN caído o sin partidos | `/sports` queda vacío o sin cuotas; Dota no se afecta. Se puede omitir el segmento pre-partida |
 | Fecha de tarjeta rechazada | Ya corregido: se acepta cualquier fecha válida (ADR-041) |

@@ -51,6 +51,7 @@ Cerrados: M0 (capturas GSI reales), M1 (identidad y wallet), M2a (catálogo Open
 - M8c: modelo normal sobre la tabla real de ESPN (puntos a favor/contra por conferencia): `P(gana) = Φ(Δ/12)`, total con σ=18 y ventaja de local 2%. Sin tabla, media de liga y equipos neutros.
 - M8c: `/sports` tiene selector Fútbol/NBA; el boleto es el mismo. El resultado final de ESPN incluye prórroga; un empate imposible anula el mercado.
 - M8c: `PrematchMarketPublisher` y `PrematchResultService` se comparten entre fútbol y NBA; cada deporte solo aporta líneas, cuotas y etiquetas.
+- M7 (2026-11-23): kit de demo regenerado con M8. `dist/betpulse-demo-kit` incluye V13, fútbol y NBA; `demo-kit/README.md` y `docs/demo.md` explican pre-partida, ESPN y el cierre en kickoff.
 - Catálogo con datos reales de OpenDota; sin fixtures ni datos inventados en el producto.
 - Las partidas con `league_id > 0` se priorizan sobre las ranked y muestran el nombre de liga resuelto con `/leagues/{id}` (caché 6 h).
 - Cuatro mercados base por partida en vivo (ganador, total de kills, handicap y duración) más tres de eventos GSI (primera sangre, primera torre y siguiente Roshan), con versión e historial append-only.
@@ -91,7 +92,7 @@ Cerrados: M0 (capturas GSI reales), M1 (identidad y wallet), M2a (catálogo Open
 ## Pendiente de entorno (opcional)
 
 - `STEAM_API_KEY` para enriquecer el feed pro con draft, torres y Roshan. No bloquea la demo.
-- Demo kit `dist/betpulse-demo-kit` ya probado; sirve en cualquier equipo con Docker Desktop.
+- Demo kit `dist/betpulse-demo-kit` regenerado y probado en limpio (368 MB de imágenes); `start.ps1` carga el tar y deja PostgreSQL, backend y frontend `healthy`.
 
 ## Bloqueos
 
@@ -124,6 +125,15 @@ npm run lint
 npm test
 npm run build
 ```
+
+Resultados 2026-11-23 (kit de demo):
+
+- `dist/betpulse-demo-kit` regenerado con las imágenes de M8 (368 MB de `.tar`) y el README actualizado.
+- Prueba en limpio en `3100` tras borrar imágenes y volumen: `start.ps1` cargó el tar y dejó los tres servicios `healthy`.
+- Flyway aplicó V1–V13 sobre una base vacía; el único usuario es el admin sembrado.
+- `/sports` respondió 200 con pestaña NBA; 60 fixtures de fútbol y 22 de NBA, todos con dos mercados y cuotas.
+- Apuesta real por el proxy del frontend: registro → depósito S/ 200 → `1X2 HOME` @ 2.768 → `PLACED` con disponible S/ 190 y retenido S/ 10.
+- `reset.ps1` dejó base limpia y volvió a levantar el stack; `stop.ps1` conserva datos.
 
 Resultados 2026-11-23 (M8c):
 
