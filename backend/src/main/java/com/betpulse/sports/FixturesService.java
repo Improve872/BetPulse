@@ -3,6 +3,8 @@ package com.betpulse.sports;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.YearMonth;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -11,6 +13,8 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+
+import com.betpulse.sports.EspnScoreboardDtos.Scoreboard;
 
 import com.betpulse.sports.SportsDtos.FixturesResponse;
 import com.betpulse.sports.SportsDtos.LeagueFixtures;
@@ -72,7 +76,8 @@ public class FixturesService {
 
 		for (EspnProperties.League league : properties.getLeagues()) {
 			try {
-				var fixtures = mapper.map(league, client.fetch(league.getSlug()), now, properties.getHorizonDays());
+				List<Scoreboard> boards = fetchMonths(league, now);
+				var fixtures = mapper.map(league, boards, now, properties.getHorizonDays());
 				lastGood.put(league.getSlug(), new LeagueFixtures(league.getSlug(), league.getName(), fixtures));
 				successes++;
 			} catch (RuntimeException exception) {
@@ -85,6 +90,27 @@ public class FixturesService {
 			lastSuccessAt = now;
 		}
 		lastError = successes == properties.getLeagues().size() ? null : error;
+	}
+
+	/** ESPN solo acepta un mes por petición: se piden los meses del horizonte. */
+	private List<Scoreboard> fetchMonths(EspnProperties.League league, Instant now) {
+		YearMonth first = YearMonth.from(now.atZone(ZoneOffset.UTC));
+		YearMonth last = YearMonth.from(
+				now.plus(Duration.ofDays(properties.getHorizonDays())).atZone(ZoneOffset.UTC));
+		List<Scoreboard> boards = new ArrayList<>();
+		RuntimeException failure = null;
+		for (YearMonth month = first; !month.isAfter(last); month = month.plusMonths(1)) {
+			try {
+				boards.add(client.fetch(league.getSlug(), month));
+			} catch (RuntimeException exception) {
+				failure = exception;
+				log.warn("No se pudo consultar {} en {}: {}", league.getSlug(), month, exception.getMessage());
+			}
+		}
+		if (boards.isEmpty() && failure != null) {
+			throw failure;
+		}
+		return boards;
 	}
 
 	private String status(Instant now) {

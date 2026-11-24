@@ -3,7 +3,9 @@ package com.betpulse.sports;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 import org.springframework.stereotype.Component;
@@ -23,13 +25,31 @@ import com.betpulse.sports.SportsDtos.FixtureView;
 public class EspnFixtureMapper {
 
 	public List<FixtureView> map(EspnProperties.League league, Scoreboard scoreboard, Instant now, int horizonDays) {
-		if (scoreboard == null || scoreboard.events() == null) {
-			return List.of();
-		}
+		return map(league, scoreboard == null ? List.of() : List.of(scoreboard), now, horizonDays);
+	}
+
+	/**
+	 * Normaliza uno o más scoreboards (normalmente el mes actual y el
+	 * siguiente) y deduplica por id de evento.
+	 */
+	public List<FixtureView> map(EspnProperties.League league, List<Scoreboard> scoreboards, Instant now,
+			int horizonDays) {
 		Instant limit = now.plus(Duration.ofDays(Math.max(1, horizonDays)));
-		return scoreboard.events().stream()
+		Map<String, Event> events = new LinkedHashMap<>();
+		for (Scoreboard scoreboard : scoreboards) {
+			if (scoreboard == null || scoreboard.events() == null) {
+				continue;
+			}
+			for (Event event : scoreboard.events()) {
+				if (event != null && event.id() != null) {
+					events.putIfAbsent(event.id(), event);
+				}
+			}
+		}
+		return events.values().stream()
 				.map(event -> toFixture(league, event))
 				.filter(Objects::nonNull)
+				.filter(fixture -> !fixture.kickoff().isBefore(now))
 				.filter(fixture -> !fixture.kickoff().isAfter(limit))
 				.filter(fixture -> "SCHEDULED".equals(fixture.state()))
 				.sorted(Comparator.comparing(FixtureView::kickoff))

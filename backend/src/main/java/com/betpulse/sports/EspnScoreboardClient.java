@@ -30,6 +30,12 @@ public class EspnScoreboardClient {
 		return get("/soccer/" + leagueSlug + "/scoreboard?dates=" + day, leagueSlug);
 	}
 
+	/** Un mes completo en una sola petición: ESPN acepta `dates=YYYYMM`. */
+	public Scoreboard fetch(String leagueSlug, java.time.YearMonth month) {
+		String key = java.time.format.DateTimeFormatter.ofPattern("yyyyMM").format(month);
+		return get("/soccer/" + leagueSlug + "/scoreboard?dates=" + key, leagueSlug);
+	}
+
 	private Scoreboard get(String path, String leagueSlug) {
 		try {
 			Scoreboard body = restClient.get().uri(path).retrieve().body(Scoreboard.class);

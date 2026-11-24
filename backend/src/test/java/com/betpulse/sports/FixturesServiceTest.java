@@ -1,6 +1,8 @@
 package com.betpulse.sports;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -34,8 +36,8 @@ class FixturesServiceTest {
 	@Test
 	void aggregatesLeaguesAndReportsLiveFeed() {
 		EspnProperties properties = properties();
-		when(client.fetch("eng.1")).thenReturn(scoreboard("eng-1"));
-		when(client.fetch("esp.1")).thenReturn(scoreboard("esp-1"));
+		when(client.fetch(eq("eng.1"), any(java.time.YearMonth.class))).thenReturn(scoreboard("eng-1"));
+		when(client.fetch(eq("esp.1"), any(java.time.YearMonth.class))).thenReturn(scoreboard("esp-1"));
 
 		FixturesService service = new FixturesService(client, mapper, properties, clock);
 		service.refresh();
@@ -51,14 +53,14 @@ class FixturesServiceTest {
 	@Test
 	void keepsLastGoodFixturesWhenOneLeagueFails() {
 		EspnProperties properties = properties();
-		when(client.fetch("eng.1")).thenReturn(scoreboard("eng-1"));
-		when(client.fetch("esp.1")).thenReturn(scoreboard("esp-1"));
+		when(client.fetch(eq("eng.1"), any(java.time.YearMonth.class))).thenReturn(scoreboard("eng-1"));
+		when(client.fetch(eq("esp.1"), any(java.time.YearMonth.class))).thenReturn(scoreboard("esp-1"));
 
 		FixturesService service = new FixturesService(client, mapper, properties, clock);
 		service.refresh();
 
 		clock.advance(Duration.ofMinutes(30));
-		when(client.fetch("esp.1")).thenThrow(new RuntimeException("ESPN caído"));
+		when(client.fetch(eq("esp.1"), any(java.time.YearMonth.class))).thenThrow(new RuntimeException("ESPN caído"));
 		service.refresh();
 
 		var response = service.getFixtures();
@@ -71,15 +73,15 @@ class FixturesServiceTest {
 	@Test
 	void marksTheFeedStaleWhenNothingSucceeds() {
 		EspnProperties properties = properties();
-		when(client.fetch("eng.1")).thenReturn(scoreboard("eng-1"));
-		when(client.fetch("esp.1")).thenReturn(scoreboard("esp-1"));
+		when(client.fetch(eq("eng.1"), any(java.time.YearMonth.class))).thenReturn(scoreboard("eng-1"));
+		when(client.fetch(eq("esp.1"), any(java.time.YearMonth.class))).thenReturn(scoreboard("esp-1"));
 
 		FixturesService service = new FixturesService(client, mapper, properties, clock);
 		service.refresh();
 
 		clock.advance(Duration.ofHours(2));
-		when(client.fetch("eng.1")).thenThrow(new RuntimeException("timeout"));
-		when(client.fetch("esp.1")).thenThrow(new RuntimeException("timeout"));
+		when(client.fetch(eq("eng.1"), any(java.time.YearMonth.class))).thenThrow(new RuntimeException("timeout"));
+		when(client.fetch(eq("esp.1"), any(java.time.YearMonth.class))).thenThrow(new RuntimeException("timeout"));
 		service.refresh();
 
 		var response = service.getFixtures();
