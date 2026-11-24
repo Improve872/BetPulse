@@ -15,7 +15,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <javalin.version>6.7.0</javalin.version>
         <slf4j.version>2.0.17</slf4j.version>
-        <jackson.version>2.18.2</jackson.version>
+        <jackson.version>2.23.0</jackson.version>
         <junit.version>5.12.2</junit.version>
         <assertj.version>3.27.4</assertj.version>
     </properties>
