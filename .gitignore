@@ -24,6 +24,12 @@ collector/spool/
 dist/
 infra/demo.env
 
+# Material académico local (no se versiona)
+docs/Cronograma-BetPulse.pdf
+docs/Diagramas-BetPulse.drawio
+docs/cronograma-academico.*
+docs/cronograma-preview.png
+
 # IDE
 .idea/
 .vscode/
