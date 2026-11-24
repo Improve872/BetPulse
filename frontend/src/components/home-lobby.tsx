@@ -115,8 +115,22 @@ export function HomeLobby({ data: initialData, markets: initialMarkets }: HomeLo
     const selection = market?.selections.find(
       (candidate) => candidate.key === betSelection.selectionKey,
     );
-    return match && market && selection ? { match, market, selection } : null;
-  }, [allMatches, betSelection, marketByMatchId]);
+    if (!match || !market || !selection) {
+      return null;
+    }
+    return {
+      subject: {
+        id: match.id,
+        homeName: match.radiant.name,
+        awayName: match.dire.name,
+        homeTeam: match.radiant,
+        awayTeam: match.dire,
+      },
+      market,
+      selection,
+      selectionLabel: matchSelectionLabel(match, market, selection.key, t),
+    };
+  }, [allMatches, betSelection, marketByMatchId, t]);
 
   useEffect(() => {
     if (betSelection && !betTarget) {
@@ -548,12 +562,7 @@ export function HomeLobby({ data: initialData, markets: initialMarkets }: HomeLo
             {betTarget ? (
               <>
                 <p className="truncate text-xs font-semibold text-arena-ink">
-                  {matchSelectionLabel(
-                    betTarget.match,
-                    betTarget.market,
-                    betTarget.selection.key,
-                    t,
-                  )}
+                  {betTarget.selectionLabel}
                 </p>
                 <p className="truncate text-[11px] text-arena-muted">
                   {marketTitle(betTarget.market, t)} ·{" "}

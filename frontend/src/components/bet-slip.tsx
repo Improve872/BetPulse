@@ -8,21 +8,31 @@ import {
   LockIcon,
   TicketIcon,
 } from "@/components/icons";
-import { TeamCrest } from "@/components/team-crest";
 import { ApiError } from "@/lib/api";
+import { TeamCrest } from "@/components/team-crest";
 import { useAuth } from "@/lib/auth";
 import { placeBet, type Bet } from "@/lib/bets";
 import { cn, formatMoney, formatOdds } from "@/lib/format";
 import { useLanguage } from "@/lib/i18n";
-import { matchSelectionLabel } from "@/lib/match-labels";
-import type { LobbyMatch } from "@/lib/lobby";
+import type { LobbyTeam } from "@/lib/lobby";
 import { marketTitle, type Market, type Selection } from "@/lib/markets";
 import { notifyWalletUpdated } from "@/lib/wallet-events";
 
+export type BetSubject = {
+  id: string;
+  homeName: string;
+  awayName: string;
+  homeCrestUrl?: string | null;
+  awayCrestUrl?: string | null;
+  homeTeam?: LobbyTeam;
+  awayTeam?: LobbyTeam;
+};
+
 export type BetTarget = {
-  match: LobbyMatch;
+  subject: BetSubject;
   market: Market;
   selection: Selection;
+  selectionLabel: string;
 };
 
 type BetSlipProps = {
@@ -156,17 +166,25 @@ export function BetSlip({
             <div className="border-b border-arena-line px-4 py-3">
               <div className="flex items-start justify-between gap-3">
                 <div className="flex min-w-0 flex-1 items-center gap-2">
-                  <TeamCrest team={target.match.radiant} size="xs" />
+                  {target.subject.homeTeam ? (
+                    <TeamCrest team={target.subject.homeTeam} size="xs" />
+                  ) : (
+                    <SubjectCrest name={target.subject.homeName} url={target.subject.homeCrestUrl} />
+                  )}
                   <span className="min-w-0 flex-1 truncate text-xs font-semibold text-arena-ink">
-                    {target.match.radiant.name}
+                    {target.subject.homeName}
                   </span>
                   <span className="text-[11px] font-semibold uppercase text-arena-muted">
                     vs
                   </span>
                   <span className="min-w-0 flex-1 truncate text-right text-xs font-semibold text-arena-ink">
-                    {target.match.dire.name}
+                    {target.subject.awayName}
                   </span>
-                  <TeamCrest team={target.match.dire} size="xs" />
+                  {target.subject.awayTeam ? (
+                    <TeamCrest team={target.subject.awayTeam} size="xs" />
+                  ) : (
+                    <SubjectCrest name={target.subject.awayName} url={target.subject.awayCrestUrl} />
+                  )}
                 </div>
                 <button
                   type="button"
@@ -185,12 +203,7 @@ export function BetSlip({
               <div className="mt-3 flex items-center justify-between gap-3 rounded-xl border border-arena-line bg-arena-raised/60 px-3 py-2.5">
                 <div className="min-w-0">
                   <p className="truncate text-xs font-semibold text-arena-ink">
-                    {matchSelectionLabel(
-                      target.match,
-                      target.market,
-                      target.selection.key,
-                      t,
-                    )}
+                    {target.selectionLabel}
                   </p>
                   <p className="mt-0.5 text-[11px] text-arena-muted">
                     {t("bet.version", {
@@ -344,5 +357,26 @@ export function BetSlip({
         </div>
       </div>
     </aside>
+  );
+}
+
+function SubjectCrest({ name, url }: { name: string; url?: string | null }) {
+  const [failed, setFailed] = useState(false);
+  if (!url || failed) {
+    return (
+      <span className="grid h-6 w-6 shrink-0 place-items-center rounded-md border border-white/15 bg-arena-raised text-[9px] font-bold text-arena-muted">
+        {name.slice(0, 2).toUpperCase()}
+      </span>
+    );
+  }
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={url}
+      alt=""
+      loading="lazy"
+      onError={() => setFailed(true)}
+      className="h-6 w-6 shrink-0 object-contain"
+    />
   );
 }

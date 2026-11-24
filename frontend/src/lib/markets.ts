@@ -115,9 +115,36 @@ export function marketTitleForType(
       return t("market.title.FIRST_TOWER");
     case "NEXT_ROSHAN":
       return t("market.title.NEXT_ROSHAN");
+    case "MATCH_RESULT_1X2":
+      return t("market.title.MATCH_RESULT_1X2");
+    case "TOTAL_GOALS":
+      return t("market.title.TOTAL_GOALS");
     default:
       return fallback;
   }
+}
+
+export function betSelectionLabel(
+  bet: {
+    marketType: string;
+    line?: number | null;
+    selectionKey: string;
+    selectionLabel: string;
+  },
+  t: Translate,
+): string {
+  if (
+    bet.marketType === "MATCH_RESULT_1X2" ||
+    bet.marketType === "TOTAL_GOALS"
+  ) {
+    return bet.selectionLabel;
+  }
+  return selectionLabelForType(
+    bet.marketType,
+    bet.line,
+    bet.selectionKey,
+    t,
+  );
 }
 
 export function selectionLabel(
@@ -138,11 +165,24 @@ export function selectionLabelForType(
   lineValue: number | null | undefined,
   selectionKey: string,
   t: Translate,
+  teams?: { home?: string; away?: string },
 ): string {
   const line = Number(lineValue ?? 0);
   const lineLabel = Number.isFinite(line) ? line.toFixed(1) : "—";
 
   switch (marketType) {
+    case "MATCH_RESULT_1X2":
+      if (selectionKey === "HOME") {
+        return teams?.home ?? t("sports.selection.home");
+      }
+      if (selectionKey === "DRAW") {
+        return t("sports.selection.draw");
+      }
+      return teams?.away ?? t("sports.selection.away");
+    case "TOTAL_GOALS":
+      return selectionKey === "OVER"
+        ? t("market.overLine", { line: lineLabel })
+        : t("market.underLine", { line: lineLabel });
     case "MATCH_WINNER":
     case "FIRST_BLOOD":
     case "FIRST_TOWER":

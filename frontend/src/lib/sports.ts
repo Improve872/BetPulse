@@ -11,6 +11,23 @@ export type FixtureTeam = {
   crestUrl: string | null;
 };
 
+export type FixtureSelection = {
+  key: string;
+  label: string;
+  probability: number;
+  odds: number;
+};
+
+export type FixtureMarket = {
+  id: string;
+  marketKey: string;
+  title: string;
+  line: number | null;
+  version: number;
+  status: string;
+  selections: FixtureSelection[];
+};
+
 export type Fixture = {
   id: string;
   leagueId: string;
@@ -23,6 +40,7 @@ export type Fixture = {
   homeScore: number | null;
   awayScore: number | null;
   venue: string | null;
+  markets: FixtureMarket[];
 };
 
 export type LeagueFixtures = {
@@ -63,7 +81,12 @@ export async function getFixtures(): Promise<FixturesResponse> {
         ? data.leagues.map((league) => ({
             id: league.id,
             name: league.name,
-            fixtures: Array.isArray(league.fixtures) ? league.fixtures : [],
+            fixtures: Array.isArray(league.fixtures)
+              ? league.fixtures.map((fixture) => ({
+                  ...fixture,
+                  markets: Array.isArray(fixture.markets) ? fixture.markets : [],
+                }))
+              : [],
           }))
         : [],
     };

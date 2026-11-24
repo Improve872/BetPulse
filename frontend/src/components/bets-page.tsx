@@ -13,8 +13,8 @@ import { betStatusKey, getBets, type Bet } from "@/lib/bets";
 import { cn, formatDateTime, formatMoney, formatOdds } from "@/lib/format";
 import { useLanguage } from "@/lib/i18n";
 import {
+  betSelectionLabel,
   marketTitleForType,
-  selectionLabelForType,
 } from "@/lib/markets";
 
 const statusClasses: Record<string, string> = {
@@ -177,13 +177,7 @@ export function BetsPage() {
                       )}
                     </h2>
                     <p className="mt-1 text-xs text-muted">
-                      {selectionLabelForType(
-                        bet.marketType,
-                        bet.line,
-                        bet.selectionKey,
-                        t,
-                      )}{" "}
-                      · {formatOdds(Number(bet.odds))}
+                      {betSelectionLabel(bet, t)} · {formatOdds(Number(bet.odds))}
                     </p>
                   </div>
                   <span
