@@ -765,7 +765,9 @@ tabla real (goles a favor y en contra por equipo) en
 
 - Los mercados de fútbol reutilizan `markets`/`selections`/`odds_history` con
   `markets.sport = 'SOCCER'` y `match_id = 'FB:<eventId de ESPN>'`. El lobby de
-  Dota filtra `sport = 'DOTA'`; no ve mercados de fútbol.
+  Dota filtra `sport = 'DOTA'`; no ve mercados de fútbol. El cierre por
+  desaparición del feed de Dota también filtra `sport = 'DOTA'` para no tocar
+  los mercados pre-partida.
 - Mercados: `MATCH_RESULT_1X2` (`HOME`/`DRAW`/`AWAY`) y `TOTAL_GOALS`
   (`OVER`/`UNDER`) con línea en medio punto cercana a los goles esperados.
 - Cuotas: Poisson bivariado por equipo. Los goles esperados salen de la media

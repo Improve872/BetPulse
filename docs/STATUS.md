@@ -46,7 +46,7 @@ Cerrados: M0 (capturas GSI reales), M1 (identidad y wallet), M2a (catálogo Open
 - M8b: los fixtures se consultan por mes (`dates=YYYYMM`) y se deduplican; el calendario cubre el horizonte de 10 días. `/sports` muestra cuotas y usa el boleto con equipos genéricos.
 - M8b: los mercados se abren al publicarse y se cierran en el kickoff. El backend rechaza apuestas posteriores con `MATCH_STARTED` aunque el mercado siga `OPEN`.
 - M8b: `sport_results` guarda el marcador final desde ESPN. `READY` liquida 1X2 (empate incluido) y total de goles; `VOID` por postponer/cancelar/abandonar o por 12 h sin resultado. El settlement no consulta ESPN.
-- El lobby de Dota solo lista `markets.sport='DOTA'`; los mercados de fútbol no se mezclan.
+- El lobby de Dota solo lista `markets.sport='DOTA'`; los mercados de fútbol no se mezclan. El cierre por desaparición del feed (`closeMissing`) también filtra Dota: verificado con una regresión que un cambio de catálogo no cierra mercados de fútbol.
 - Catálogo con datos reales de OpenDota; sin fixtures ni datos inventados en el producto.
 - Las partidas con `league_id > 0` se priorizan sobre las ranked y muestran el nombre de liga resuelto con `/leagues/{id}` (caché 6 h).
 - Cuatro mercados base por partida en vivo (ganador, total de kills, handicap y duración) más tres de eventos GSI (primera sangre, primera torre y siguiente Roshan), con versión e historial append-only.
@@ -123,10 +123,10 @@ npm run build
 
 Resultados 2026-11-23 (M8b):
 
-- Backend: 128/128 tests verdes (M8b suma el modelo Poisson, la resolución 1X2/total, la guarda de kickoff y el flujo fútbol → resultado → settlement).
+- Backend: 129/129 tests verdes (M8b suma el modelo Poisson, la resolución 1X2/total, la guarda de kickoff, el flujo fútbol → resultado → settlement y un test que verifica que el cierre por feed de Dota no toca mercados de fútbol).
 - Frontend: 18/18 tests de checkout; lint y build verdes.
 - Flyway: V1–V12 aplicadas en Testcontainers y en el PostgreSQL local.
-- Funcional con ESPN real: 60 fixtures en 5 ligas y 120 mercados abiertos con cuotas y etiquetas de equipo; `/sports` renderizó cuotas desde el servidor.
+- Funcional con ESPN real: 60 fixtures en 5 ligas y 120 mercados abiertos con cuotas y etiquetas de equipo; `/sports` renderizó cuotas desde el servidor. Los 120 mercados de fútbol siguieron `OPEN` tras 3 minutos de refrescos del catálogo de Dota.
 - Flujo real por API: registro → depósito S/ 200.00 → apuesta S/ 10.00 a 1X2 `HOME` @ 2.768 → `PLACED`, disponible S/ 190.00 y retenido S/ 10.00.
 - `/api/markets/live` siguió devolviendo solo mercados Dota (24), sin contaminación de fútbol.
 
