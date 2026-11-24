@@ -201,7 +201,7 @@ transferencia → saldo actualizado; carrusel y menú funcionan en desktop y mó
 Objetivo: que no falle en clase.
 
 **Estado:** cerrado 2026-11-16 en su base (hardening y empaquetado Docker).
-Queda pendiente el E2E de flujos de dinero con Playwright.
+E2E de flujos de dinero con Playwright cerrado el 2026-11-24.
 
 Tareas:
 

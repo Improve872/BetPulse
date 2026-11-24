@@ -22,6 +22,9 @@ ADR-041 y ADR-042.
   incluida la regresión de fecha vencida; entra al CI junto a lint y build.
 - `docs/demo.md` como guion técnico: arquitectura, flujos, invariantes de
   dinero, datos de demo y preguntas del jurado.
+- E2E de dinero con Playwright (2026-11-24): navegador real para depósito,
+  apuesta, partida GSI firmada, liquidación y saldo final; job `e2e` en CI y
+  `scripts/e2e.ps1` para ejecutarlo en local.
 - Dockerfiles multietapa, `output: "standalone"`, `infra/docker-compose.demo.yml`
   con healthchecks y `demo-kit/` con arranque, parada, reset y `.tar` de
   imágenes. Sin colector ni GSI en el paquete.
@@ -32,6 +35,8 @@ ADR-041 y ADR-042.
 
 - Backend: 116/116 tests al cerrar la base (hoy 139/139 con M8).
 - Frontend: 18/18 tests de checkout; lint y build verdes.
+- E2E: 1/1 en Chromium (~14 s en local) con el flujo completo de dinero; job
+  `e2e` en CI.
 - Headers verificados en `next start`: CSP completa y headers de seguridad.
 - Docker: imágenes construidas, `docker compose up --wait` deja los tres
   servicios `healthy`; reinicio con `down`/`up` conserva usuario y saldo.
@@ -40,7 +45,6 @@ ADR-041 y ADR-042.
 
 ## Deuda trasladada
 
-- E2E de flujos de dinero con Playwright (opcional tras la demo).
 - Actualización mayor de Next para cerrar las vulnerabilidades de `npm audit`
   (2 de producción, 6 de desarrollo; sin críticas).
 - OpenAPI, ERD y runbook completo si el alcance académico los exige.

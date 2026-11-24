@@ -52,6 +52,7 @@ Cerrados: M0 (capturas GSI reales), M1 (identidad y wallet), M2a (catálogo Open
 - M8c: `/sports` tiene selector Fútbol/NBA; el boleto es el mismo. El resultado final de ESPN incluye prórroga; un empate imposible anula el mercado.
 - M8c: `PrematchMarketPublisher` y `PrematchResultService` se comparten entre fútbol y NBA; cada deporte solo aporta líneas, cuotas y etiquetas.
 - M7 (2026-11-23): kit de demo regenerado con M8. `dist/betpulse-demo-kit` incluye V13, fútbol y NBA; `demo-kit/README.md` y `docs/demo.md` explican pre-partida, ESPN y el cierre en kickoff.
+- M7 (2026-11-24): E2E de dinero con Playwright. Un navegador real recorre depósito, apuesta en el lobby, `POST_GAME` GSI firmado, liquidación `exactly-once` y saldo final; corre en el job `e2e` del CI.
 - Catálogo con datos reales de OpenDota; sin fixtures ni datos inventados en el producto.
 - Las partidas con `league_id > 0` se priorizan sobre las ranked y muestran el nombre de liga resuelto con `/leagues/{id}` (caché 6 h).
 - Cuatro mercados base por partida en vivo (ganador, total de kills, handicap y duración) más tres de eventos GSI (primera sangre, primera torre y siguiente Roshan), con versión e historial append-only.
@@ -85,7 +86,7 @@ Cerrados: M0 (capturas GSI reales), M1 (identidad y wallet), M2a (catálogo Open
 
 ## Próxima acción
 
-1. M7 pendiente: E2E de flujos de dinero con Playwright (opcional tras la demo).
+1. Opcional: subir `next` de `15.5.28` a `15.5.29` para cerrar las 2 vulnerabilidades de producción de `npm audit` (el audit lo propone como parche; no aplicado).
 2. Opcional: M3c si aparece calendario fiable; Steam `GetLiveLeagueGames` si hay API key; pulido admin (usuarios, exposición, salud).
 3. M8 cerrado; siguiente hito a definir en `docs/plan.md`.
 
@@ -124,7 +125,17 @@ cd ..\frontend
 npm run lint
 npm test
 npm run build
+
+# E2E (levanta el stack si hace falta)
+cd ..
+.\scripts\e2e.ps1
 ```
+
+Resultados 2026-11-24 (E2E de dinero):
+
+- Playwright (Chromium) en local: registro por API con sesión compartida, depósito S/ 100, partida GSI firmada, apuesta S/ 10 en el boleto, `POST_GAME` y liquidación `WON`; saldo final = 9 000 + payout y retenido 0.
+- El script `scripts/e2e.ps1` levanta PostgreSQL, backend y frontend, ejecuta la prueba y limpia los procesos; verde y reproducible en ~14 s.
+- CI: nuevo job `e2e` con PostgreSQL como servicio, backend y frontend nativos y Chromium de Playwright.
 
 Resultados 2026-11-23 (kit de demo):
 

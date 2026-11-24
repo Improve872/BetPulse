@@ -64,7 +64,7 @@ powershell -ExecutionPolicy Bypass -File .\start.ps1
 ```
 
 Abre `http://localhost:3000`. Solo requiere Docker Desktop e internet para
-OpenDota. No incluye colector ni GSI. Detalle en `demo-kit/README.md`.
+OpenDota y ESPN. No incluye colector ni GSI. Detalle en `demo-kit/README.md`.
 
 ## Arranque
 
@@ -83,3 +83,23 @@ cd collector && ./mvnw package && java -jar target/collector-0.1.0-SNAPSHOT.jar
 ```
 
 OpenDota funciona sin API key; `OPENDOTA_API_KEY` es opcional para subir el rate limit. El frontend usa `BACKEND_URL` (por defecto `http://127.0.0.1:8081`) para el fetch server-side del catálogo.
+
+## Tests
+
+```powershell
+# Backend
+cd backend
+.\mvnw.cmd verify
+
+# Frontend
+cd frontend
+npm run lint
+npm test
+npm run build
+
+# E2E de dinero: levanta PostgreSQL, backend y frontend, y ejecuta Playwright
+.\scripts\e2e.ps1
+```
+
+El E2E inyecta una partida GSI firmada, apuesta desde el navegador y espera la
+liquidación real (`WON`) antes de comprobar el saldo.
