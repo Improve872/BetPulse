@@ -1,14 +1,14 @@
 # Estado del proyecto
 
-Última actualización: 2026-11-16
+Última actualización: 2026-11-23
 
 > Estado vigente únicamente. El histórico de hitos cerrados vive en `docs/milestones/`.
 
 ## Hito actual
 
-**M7: hardening base cerrado. M8a cerrado: calendario de fútbol con ESPN.** Siguiente: M8b (mercados 1X2 y over/under con liquidación). M3c sigue bloqueado por falta de calendario pre-partida.
+**M7: hardening base cerrado. M8a cerrado: calendario de fútbol con ESPN. M8b cerrado: mercados 1X2 y total de goles con liquidación.** Siguiente: M8c (NBA). M3c sigue bloqueado por falta de calendario pre-partida.
 
-Cerrados: M0 (capturas GSI reales), M1 (identidad y wallet), M2a (catálogo OpenDota + SSE), M2b (partida propia GSI), M3a y M3b (cuatro mercados en vivo con cuotas), M4 (apuestas simples con holds), M5 (liquidación, payout/void, admin y auditoría), M6a (arena visual y sistema de diseño), M6b (streaming oficial y cierre de producto), M6c (copy de producto y saldo administrativo), M6d (cuenta, rail en vivo y checkout simulado). Detalle en `docs/milestones/`.
+Cerrados: M0 (capturas GSI reales), M1 (identidad y wallet), M2a (catálogo OpenDota + SSE), M2b (partida propia GSI), M3a y M3b (cuatro mercados en vivo con cuotas), M4 (apuestas simples con holds), M5 (liquidación, payout/void, admin y auditoría), M6a (arena visual y sistema de diseño), M6b (streaming oficial y cierre de producto), M6c (copy de producto y saldo administrativo), M6d (cuenta, rail en vivo y checkout simulado), M8b (fútbol pre-partida apostable). Detalle en `docs/milestones/`.
 
 ## Estado del sistema
 
@@ -41,12 +41,18 @@ Cerrados: M0 (capturas GSI reales), M1 (identidad y wallet), M2a (catálogo Open
 - M8a (2026-11-16): `/sports` muestra el calendario real de las cinco grandes ligas con datos de ESPN (`eng.1`, `esp.1`, `ger.1`, `ita.1`, `fra.1`), agrupado por liga, con escudos, sede y cuenta atrás. Solo se publican partidos programados: no hay cobertura ni apuestas en vivo de fútbol (ADR-043).
 - M8a: `GET /api/sports/fixtures` público; caché en memoria con refresco cada 5 min, stale a los 20 min y horizonte de 10 días. Si una liga falla se conserva su última copia y el feed se marca `STALE`/`DOWN`.
 - M8a: ESPN exige un `User-Agent` no-Java; se envía `BetPulse/0.1` y se documenta el `403` como riesgo. Escudos desde `a.espncdn.com` permitidos en `img-src`.
+- M8b (2026-11-23): fútbol apostable. `MATCH_RESULT_1X2` (`HOME`/`DRAW`/`AWAY`) y `TOTAL_GOALS` por fixture, con `match_id=FB:<eventId>` y `markets.sport='SOCCER'`.
+- M8b: cuotas Poisson desde la tabla real de ESPN (goles a favor/contra, suavizado y ventaja de local). Margen 6%, versión e `odds_history` con `POISSON_PREMATCH`. Sin tabla disponible, cuotas planas de liga; no se inventan fuerzas.
+- M8b: los fixtures se consultan por mes (`dates=YYYYMM`) y se deduplican; el calendario cubre el horizonte de 10 días. `/sports` muestra cuotas y usa el boleto con equipos genéricos.
+- M8b: los mercados se abren al publicarse y se cierran en el kickoff. El backend rechaza apuestas posteriores con `MATCH_STARTED` aunque el mercado siga `OPEN`.
+- M8b: `sport_results` guarda el marcador final desde ESPN. `READY` liquida 1X2 (empate incluido) y total de goles; `VOID` por postponer/cancelar/abandonar o por 12 h sin resultado. El settlement no consulta ESPN.
+- El lobby de Dota solo lista `markets.sport='DOTA'`; los mercados de fútbol no se mezclan.
 - Catálogo con datos reales de OpenDota; sin fixtures ni datos inventados en el producto.
 - Las partidas con `league_id > 0` se priorizan sobre las ranked y muestran el nombre de liga resuelto con `/leagues/{id}` (caché 6 h).
 - Cuatro mercados base por partida en vivo (ganador, total de kills, handicap y duración) más tres de eventos GSI (primera sangre, primera torre y siguiente Roshan), con versión e historial append-only.
 - Apuestas con validación server-side, holds en el ledger, idempotencia y aislamiento por usuario.
 - Auth real con sesión HttpOnly, CSRF y roles; wallet con ledger de doble entrada.
-- Migraciones aplicadas: V1–V11.
+- Migraciones aplicadas: V1–V12.
 - `match_results` guarda el resultado final verificado de cada partida con mercados cerrados: ganador, scores, duración, `first_blood_time`, `league_id` y `objectives` (JSON) desde OpenDota `/matches/{id}`, con backoff e idempotencia.
 - `market_results` resuelve cada mercado una sola vez: `SETTLED` con selección ganadora o `VOID`. Mercado `MATCH_WINNER`, `TOTAL_KILLS`, `KILL_HANDICAP` y `DURATION` según reglas de ADR-028. El mercado pasa a `SETTLED`/`VOID` y no se reabre.
 - Colector definitivo: normaliza GSI, deduplica eventos, envía snapshots a 1 Hz, firma con HMAC y usa spool ante caídas.
@@ -68,14 +74,14 @@ Cerrados: M0 (capturas GSI reales), M1 (identidad y wallet), M2a (catálogo Open
 - Colector Javalin definitivo: expone `/health` y `/`, recibe `/gsi`, normaliza, deduplica, firma con HMAC y reenvía al backend con spool ante caídas.
 - Liquidación implementada: `settlements` único por apuesta, payout/void, ledger y auditoría. Las apuestas ya no quedan abiertas para siempre.
 - Steam `GetLiveLeagueGames` no integrado: falta `STEAM_API_KEY` (rate limit de generación). No bloquea la demo.
-- CI: última ejecución en verde `f7e1bae` para backend, colector, frontend y build de imágenes Docker. El frontend ahora corre lint, test y build; el backend local suma 116 tests. El commit de M8a queda pendiente de la nueva ejecución de CI.
+- CI: última ejecución verde registrada `f7e1bae` para backend, colector, frontend y build de imágenes Docker. Los commits de M8a y M8b quedan pendientes de la nueva ejecución de CI.
   `https://github.com/Improve872/BetPulse/actions/runs/41782427003`
 
 ## Próxima acción
 
-1. M8b: mercados 1X2 y over/under de goles para fútbol, con cuotas Poisson y liquidación con empates.
-2. M7 pendiente: E2E de flujos de dinero con Playwright (opcional tras la demo).
-3. M8c: NBA con la misma tubería de ESPN.
+1. Ejecutar CI de M8a + M8b y anotar la URL verde.
+2. M8c: NBA con la misma tubería de ESPN (ganador y over/under de puntos, overtime).
+3. M7 pendiente: E2E de flujos de dinero con Playwright (opcional tras la demo).
 4. Opcional: M3c si aparece calendario fiable; Steam `GetLiveLeagueGames` si hay API key; pulido admin (usuarios, exposición, salud).
 
 ## Pendiente de entorno (opcional)
@@ -89,10 +95,13 @@ Cerrados: M0 (capturas GSI reales), M1 (identidad y wallet), M2a (catálogo Open
 - Sin `STEAM_API_KEY` no hay draft, torres ni Roshan en vivo; el feed pro funciona con OpenDota.
 - `npm audit`: 2 vulnerabilidades en dependencias de producción (PostCSS embebido en Next 15) y 6 en desarrollo (Vite/esbuild); sin críticas tras subir Vitest 5. Se resolverán con la actualización mayor de Next en M7.
 - ESPN es una API no oficial y sin SLA; exige `User-Agent` propio. Si cambia el esquema o cae, el calendario de fútbol queda vacío o `STALE` sin afectar Dota.
+- Las cuotas de fútbol dependen de la tabla de ESPN; sin ella se publican cuotas planas de liga. No hay cuotas de mercado reales para calibrar el modelo.
 
 ## Restricción de diseño vigente
 
-El settlement es **agnóstico a la fuente**: consume `market_results` ya resuelto y no consulta OpenDota ni GSI. OpenDota y GSI solo alimentan `match_results`; agregar una fuente nueva no toca el núcleo de pagos.
+El settlement es **agnóstico a la fuente**: consume `market_results` ya resuelto y no consulta OpenDota, GSI ni ESPN. OpenDota y GSI solo alimentan `match_results`; ESPN solo alimenta `sport_results`. Agregar una fuente nueva no toca el núcleo de pagos.
+
+El **fútbol es solo pre-partida**: los mercados se cierran en el kickoff y no hay cuotas ni cobertura en vivo. El lobby de Dota filtra `sport='DOTA'`; los dos catálogos no se mezclan.
 
 La **arena** (lobby y detalle de partido) usa tema oscuro; **cuenta, wallet, apuestas y admin** usan tema claro. Los tokens de ambos entornos no se mezclan sin revisar contraste.
 
@@ -112,7 +121,16 @@ npm test
 npm run build
 ```
 
-Resultados 2026-11-16 (M7):
+Resultados 2026-11-23 (M8b):
+
+- Backend: 128/128 tests verdes (M8b suma el modelo Poisson, la resolución 1X2/total, la guarda de kickoff y el flujo fútbol → resultado → settlement).
+- Frontend: 18/18 tests de checkout; lint y build verdes.
+- Flyway: V1–V12 aplicadas en Testcontainers y en el PostgreSQL local.
+- Funcional con ESPN real: 60 fixtures en 5 ligas y 120 mercados abiertos con cuotas y etiquetas de equipo; `/sports` renderizó cuotas desde el servidor.
+- Flujo real por API: registro → depósito S/ 200.00 → apuesta S/ 10.00 a 1X2 `HOME` @ 2.768 → `PLACED`, disponible S/ 190.00 y retenido S/ 10.00.
+- `/api/markets/live` siguió devolviendo solo mercados Dota (24), sin contaminación de fútbol.
+
+Resultados 2026-11-16 (M7/M8a):
 
 - Backend: 116/116 tests verdes (M7 suma rate limiting y control de acceso; M8a suma el mapeo de ESPN y la caché de fixtures).
 - Frontend: 18/18 tests de checkout en Vitest; lint y build verdes.

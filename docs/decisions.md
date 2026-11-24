@@ -775,10 +775,14 @@ tabla real (goles a favor y en contra por equipo) en
   neutros: no se inventan fuerzas.
 - Se aplica el mismo margen del 6% y la misma fórmula de cuota del motor
   existente. Las probabilidades se normalizan y se recortan a `[0.02, 0.96]`.
+- Los fixtures se consultan por mes (`dates=YYYYMM`) para cubrir el horizonte
+  de 10 días con una sola petición por liga y mes; si el horizonte cruza de
+  mes, se consultan los dos. La normalización deduplica eventos por id.
 - Publicación: al sincronizar fixtures (cada 5 min) se crean/actualizan mercados
   y se versiona solo si la cuota cambia; `odds_history.source` es
-  `POISSON_PREMATCH`. Los mercados se abren al publicarse el fixture y se
-  cierran en el kickoff; no hay apuestas en vivo de fútbol.
+  `POISSON_PREMATCH`.
+- Los mercados se abren al publicarse el fixture y se cierran en el kickoff; no
+  hay apuestas en vivo de fútbol.
 - El backend rechaza apuestas de fútbol después del kickoff (`MATCH_STARTED`)
   aunque el cierre programado aún no haya corrido.
 - Resultado: una fila por partido en `sport_results`, creada al publicar los
