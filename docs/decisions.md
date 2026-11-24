@@ -812,3 +812,47 @@ tabla real (goles a favor y en contra por equipo) en
   sigue visible en `/bets` con la etiqueta guardada.
 - M8c (NBA) puede reutilizar `sport_results`, el modelo Poisson y el mismo
   flujo de resolución cambiando el deporte, el parseo de ESPN y las líneas.
+
+## ADR-045 — NBA pre-partida: ganador y total de puntos (M8c)
+
+**Estado:** aceptada (2026-11-23)
+**Relacionada:** ADR-005 (motor de cuotas), ADR-028 (liquidación), ADR-043
+(ESPN), ADR-044 (mercados pre-partida de fútbol), M8 del plan.
+
+**Contexto:** M8c amplía el catálogo a NBA con la misma tubería de ESPN. El
+baloncesto no tiene empate y el marcador es alto y continuo, así que ni las
+selecciones ni el modelo de fútbol sirven tal cual. ESPN publica scoreboard y
+tabla de la NBA sin clave; la tabla viene separada por conferencia.
+
+**Decisión:**
+
+- Fuente: `site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard`
+  (consultado por mes) y `/apis/v2/sports/basketball/nba/standings`.
+- Mercados: `MATCH_RESULT_2WAY` (`HOME`/`AWAY`, sin empate) y `TOTAL_POINTS`
+  (`OVER`/`UNDER`) con línea en medio punto.
+- Identidad: `markets.sport = 'BASKETBALL'`, `match_id = 'BB:<eventId>'`; el
+  lobby de Dota sigue filtrando `sport = 'DOTA'`.
+- Modelo: puntos esperados por equipo desde la media de la liga y las
+  fortalezas ofensiva/defensiva de la tabla (suavizado y ventaja de local
+  `1.02`). El margen y el total se modelan con una normal:
+  `P(local gana) = Φ(Δ/12)` y `P(over) = 1 − Φ((línea − total)/18)`.
+- Se reutiliza `PrematchMarketPublisher` (creación, versionado, historial,
+  cierre en el kickoff) y `PrematchResultService` (resultado final desde ESPN).
+  `sport_results.sport = 'BASKETBALL'`.
+- Liquidación: el ganador usa el marcador final (incluye prórroga); un empate
+  imposible se anula por precaución. El total compara la suma final con la
+  línea. Void si se postpone/cancela o pasan 12 h sin resultado.
+- Fútbol y NBA comparten la página `/sports` con un selector de deporte; el
+  boleto es el mismo.
+- La migración V13 amplía `markets.sport` a `BASKETBALL`.
+
+**Consecuencias:**
+
+- El modelo no está calibrado contra cuotas de mercado (ESPN no las publica);
+  es transparente y reproducible, no una promesa de precisión.
+- La prórroga cuenta en el resultado final, como en el mercado real de
+  ganador y total de puntos.
+- Si aparece un tercer deporte, los servicios de fixtures y el publicador ya
+  son reutilizables; la duplicación restante está en la capa de presentación
+  por deporte y debería extraerse a una estrategia común.
+- Sigue vigente el riesgo de ESPN (API no oficial, sin SLA).

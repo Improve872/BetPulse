@@ -221,7 +221,7 @@ Aceptación: checklist aprobado y flujos críticos verificados (checkout, apuest
 
 **Estado:** M8a (calendario de fútbol con ESPN) cerrado 2026-11-16. M8b
 (mercados 1X2, over/under y liquidación con empates) cerrado 2026-11-23. M8c
-(NBA) pendiente.
+(NBA: ganador y total de puntos) cerrado 2026-11-23. M8 completo.
 
 Objetivo: ampliar contenido sin depender de ver el partido en vivo.
 

@@ -3,7 +3,7 @@
 ## Glosario
 
 - **Match:** partida de Dota 2.
-- **Fixture:** partido de fútbol pre-partida; se identifica como `FB:<eventId de ESPN>`.
+- **Fixture:** partido pre-partida (fútbol o NBA); se identifica como `FB:<eventId>` o `BB:<eventId>` de ESPN.
 - **Market:** mercado de apuesta (ej. ganador del mapa).
 - **Selection:** resultado apostable dentro de un mercado (ej. Radiant).
 - **Odds:** cuota decimal.
@@ -52,6 +52,16 @@
 - Mismo margen (6%) y misma fórmula de cuota. Si no hay tabla, se usan equipos
   neutros y la media de la liga; no se inventan fortalezas.
 
+### Modelo pre-partida de NBA (M8c)
+
+- Marcador alto y continuo: no se usa Poisson. Los puntos esperados salen de la
+  media de la liga y de las fortalezas ofensiva/defensiva de la tabla de ESPN.
+- `P(local gana) = Φ((puntos_local − puntos_visitante) / 12)`; el total sigue
+  una normal con desviación 18 y se compara con la línea.
+- Ventaja de local configurable (2%). Sin empate: `HOME`/`AWAY`.
+- Mismo margen (6%) y redondeo de cuota a 3 decimales. Sin tabla, media de liga
+  y equipos neutros.
+
 ### Modelo en vivo
 
 - Regresión logística con:
@@ -94,6 +104,17 @@ Recomendación: usar líneas `.5` para evitar empates/push en el MVP. Si se usa 
   rechaza con `MATCH_STARTED` aunque el mercado siga `OPEN`.
 - Partido postponido, cancelado o abandonado: `VOID` y reembolso.
 - Sin resultado de ESPN tras `result-void-after` (12 h): `VOID` y reembolso.
+
+### Mercados pre-partida de NBA (M8c)
+
+| Mercado | Selecciones | Regla de liquidación |
+|---|---|---|
+| `MATCH_RESULT_2WAY` | `HOME`, `AWAY` | Marcador final; la prórroga cuenta |
+| `TOTAL_POINTS` | `OVER`, `UNDER` | Suma final de puntos contra la línea `.5` |
+
+- `match_id = 'BB:<eventId>'` y `markets.sport = 'BASKETBALL'`.
+- Sin empate: un marcador igualado anula el mercado por precaución.
+- Mismas reglas de cierre en el kickoff, guarda `MATCH_STARTED` y void.
 
 ## Ciclo de vida de un mercado
 
@@ -213,8 +234,9 @@ Resultado por mercado (`market_results`):
 - Sin resultado válido, línea ausente o partido `VOID`: mercado `VOID`.
 - Un mercado resuelto pasa a `SETTLED`/`VOID` y no se reabre.
 - Fútbol (M8b): `1X2` usa `sport_results.winner`; `TOTAL_GOALS` compara goles
-  totales con la línea. `sport_results` es la única entrada de resultados de
-  fútbol; el settlement no consulta ESPN.
+  totales con la línea. NBA (M8c): `MATCH_RESULT_2WAY` usa el ganador y
+  `TOTAL_POINTS` la suma de puntos; la prórroga cuenta. `sport_results` es la
+  única entrada de resultados pre-partida; el settlement no consulta ESPN.
 
 Reglas:
 
@@ -240,7 +262,7 @@ Reglas:
 - `game_snapshots` unique `(snapshot_id)`.
 - `game_events` unique `(match_id, event_id)`.
 - `markets.source` en `OPENDOTA`/`GSI`/`ESPN`; `markets.practice` solo para partidas locales.
-- `markets.sport` en `DOTA`/`SOCCER`; el lobby solo lista `DOTA`.
+- `markets.sport` en `DOTA`/`SOCCER`/`BASKETBALL`; el lobby solo lista `DOTA`.
 - `sport_results` unique `match_id`; `READY` exige marcador y ganador.
 - `odds_history` append-only.
 - `audit_logs` append-only.

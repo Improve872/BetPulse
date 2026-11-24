@@ -87,7 +87,7 @@ En desarrollo, Next.js hace proxy de `/api` al backend para evitar CORS y compar
 - M5 implementado: `/bets` muestra estado, pago y fecha de liquidación; `/admin` lista apuestas en revisión/pendientes y permite anular con motivo (rol `ADMIN`).
 - M2b implementado: `/match/[id]` muestra la partida propia en vivo por SSE (marcador, jugadores, net worth, timeline y Roshan). El enlace aparece en la card de "Mi partida".
 - Admin de mercados implementado: `/admin/markets` lista mercados y permite suspender, reanudar o cambiar cuota; cada acción se audita y, en override, sube versión e inserta `odds_history`.
-- `/sports` (M8a/M8b): página arena con calendario real de fútbol desde `lib/sports.ts`; agrupa fixtures por liga, filtra por liga, muestra escudos con fallback y cuenta atrás. Cada fixture publica `1X2` y `TOTAL_GOALS` con cuotas del servidor y boleto reutilizando `BetSlip`. Sin cobertura en vivo.
+- `/sports` (M8a/M8b/M8c): página arena con selector Fútbol/NBA y calendario real desde `lib/sports.ts`; agrupa fixtures por liga, filtra por liga, muestra escudos con fallback y cuenta atrás. Cada fixture publica sus mercados pre-partida (`1X2`, total de goles, ganador NBA y total de puntos) con cuotas del servidor y boleto reutilizando `BetSlip`. Sin cobertura en vivo.
 
 ## Flujo de datos
 
@@ -104,7 +104,8 @@ En desarrollo, Next.js hace proxy de `/api` al backend para evitar CORS y compar
 11. Depósitos/retiros simulados pasan por la abstracción de pagos y el ledger.
 12. En paralelo, `sports` consulta el scoreboard de ESPN para las cinco grandes ligas de fútbol, normaliza los partidos programados y los publica en `/api/sports/fixtures`; `/sports` los muestra con escudos, cuenta atrás y cuotas.
 13. `FootballMarketService` crea/actualiza los mercados `MATCH_RESULT_1X2` y `TOTAL_GOALS` con el modelo Poisson sobre la tabla real de ESPN, los cierra en el kickoff y registra una fila `PENDING` en `sport_results`.
-14. `FootballResultService` consulta el scoreboard de ESPN por fecha de kickoff y completa `sport_results` (`READY`/`VOID`); desde ahí `MarketResultService` y `SettlementService` liquidan sin conocer ESPN.
+14. `PrematchResultService` consulta el scoreboard de ESPN por fecha de kickoff y completa `sport_results` (`READY`/`VOID`); desde ahí `MarketResultService` y `SettlementService` liquidan sin conocer ESPN.
+15. NBA repite la tubería con `BasketballFixturesService`, `BasketballMarketService` y el mismo publicador/resultado. `markets.sport = 'BASKETBALL'` y `TOTAL_POINTS` con modelo normal; el resultado incluye prórroga.
 
 ## Fuente híbrida
 
@@ -114,7 +115,7 @@ En desarrollo, Next.js hace proxy de `/api` al backend para evitar CORS y compar
 | OpenDota `/live` | Partidos secundarios | 30–60 s | Media, con delay |
 | OpenDota histórico | Ratings, calibración, verificación | Bajo demanda | Alta para histórico |
 | GSI League | Series, streams, torneo | Con el feed | Alta |
-| ESPN scoreboard | Fixtures, resultados y tabla de fútbol | 2–5 min | Media; API no oficial, sin SLA |
+| ESPN scoreboard | Fixtures, resultados y tablas de fútbol y NBA | 2–5 min | Media; API no oficial, sin SLA |
 
 Reglas:
 
@@ -142,11 +143,11 @@ Reglas:
 - `matches`, `tournaments`, `teams`, `players`, `match_participants`
 - `collector_sessions`, `game_snapshots`, `game_events`, `ingestion_health`
 - `match_results` (resultado final verificado y objetivos de la partida)
-- `sport_results` (resultado final de fútbol por fixture: marcador, ganador, void)
+- `sport_results` (resultado final pre-partida de fútbol/NBA: marcador, ganador, void)
 - `market_results` (resultado por mercado: ganador o void)
 - `settlements` (liquidación única por apuesta, con transacción de ledger)
 - `audit_logs` (append-only: liquidaciones y anulaciones)
-- `markets.source` (`OPENDOTA`/`GSI`/`ESPN`), `markets.practice` (partida local) y `markets.sport` (`DOTA`/`SOCCER`)
+- `markets.source` (`OPENDOTA`/`GSI`/`ESPN`), `markets.practice` (partida local) y `markets.sport` (`DOTA`/`SOCCER`/`BASKETBALL`)
 - `game_snapshots`, `game_events`, `match_state`
 - `match_streams` (stream oficial por partida o liga; provider, canal/video, enabled y fallback)
 - `markets`, `selections`, `odds_history`, `market_suspensions`
