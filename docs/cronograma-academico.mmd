@@ -1,0 +1,50 @@
+gantt
+    title BetPulse - Cronograma de desarrollo para dos integrantes
+    dateFormat YYYY-MM-DD
+    axisFormat %d/%m
+    tickInterval 1week
+    section Sprint 0 · Descubrimiento y diseño
+    AB - Alcance, requisitos, backlog y riesgos :s0t0, 2026-10-01, 4d
+    A - Viabilidad OpenDota/GSI y capturas reales :s0t1, 2026-10-03, 4d
+    A - Arquitectura, ERD, contratos API y seguridad :s0t2, 2026-10-05, 4d
+    B - Flujos, wireframes y prototipo navegable :s0t3, 2026-10-05, 5d
+    AB - Validación del diseño y criterios de aceptación :s0t4, 2026-10-10, 2d
+    Diseño validado y backlog priorizado :milestone, 2026-10-11, 0d
+    section Sprint 1 · Identidad y saldo ficticio
+    A - PostgreSQL, Flyway, base backend y pipeline CI :s1t0, 2026-10-12, 2d
+    B - Base frontend y componentes desde el prototipo :s1t1, 2026-10-12, 2d
+    A - Auth, CSRF, roles y wallet/ledger + tests :s1t2, 2026-10-14, 5d
+    B - Login, registro, wallet e integración con API :s1t3, 2026-10-14, 5d
+    AB - Integración: permisos, saldo e idempotencia :s1t4, 2026-10-19, 3d
+    Registro, acceso y recarga demo verificados :milestone, 2026-10-21, 0d
+    section Sprint 2 · Catálogo, mercados y apuestas
+    A - OpenDota, SSE y cuotas versionadas + tests :s2t0, 2026-10-22, 4d
+    B - Lobby, filtros, mercados y actualizaciones SSE :s2t1, 2026-10-22, 4d
+    A - Apuestas, holds y concurrencia + tests :s2t2, 2026-10-26, 4d
+    B - Bet slip, historial y errores de cuota/saldo :s2t3, 2026-10-26, 4d
+    AB - Integración de apuesta y trazabilidad de requisitos :s2t4, 2026-10-30, 2d
+    Apuesta aceptada con saldo retenido :milestone, 2026-10-31, 0d
+    section Sprint 3 · GSI y liquidación
+    A - Colector GSI: HMAC, spool y eventos + tests :s3t0, 2026-11-01, 4d
+    B - Detalle GSI, marcador, timeline y reconexión :s3t1, 2026-11-01, 4d
+    A - Resultados, payout/void y auditoría + tests :s3t2, 2026-11-05, 4d
+    B - Estados de liquidación y diagramas de secuencia :s3t3, 2026-11-05, 4d
+    AB - Prueba integral: suspensión y liquidación única :s3t4, 2026-11-09, 2d
+    Ciclo completo y ledger balanceado :milestone, 2026-11-10, 0d
+    section Sprint 4 · Administración y producto
+    A - Admin de mercados, apuestas y streams + tests :s4t0, 2026-11-11, 4d
+    B - Arena visual, escudos, ES/EN, responsive y admin :s4t1, 2026-11-11, 4d
+    A - Streams oficiales, CSP y revisión de permisos :s4t2, 2026-11-15, 3d
+    B - Player bajo demanda y fallback sin señal :s4t3, 2026-11-15, 3d
+    AB - Integración de admin/stream y revisión de UX :s4t4, 2026-11-18, 3d
+    Producto integrado para validación final :milestone, 2026-11-20, 0d
+    section Sprint 5 · Validación y entrega
+    A - Hardening, dependencias y pruebas críticas :s5t0, 2026-11-21, 4d
+    B - E2E, responsive y evidencias de pruebas :s5t1, 2026-11-21, 4d
+    A - API, ERD definitivo y guía de instalación :s5t2, 2026-11-25, 2d
+    B - Manuales de usuario/admin e informe final :s5t3, 2026-11-25, 2d
+    AB - Correcciones, regresión y empaquetado en laptop :s5t4, 2026-11-27, 2d
+    AB - Ensayo, presentación y video de respaldo :s5t5, 2026-11-29, 2d
+    Versión final, documentación y demo listas :milestone, 2026-11-30, 0d
+    section Entrega
+    Entrega final :milestone, 2026-12-01, 0d

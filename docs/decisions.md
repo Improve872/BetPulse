@@ -748,3 +748,61 @@ fechas y resultados, pero es una API no oficial y sin SLA.
 - La misma tubería sirve para NBA y otros deportes con otro path de ESPN.
 - Los fixtures no son apostables hasta M8b; la UI no muestra cuotas ni CTA de
   apuesta en esta pantalla.
+
+## ADR-044 — Mercados pre-partida de fútbol y liquidación con empates (M8b)
+
+**Estado:** aceptada (2026-11-23)
+**Relacionada:** ADR-005 (motor de cuotas), ADR-024 (líneas), ADR-028
+(liquidación por mercado), ADR-043 (fútbol con ESPN), M8 del plan.
+
+**Contexto:** M8a publica el calendario de fútbol pero no permite apostar. M8b
+necesita dos mercados (`1X2` y total de goles), cuotas calculadas en servidor y
+liquidación con empate posible. ESPN no publica cuotas ni xG; sí publica la
+tabla real (goles a favor y en contra por equipo) en
+`/apis/v2/sports/soccer/{liga}/standings`.
+
+**Decisión:**
+
+- Los mercados de fútbol reutilizan `markets`/`selections`/`odds_history` con
+  `markets.sport = 'SOCCER'` y `match_id = 'FB:<eventId de ESPN>'`. El lobby de
+  Dota filtra `sport = 'DOTA'`; no ve mercados de fútbol.
+- Mercados: `MATCH_RESULT_1X2` (`HOME`/`DRAW`/`AWAY`) y `TOTAL_GOALS`
+  (`OVER`/`UNDER`) con línea en medio punto cercana a los goles esperados.
+- Cuotas: Poisson bivariado por equipo. Los goles esperados salen de la media
+  de la liga y de la fortaleza ofensiva/defensiva de cada equipo según la
+  tabla, suavizada con `shrinkage-games` y con ventaja de local configurable
+  (`10%` por defecto). Sin tabla disponible, se usa la media de liga y equipos
+  neutros: no se inventan fuerzas.
+- Se aplica el mismo margen del 6% y la misma fórmula de cuota del motor
+  existente. Las probabilidades se normalizan y se recortan a `[0.02, 0.96]`.
+- Publicación: al sincronizar fixtures (cada 5 min) se crean/actualizan mercados
+  y se versiona solo si la cuota cambia; `odds_history.source` es
+  `POISSON_PREMATCH`. Los mercados se abren al publicarse el fixture y se
+  cierran en el kickoff; no hay apuestas en vivo de fútbol.
+- El backend rechaza apuestas de fútbol después del kickoff (`MATCH_STARTED`)
+  aunque el cierre programado aún no haya corrido.
+- Resultado: una fila por partido en `sport_results`, creada al publicar los
+  mercados. `FootballResultService` consulta el scoreboard de ESPN por fecha,
+  guarda marcador y ganador (`HOME`/`DRAW`/`AWAY`) y marca `READY`. Un partido
+  postponed/cancelado/abandonado se marca `VOID`; si pasan
+  `result-void-after` (12 h) sin resultado, también se anula.
+- `MarketResultService` resuelve fútbol desde `sport_results` y
+  `MarketOutcomeResolver` aplica las reglas: 1X2 con empate, total comparado con
+  la línea, void sin marcador. El settlement no cambia: sigue consumiendo
+  `market_results`.
+- UI: `/sports` muestra los dos mercados por fixture y el boleto reutiliza
+  `BetSlip` con un sujeto genérico (equipos + escudos), sin acoplarlo a Dota.
+
+**Consecuencias:**
+
+- La cuota depende de la tabla de ESPN y de su disponibilidad; si la tabla cae,
+  las cuotas quedan planas pero siguen siendo calculadas en servidor.
+- Los mercados 1X2 se liquidan con el marcador final del partido de liga. Las
+  cinco ligas no juegan prórroga; si en el futuro se añade una copa, la regla
+  debe fijar 90 minutos con `linescores` de ESPN y revisarse aquí.
+- El resultado se consulta por fecha de kickoff; un partido aplazado más de
+  12 h se anula y reembolsa, lo que es conservador y evita apuestas colgadas.
+- El fixture desaparece de `/sports` al empezar el partido, pero la apuesta
+  sigue visible en `/bets` con la etiqueta guardada.
+- M8c (NBA) puede reutilizar `sport_results`, el modelo Poisson y el mismo
+  flujo de resolución cambiando el deporte, el parseo de ESPN y las líneas.

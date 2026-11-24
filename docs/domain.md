@@ -3,6 +3,7 @@
 ## Glosario
 
 - **Match:** partida de Dota 2.
+- **Fixture:** partido de fútbol pre-partida; se identifica como `FB:<eventId de ESPN>`.
 - **Market:** mercado de apuesta (ej. ganador del mapa).
 - **Selection:** resultado apostable dentro de un mercado (ej. Radiant).
 - **Odds:** cuota decimal.
@@ -40,6 +41,17 @@
 - Ajuste por draft, lado y forma reciente.
 - `P(Radiant) = 1 / (1 + 10^((R_Dire - R_Radiant)/400))`.
 
+### Modelo pre-partida de fútbol (M8b)
+
+- Poisson por equipo con goles esperados `λ` calculados desde la tabla real de
+  ESPN: media de liga × fortaleza ofensiva × fortaleza defensiva del rival.
+- Fortalezas suavizadas hacia la media de la liga (`shrinkage-games`, 6 por
+  defecto) y ventaja de local configurable (10%).
+- `1X2` se calcula sobre la matriz de marcadores; `TOTAL_GOALS` compara la línea
+  con `P(goles local + goles visitante > línea)`.
+- Mismo margen (6%) y misma fórmula de cuota. Si no hay tabla, se usan equipos
+  neutros y la media de la liga; no se inventan fortalezas.
+
 ### Modelo en vivo
 
 - Regresión logística con:
@@ -68,6 +80,20 @@
 | Duración O/U | Tiempo de juego al destruirse el ancient |
 
 Recomendación: usar líneas `.5` para evitar empates/push en el MVP. Si se usa línea entera y el resultado coincide exactamente, el mercado se anula (void).
+
+### Mercados pre-partida de fútbol (M8b)
+
+| Mercado | Selecciones | Regla de liquidación |
+|---|---|---|
+| `MATCH_RESULT_1X2` | `HOME`, `DRAW`, `AWAY` | Marcador final; el empate gana `DRAW` |
+| `TOTAL_GOALS` | `OVER`, `UNDER` | Suma final de goles contra la línea `.5` |
+
+- Los fixtures se identifican como `FB:<eventId>` y `markets.sport = 'SOCCER'`.
+- Los mercados se abren al publicarse el fixture y se cierran en el kickoff.
+- No hay apuestas en vivo de fútbol: una apuesta después del kickoff se
+  rechaza con `MATCH_STARTED` aunque el mercado siga `OPEN`.
+- Partido postponido, cancelado o abandonado: `VOID` y reembolso.
+- Sin resultado de ESPN tras `result-void-after` (12 h): `VOID` y reembolso.
 
 ## Ciclo de vida de un mercado
 
@@ -186,6 +212,9 @@ Resultado por mercado (`market_results`):
 - `MATCH_WINNER` usa `radiant_win`; `TOTAL_KILLS` compara kills totales; `KILL_HANDICAP` compara `radiantKills - direKills`; `DURATION` compara minutos jugados.
 - Sin resultado válido, línea ausente o partido `VOID`: mercado `VOID`.
 - Un mercado resuelto pasa a `SETTLED`/`VOID` y no se reabre.
+- Fútbol (M8b): `1X2` usa `sport_results.winner`; `TOTAL_GOALS` compara goles
+  totales con la línea. `sport_results` es la única entrada de resultados de
+  fútbol; el settlement no consulta ESPN.
 
 Reglas:
 
@@ -210,7 +239,9 @@ Reglas:
 - `market_results` unique `(market_id)`.
 - `game_snapshots` unique `(snapshot_id)`.
 - `game_events` unique `(match_id, event_id)`.
-- `markets.source` en `OPENDOTA`/`GSI`; `markets.practice` solo para partidas locales.
+- `markets.source` en `OPENDOTA`/`GSI`/`ESPN`; `markets.practice` solo para partidas locales.
+- `markets.sport` en `DOTA`/`SOCCER`; el lobby solo lista `DOTA`.
+- `sport_results` unique `match_id`; `READY` exige marcador y ganador.
 - `odds_history` append-only.
 - `audit_logs` append-only.
 

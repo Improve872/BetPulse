@@ -1,0 +1,467 @@
+<?xml version='1.0' encoding='utf-8'?>
+<mxfile host="app.diagrams.net" type="device" version="24.7.17" pages="3">
+  <diagram id="betpulse-1" name="01 - Registro de una apuesta">
+    <mxGraphModel grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" page="1" pageScale="1" pageWidth="1320" pageHeight="2110" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" value="BETPULSE | Registro de una apuesta" style="text;strokeColor=none;fillColor=none;align=left;fontStyle=1;whiteSpace=wrap;html=0;fillColor=#dbeafe;strokeColor=#64748b;fontColor=#16324f;fontFamily=Helvetica;fontSize=30;spacing=12;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="30" y="15" width="1250" height="65" as="geometry" />
+        </mxCell>
+        <mxCell id="sub" value="Saldo ficticio en PEN | Flujo de aceptación y controles transaccionales" style="text;strokeColor=none;fillColor=none;align=left;fontStyle=1;whiteSpace=wrap;html=0;fillColor=#dbeafe;strokeColor=#64748b;fontColor=#16324f;fontFamily=Helvetica;fontSize=17;spacing=12;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="30" y="85" width="1250" height="45" as="geometry" />
+        </mxCell>
+        <mxCell id="start" value="Usuario confirma selección y monto" style="rounded=1;arcSize=50;whiteSpace=wrap;html=0;fillColor=#dbeafe;strokeColor=#64748b;fontColor=#16324f;fontFamily=Helvetica;fontSize=17;spacing=12;" vertex="1" parent="1">
+          <mxGeometry x="480" y="150" width="350" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="request" value="POST /api/bets&#10;Cuota, versión e Idempotency-Key" style="rounded=1;arcSize=10;whiteSpace=wrap;html=0;fillColor=#dbeafe;strokeColor=#64748b;fontColor=#16324f;fontFamily=Helvetica;fontSize=17;spacing=12;" vertex="1" parent="1">
+          <mxGeometry x="480" y="245" width="350" height="85" as="geometry" />
+        </mxCell>
+        <mxCell id="auth" value="¿Sesión, CSRF y entrada válidos?" style="rhombus;whiteSpace=wrap;html=0;fillColor=#fef3c7;strokeColor=#64748b;fontColor=#16324f;fontFamily=Helvetica;fontSize=17;spacing=12;" vertex="1" parent="1">
+          <mxGeometry x="480" y="375" width="350" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="hash" value="Normalizar clave y calcular hash de solicitud" style="rounded=1;arcSize=10;whiteSpace=wrap;html=0;fillColor=#dbeafe;strokeColor=#64748b;fontColor=#16324f;fontFamily=Helvetica;fontSize=17;spacing=12;" vertex="1" parent="1">
+          <mxGeometry x="480" y="535" width="350" height="75" as="geometry" />
+        </mxCell>
+        <mxCell id="replay" value="¿Existe apuesta del usuario con esa clave?" style="rhombus;whiteSpace=wrap;html=0;fillColor=#fef3c7;strokeColor=#64748b;fontColor=#16324f;fontFamily=Helvetica;fontSize=17;spacing=12;" vertex="1" parent="1">
+          <mxGeometry x="480" y="650" width="350" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="market" value="Leer mercado y selección con bloqueo compartido" style="rounded=1;arcSize=10;whiteSpace=wrap;html=0;fillColor=#dbeafe;strokeColor=#64748b;fontColor=#16324f;fontFamily=Helvetica;fontSize=17;spacing=12;" vertex="1" parent="1">
+          <mxGeometry x="480" y="815" width="350" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="valid" value="¿OPEN, cuota, versión y límites válidos?" style="rhombus;whiteSpace=wrap;html=0;fillColor=#fef3c7;strokeColor=#64748b;fontColor=#16324f;fontFamily=Helvetica;fontSize=17;spacing=12;" vertex="1" parent="1">
+          <mxGeometry x="480" y="935" width="350" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="insert" value="INSERT apuesta PLACED&#10;ON CONFLICT DO NOTHING" style="rounded=1;arcSize=10;whiteSpace=wrap;html=0;fillColor=#dbeafe;strokeColor=#64748b;fontColor=#16324f;fontFamily=Helvetica;fontSize=17;spacing=12;" vertex="1" parent="1">
+          <mxGeometry x="480" y="1110" width="350" height="85" as="geometry" />
+        </mxCell>
+        <mxCell id="created" value="¿Apuesta nueva insertada?" style="rhombus;whiteSpace=wrap;html=0;fillColor=#fef3c7;strokeColor=#64748b;fontColor=#16324f;fontFamily=Helvetica;fontSize=17;spacing=12;" vertex="1" parent="1">
+          <mxGeometry x="480" y="1240" width="350" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="wallet" value="Bloquear wallet y comprobar saldo disponible" style="rounded=1;arcSize=10;whiteSpace=wrap;html=0;fillColor=#dbeafe;strokeColor=#64748b;fontColor=#16324f;fontFamily=Helvetica;fontSize=17;spacing=12;" vertex="1" parent="1">
+          <mxGeometry x="480" y="1390" width="350" height="75" as="geometry" />
+        </mxCell>
+        <mxCell id="balance" value="¿Saldo suficiente?" style="rhombus;whiteSpace=wrap;html=0;fillColor=#fef3c7;strokeColor=#64748b;fontColor=#16324f;fontFamily=Helvetica;fontSize=17;spacing=12;" vertex="1" parent="1">
+          <mxGeometry x="480" y="1505" width="350" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="hold" value="Retener stake: disponible → retenido&#10;Ledger balanceado + hold_transaction_id" style="rounded=1;arcSize=10;whiteSpace=wrap;html=0;fillColor=#dbeafe;strokeColor=#64748b;fontColor=#16324f;fontFamily=Helvetica;fontSize=17;spacing=12;" vertex="1" parent="1">
+          <mxGeometry x="480" y="1650" width="350" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="history" value="Guardar historial PLACED&#10;Confirmar transacción" style="rounded=1;arcSize=10;whiteSpace=wrap;html=0;fillColor=#dbeafe;strokeColor=#64748b;fontColor=#16324f;fontFamily=Helvetica;fontSize=17;spacing=12;" vertex="1" parent="1">
+          <mxGeometry x="480" y="1790" width="350" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="done" value="HTTP 201 | Apuesta aceptada" style="rounded=1;arcSize=50;whiteSpace=wrap;html=0;fillColor=#dcfce7;strokeColor=#64748b;fontColor=#16324f;fontFamily=Helvetica;fontSize=17;spacing=12;" vertex="1" parent="1">
+          <mxGeometry x="480" y="1910" width="350" height="65" as="geometry" />
+        </mxCell>
+        <mxCell id="badinput" value="Rechazar solicitud&#10;401 / 403 / 400&#10;Sin cambios de saldo" style="rounded=1;arcSize=50;whiteSpace=wrap;html=0;fillColor=#fee2e2;strokeColor=#64748b;fontColor=#16324f;fontFamily=Helvetica;fontSize=17;spacing=12;" vertex="1" parent="1">
+          <mxGeometry x="40" y="375" width="320" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="same" value="¿Mismo hash?" style="rhombus;whiteSpace=wrap;html=0;fillColor=#fef3c7;strokeColor=#64748b;fontColor=#16324f;fontFamily=Helvetica;fontSize=17;spacing=12;" vertex="1" parent="1">
+          <mxGeometry x="950" y="650" width="280" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="old" value="HTTP 200&#10;Devolver apuesta original&#10;Sin otra retención" style="rounded=1;arcSize=50;whiteSpace=wrap;html=0;fillColor=#dcfce7;strokeColor=#64748b;fontColor=#16324f;fontFamily=Helvetica;fontSize=17;spacing=12;" vertex="1" parent="1">
+          <mxGeometry x="950" y="815" width="280" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="mismatch" value="HTTP 409&#10;IDEMPOTENCY_MISMATCH" style="rounded=1;arcSize=50;whiteSpace=wrap;html=0;fillColor=#fee2e2;strokeColor=#64748b;fontColor=#16324f;fontFamily=Helvetica;fontSize=17;spacing=12;" vertex="1" parent="1">
+          <mxGeometry x="950" y="985" width="280" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="badmarket" value="Rechazar: mercado/selección inexistente, mercado no abierto, cuota o versión distinta, stake o payout fuera de límite" style="rounded=1;arcSize=50;whiteSpace=wrap;html=0;fillColor=#fee2e2;strokeColor=#64748b;fontColor=#16324f;fontFamily=Helvetica;fontSize=17;spacing=12;" vertex="1" parent="1">
+          <mxGeometry x="40" y="930" width="320" height="145" as="geometry" />
+        </mxCell>
+        <mxCell id="race" value="Leer apuesta concurrente y verificar hash. Si no está disponible: conflicto en curso." style="rounded=1;arcSize=10;whiteSpace=wrap;html=0;fillColor=#dbeafe;strokeColor=#64748b;fontColor=#16324f;fontFamily=Helvetica;fontSize=17;spacing=12;" vertex="1" parent="1">
+          <mxGeometry x="950" y="1230" width="280" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="nosaldo" value="Saldo insuficiente&#10;ROLLBACK: tampoco persiste la apuesta insertada" style="rounded=1;arcSize=50;whiteSpace=wrap;html=0;fillColor=#fee2e2;strokeColor=#64748b;fontColor=#16324f;fontFamily=Helvetica;fontSize=17;spacing=12;" vertex="1" parent="1">
+          <mxGeometry x="40" y="1500" width="320" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="atomic" value="ATOMICIDAD&#10;Apuesta + hold + historial se ejecutan dentro de una transacción. Una excepción revierte sus cambios." style="rounded=1;dashed=1;align=left;whiteSpace=wrap;html=0;fillColor=#f1f5f9;strokeColor=#64748b;fontColor=#16324f;fontFamily=Helvetica;fontSize=16;spacing=12;" vertex="1" parent="1">
+          <mxGeometry x="40" y="1740" width="320" height="150" as="geometry" />
+        </mxCell>
+        <mxCell id="notes" value="Fuente: BetController, BetService, WalletService; migraciones V2 y V4.&#10;Dinero en céntimos (BIGINT). Payout: stake × cuota del servidor, redondeado HALF_UP.&#10;Unicidad: (user_id, idempotency_key). Los errores de persistencia revierten la transacción." style="rounded=1;dashed=1;align=left;whiteSpace=wrap;html=0;fillColor=#f1f5f9;strokeColor=#64748b;fontColor=#16324f;fontFamily=Helvetica;fontSize=16;spacing=12;" vertex="1" parent="1">
+          <mxGeometry x="30" y="2010" width="1250" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="e0" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;strokeColor=#64748b;strokeWidth=1.5;fontSize=14;labelBackgroundColor=#ffffff;endArrow=block;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="start" target="request">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e1" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;strokeColor=#64748b;strokeWidth=1.5;fontSize=14;labelBackgroundColor=#ffffff;endArrow=block;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="request" target="auth">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e2" value="Sí" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;strokeColor=#64748b;strokeWidth=1.5;fontSize=14;labelBackgroundColor=#ffffff;endArrow=block;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="auth" target="hash">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e3" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;strokeColor=#64748b;strokeWidth=1.5;fontSize=14;labelBackgroundColor=#ffffff;endArrow=block;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="hash" target="replay">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e4" value="No" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;strokeColor=#64748b;strokeWidth=1.5;fontSize=14;labelBackgroundColor=#ffffff;endArrow=block;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="replay" target="market">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e5" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;strokeColor=#64748b;strokeWidth=1.5;fontSize=14;labelBackgroundColor=#ffffff;endArrow=block;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="market" target="valid">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e6" value="Sí" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;strokeColor=#64748b;strokeWidth=1.5;fontSize=14;labelBackgroundColor=#ffffff;endArrow=block;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="valid" target="insert">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e7" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;strokeColor=#64748b;strokeWidth=1.5;fontSize=14;labelBackgroundColor=#ffffff;endArrow=block;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="insert" target="created">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e8" value="Sí" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;strokeColor=#64748b;strokeWidth=1.5;fontSize=14;labelBackgroundColor=#ffffff;endArrow=block;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="created" target="wallet">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e9" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;strokeColor=#64748b;strokeWidth=1.5;fontSize=14;labelBackgroundColor=#ffffff;endArrow=block;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="wallet" target="balance">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e10" value="Sí" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;strokeColor=#64748b;strokeWidth=1.5;fontSize=14;labelBackgroundColor=#ffffff;endArrow=block;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="balance" target="hold">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e11" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;strokeColor=#64748b;strokeWidth=1.5;fontSize=14;labelBackgroundColor=#ffffff;endArrow=block;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="hold" target="history">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e12" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;strokeColor=#64748b;strokeWidth=1.5;fontSize=14;labelBackgroundColor=#ffffff;endArrow=block;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="history" target="done">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e13" value="No" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;strokeColor=#64748b;strokeWidth=1.5;fontSize=14;labelBackgroundColor=#ffffff;endArrow=block;exitX=0;exitY=0.5;entryX=1;entryY=0.5;" edge="1" parent="1" source="auth" target="badinput">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e14" value="Sí" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;strokeColor=#64748b;strokeWidth=1.5;fontSize=14;labelBackgroundColor=#ffffff;endArrow=block;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="replay" target="same">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e15" value="Sí" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;strokeColor=#64748b;strokeWidth=1.5;fontSize=14;labelBackgroundColor=#ffffff;endArrow=block;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="same" target="old">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e16" value="No" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;strokeColor=#64748b;strokeWidth=1.5;fontSize=14;labelBackgroundColor=#ffffff;endArrow=block;exitX=1;exitY=0.5;entryX=1;entryY=0.5;" edge="1" parent="1" source="same" target="mismatch">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1280" y="705" />
+              <mxPoint x="1280" y="1025" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e17" value="No" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;strokeColor=#64748b;strokeWidth=1.5;fontSize=14;labelBackgroundColor=#ffffff;endArrow=block;exitX=0;exitY=0.5;entryX=1;entryY=0.5;" edge="1" parent="1" source="valid" target="badmarket">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e18" value="No" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;strokeColor=#64748b;strokeWidth=1.5;fontSize=14;labelBackgroundColor=#ffffff;endArrow=block;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="created" target="race">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e19" value="Verificar" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;strokeColor=#64748b;strokeWidth=1.5;fontSize=14;labelBackgroundColor=#ffffff;endArrow=block;exitX=1;exitY=0.5;entryX=1;entryY=0.5;" edge="1" parent="1" source="race" target="same">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1250" y="1295" />
+              <mxPoint x="1250" y="705" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e20" value="No" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;strokeColor=#64748b;strokeWidth=1.5;fontSize=14;labelBackgroundColor=#ffffff;endArrow=block;exitX=0;exitY=0.5;entryX=1;entryY=0.5;" edge="1" parent="1" source="balance" target="nosaldo">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="betpulse-2" name="02 - Liquidación de apuestas">
+    <mxGraphModel grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" page="1" pageScale="1" pageWidth="1600" pageHeight="2050" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" value="BETPULSE | Liquidación de apuestas" style="text;strokeColor=none;fillColor=none;align=left;fontStyle=1;whiteSpace=wrap;html=0;fillColor=#dbeafe;strokeColor=#64748b;fontColor=#16324f;fontFamily=Helvetica;fontSize=30;spacing=12;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="30" y="15" width="1540" height="65" as="geometry" />
+        </mxCell>
+        <mxCell id="sub" value="Separación entre resultado de partida, resultado de mercado y movimiento de saldo" style="text;strokeColor=none;fillColor=none;align=left;fontStyle=1;whiteSpace=wrap;html=0;fillColor=#dbeafe;strokeColor=#64748b;fontColor=#16324f;fontFamily=Helvetica;fontSize=18;spacing=12;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="30" y="85" width="1540" height="45" as="geometry" />
+        </mxCell>
+        <mxCell id="sources" value="OpenDota / GSI&#10;Resultado final de la partida" style="rounded=1;arcSize=10;whiteSpace=wrap;html=0;fillColor=#dbeafe;strokeColor=#64748b;fontColor=#16324f;fontFamily=Helvetica;fontSize=17;spacing=12;" vertex="1" parent="1">
+          <mxGeometry x="40" y="160" width="320" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="match" value="match_results&#10;Resultado READY o VOID" style="rounded=1;arcSize=10;whiteSpace=wrap;html=0;fillColor=#dbeafe;strokeColor=#64748b;fontColor=#16324f;fontFamily=Helvetica;fontSize=17;spacing=12;" vertex="1" parent="1">
+          <mxGeometry x="430" y="160" width="320" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="resolve" value="Resolver reglas de cada mercado&#10;Ganador, total, hándicap, duración y eventos" style="rounded=1;arcSize=10;whiteSpace=wrap;html=0;fillColor=#dbeafe;strokeColor=#64748b;fontColor=#16324f;fontFamily=Helvetica;fontSize=17;spacing=12;" vertex="1" parent="1">
+          <mxGeometry x="820" y="150" width="330" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="result" value="market_results&#10;SETTLED + ganador, o VOID" style="rounded=1;arcSize=10;whiteSpace=wrap;html=0;fillColor=#dbeafe;strokeColor=#64748b;fontColor=#16324f;fontFamily=Helvetica;fontSize=17;spacing=12;" vertex="1" parent="1">
+          <mxGeometry x="1220" y="160" width="320" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="e0" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;strokeColor=#64748b;strokeWidth=1.5;fontSize=14;labelBackgroundColor=#ffffff;endArrow=block;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="sources" target="match">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e1" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;strokeColor=#64748b;strokeWidth=1.5;fontSize=14;labelBackgroundColor=#ffffff;endArrow=block;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="match" target="resolve">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e2" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;strokeColor=#64748b;strokeWidth=1.5;fontSize=14;labelBackgroundColor=#ffffff;endArrow=block;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="resolve" target="result">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="pending" value="Seleccionar apuestas PLACED con market_results&#10;Procesamiento periódico por lotes" style="rounded=1;arcSize=10;whiteSpace=wrap;html=0;fillColor=#dbeafe;strokeColor=#64748b;fontColor=#16324f;fontFamily=Helvetica;fontSize=17;spacing=12;" vertex="1" parent="1">
+          <mxGeometry x="590" y="340" width="400" height="95" as="geometry" />
+        </mxCell>
+        <mxCell id="e3" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;strokeColor=#64748b;strokeWidth=1.5;fontSize=14;labelBackgroundColor=#ffffff;endArrow=block;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="result" target="pending">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1380" y="300" />
+              <mxPoint x="790" y="300" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="lock" value="Iniciar transacción por apuesta&#10;Leer y bloquear bets: FOR UPDATE" style="rounded=1;arcSize=10;whiteSpace=wrap;html=0;fillColor=#dbeafe;strokeColor=#64748b;fontColor=#16324f;fontFamily=Helvetica;fontSize=17;spacing=12;" vertex="1" parent="1">
+          <mxGeometry x="615" y="485" width="350" height="85" as="geometry" />
+        </mxCell>
+        <mxCell id="eligible" value="¿Sigue PLACED y tiene resultado de mercado?" style="rhombus;whiteSpace=wrap;html=0;fillColor=#fef3c7;strokeColor=#64748b;fontColor=#16324f;fontFamily=Helvetica;fontSize=17;spacing=12;" vertex="1" parent="1">
+          <mxGeometry x="615" y="615" width="350" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="skip" value="No liquidar en este intento&#10;No mover saldo" style="rounded=1;arcSize=50;whiteSpace=wrap;html=0;fillColor=#f1f5f9;strokeColor=#64748b;fontColor=#16324f;fontFamily=Helvetica;fontSize=17;spacing=12;" vertex="1" parent="1">
+          <mxGeometry x="70" y="625" width="350" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="e4" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;strokeColor=#64748b;strokeWidth=1.5;fontSize=14;labelBackgroundColor=#ffffff;endArrow=block;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="pending" target="lock">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e5" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;strokeColor=#64748b;strokeWidth=1.5;fontSize=14;labelBackgroundColor=#ffffff;endArrow=block;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="lock" target="eligible">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e6" value="No" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;strokeColor=#64748b;strokeWidth=1.5;fontSize=14;labelBackgroundColor=#ffffff;endArrow=block;exitX=0;exitY=0.5;entryX=1;entryY=0.5;" edge="1" parent="1" source="eligible" target="skip">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="void" value="¿Mercado VOID?" style="rhombus;whiteSpace=wrap;html=0;fillColor=#fef3c7;strokeColor=#64748b;fontColor=#16324f;fontFamily=Helvetica;fontSize=17;spacing=12;" vertex="1" parent="1">
+          <mxGeometry x="615" y="785" width="350" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="winner" value="¿Selección apostada igual a ganadora?" style="rhombus;whiteSpace=wrap;html=0;fillColor=#fef3c7;strokeColor=#64748b;fontColor=#16324f;fontFamily=Helvetica;fontSize=17;spacing=12;" vertex="1" parent="1">
+          <mxGeometry x="1120" y="780" width="360" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="e7" value="Sí" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;strokeColor=#64748b;strokeWidth=1.5;fontSize=14;labelBackgroundColor=#ffffff;endArrow=block;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="eligible" target="void">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e8" value="No" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;strokeColor=#64748b;strokeWidth=1.5;fontSize=14;labelBackgroundColor=#ffffff;endArrow=block;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="void" target="winner">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="refund" value="VOID | Reembolso&#10;Retenido −stake&#10;Disponible +stake" style="rounded=1;arcSize=10;whiteSpace=wrap;html=0;fillColor=#fef3c7;strokeColor=#64748b;fontColor=#16324f;fontFamily=Helvetica;fontSize=17;spacing=12;" vertex="1" parent="1">
+          <mxGeometry x="80" y="1020" width="350" height="125" as="geometry" />
+        </mxCell>
+        <mxCell id="win" value="WON | Pago total&#10;Retenido −stake; disponible +payout&#10;Casa −(payout − stake)" style="rounded=1;arcSize=10;whiteSpace=wrap;html=0;fillColor=#dcfce7;strokeColor=#64748b;fontColor=#16324f;fontFamily=Helvetica;fontSize=17;spacing=12;" vertex="1" parent="1">
+          <mxGeometry x="615" y="1020" width="350" height="125" as="geometry" />
+        </mxCell>
+        <mxCell id="loss" value="LOST | Pérdida&#10;Retenido −stake&#10;Casa +stake" style="rounded=1;arcSize=10;whiteSpace=wrap;html=0;fillColor=#fee2e2;strokeColor=#64748b;fontColor=#16324f;fontFamily=Helvetica;fontSize=17;spacing=12;" vertex="1" parent="1">
+          <mxGeometry x="1120" y="1020" width="350" height="125" as="geometry" />
+        </mxCell>
+        <mxCell id="e9" value="Sí" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;strokeColor=#64748b;strokeWidth=1.5;fontSize=14;labelBackgroundColor=#ffffff;endArrow=block;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="void" target="refund">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="790" y="950" />
+              <mxPoint x="255" y="950" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e10" value="Sí" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;strokeColor=#64748b;strokeWidth=1.5;fontSize=14;labelBackgroundColor=#ffffff;endArrow=block;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="winner" target="win">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1300" y="970" />
+              <mxPoint x="790" y="970" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e11" value="No" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;strokeColor=#64748b;strokeWidth=1.5;fontSize=14;labelBackgroundColor=#ffffff;endArrow=block;exitX=1;exitY=0.5;entryX=1;entryY=0.5;" edge="1" parent="1" source="winner" target="loss">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1530" y="840" />
+              <mxPoint x="1530" y="1082" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="save" value="Insertar settlements&#10;PK bet_id: una liquidación por apuesta" style="rounded=1;arcSize=10;whiteSpace=wrap;html=0;fillColor=#dbeafe;strokeColor=#64748b;fontColor=#16324f;fontFamily=Helvetica;fontSize=17;spacing=12;" vertex="1" parent="1">
+          <mxGeometry x="615" y="1250" width="350" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="e12" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;strokeColor=#64748b;strokeWidth=1.5;fontSize=14;labelBackgroundColor=#ffffff;endArrow=block;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="refund" target="save">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="255" y="1200" />
+              <mxPoint x="790" y="1200" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e13" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;strokeColor=#64748b;strokeWidth=1.5;fontSize=14;labelBackgroundColor=#ffffff;endArrow=block;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="win" target="save">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e14" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;strokeColor=#64748b;strokeWidth=1.5;fontSize=14;labelBackgroundColor=#ffffff;endArrow=block;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="loss" target="save">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1295" y="1200" />
+              <mxPoint x="790" y="1200" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="unique" value="¿Inserción correcta y sin errores?" style="rhombus;whiteSpace=wrap;html=0;fillColor=#fef3c7;strokeColor=#64748b;fontColor=#16324f;fontFamily=Helvetica;fontSize=17;spacing=12;" vertex="1" parent="1">
+          <mxGeometry x="615" y="1385" width="350" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="rollback" value="ROLLBACK&#10;Revertir movimientos y cambios&#10;Investigar fallo / reintentar" style="rounded=1;arcSize=50;whiteSpace=wrap;html=0;fillColor=#fee2e2;strokeColor=#64748b;fontColor=#16324f;fontFamily=Helvetica;fontSize=17;spacing=12;" vertex="1" parent="1">
+          <mxGeometry x="1120" y="1385" width="350" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="e15" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;strokeColor=#64748b;strokeWidth=1.5;fontSize=14;labelBackgroundColor=#ffffff;endArrow=block;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="save" target="unique">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e16" value="No" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;strokeColor=#64748b;strokeWidth=1.5;fontSize=14;labelBackgroundColor=#ffffff;endArrow=block;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="unique" target="rollback">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="audit" value="Actualizar estado + historial&#10;Registrar BET_SETTLED en audit_logs" style="rounded=1;arcSize=10;whiteSpace=wrap;html=0;fillColor=#dbeafe;strokeColor=#64748b;fontColor=#16324f;fontFamily=Helvetica;fontSize=17;spacing=12;" vertex="1" parent="1">
+          <mxGeometry x="615" y="1550" width="350" height="95" as="geometry" />
+        </mxCell>
+        <mxCell id="commit" value="COMMIT&#10;Saldo e historial actualizados" style="rounded=1;arcSize=50;whiteSpace=wrap;html=0;fillColor=#dcfce7;strokeColor=#64748b;fontColor=#16324f;fontFamily=Helvetica;fontSize=17;spacing=12;" vertex="1" parent="1">
+          <mxGeometry x="615" y="1690" width="350" height="75" as="geometry" />
+        </mxCell>
+        <mxCell id="e17" value="Sí" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;strokeColor=#64748b;strokeWidth=1.5;fontSize=14;labelBackgroundColor=#ffffff;endArrow=block;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="unique" target="audit">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e18" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;strokeColor=#64748b;strokeWidth=1.5;fontSize=14;labelBackgroundColor=#ffffff;endArrow=block;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="audit" target="commit">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="admin" value="VÍA ADMINISTRATIVA&#10;ADMIN + motivo obligatorio.&#10;Solo PLACED o NEEDS_REVIEW.&#10;Void + reembolso + BET_VOIDED en una transacción.&#10;Si ya es VOID: no repetir." style="rounded=1;dashed=1;align=left;whiteSpace=wrap;html=0;fillColor=#f1f5f9;strokeColor=#64748b;fontColor=#16324f;fontFamily=Helvetica;fontSize=17;spacing=12;" vertex="1" parent="1">
+          <mxGeometry x="70" y="1400" width="350" height="230" as="geometry" />
+        </mxCell>
+        <mxCell id="notes" value="SEPARACIÓN DE RESPONSABILIDADES&#10;SettlementService consume market_results: no consulta OpenDota ni GSI.&#10;Payout ganador: potential_payout_cents guardado al aceptar la apuesta.&#10;Cada desenlace genera ledger con suma cero. Cualquier excepción revierte toda la transacción de la apuesta." style="rounded=1;dashed=1;align=left;whiteSpace=wrap;html=0;fillColor=#f1f5f9;strokeColor=#64748b;fontColor=#16324f;fontFamily=Helvetica;fontSize=18;spacing=12;" vertex="1" parent="1">
+          <mxGeometry x="30" y="1820" width="1510" height="140" as="geometry" />
+        </mxCell>
+        <mxCell id="src" value="Fuente: MarketResultService, SettlementService, JdbcSettlementStore, WalletService; migraciones V5, V6 y V9." style="text;strokeColor=none;fillColor=none;align=left;fontStyle=1;whiteSpace=wrap;html=0;fillColor=#dbeafe;strokeColor=#64748b;fontColor=#16324f;fontFamily=Helvetica;fontSize=16;spacing=12;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="30" y="1970" width="1510" height="60" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="betpulse-3" name="03 - Modelo entidad-relación">
+    <mxGraphModel grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" page="1" pageScale="1" pageWidth="1980" pageHeight="1840" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" value="BETPULSE | Modelo entidad-relación del núcleo de apuestas" style="text;strokeColor=none;fillColor=none;align=left;fontStyle=1;whiteSpace=wrap;html=0;fillColor=#dbeafe;strokeColor=#64748b;fontColor=#16324f;fontFamily=Helvetica;fontSize=28;spacing=12;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="30" y="15" width="1900" height="65" as="geometry" />
+        </mxCell>
+        <mxCell id="sub" value="Modelo físico resumido | PostgreSQL | Atributos seleccionados de migraciones V2 a V9" style="text;strokeColor=none;fillColor=none;align=left;fontStyle=1;whiteSpace=wrap;html=0;fillColor=#dbeafe;strokeColor=#64748b;fontColor=#16324f;fontFamily=Helvetica;fontSize=18;spacing=12;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="30" y="85" width="1900" height="45" as="geometry" />
+        </mxCell>
+        <mxCell id="u" value="users&#10;PK id : UUID&#10;UQ email&#10;password_hash&#10;display_name&#10;status" style="rounded=1;align=left;whiteSpace=wrap;html=0;fillColor=#dbeafe;strokeColor=#64748b;fontColor=#16324f;fontFamily=Helvetica;fontSize=16;spacing=12;verticalAlign=top;spacingTop=20;" vertex="1" parent="1">
+          <mxGeometry x="40" y="190" width="420" height="340" as="geometry" />
+        </mxCell>
+        <mxCell id="w" value="wallets&#10;PK id : UUID&#10;FK/UQ user_id → users.id&#10;currency : PEN&#10;available_cents : BIGINT&#10;held_cents : BIGINT&#10;version : BIGINT" style="rounded=1;align=left;whiteSpace=wrap;html=0;fillColor=#dbeafe;strokeColor=#64748b;fontColor=#16324f;fontFamily=Helvetica;fontSize=16;spacing=12;verticalAlign=top;spacingTop=20;" vertex="1" parent="1">
+          <mxGeometry x="530" y="190" width="420" height="340" as="geometry" />
+        </mxCell>
+        <mxCell id="la" value="ledger_accounts&#10;PK id : UUID&#10;FK owner_user_id → users.id (nullable)&#10;UQ code&#10;account_type&#10;balance_cents : BIGINT&#10;UQ owner_user_id + account_type*" style="rounded=1;align=left;whiteSpace=wrap;html=0;fillColor=#dbeafe;strokeColor=#64748b;fontColor=#16324f;fontFamily=Helvetica;fontSize=16;spacing=12;verticalAlign=top;spacingTop=20;" vertex="1" parent="1">
+          <mxGeometry x="1020" y="190" width="420" height="340" as="geometry" />
+        </mxCell>
+        <mxCell id="le" value="ledger_entries&#10;PK id : BIGSERIAL&#10;FK transaction_id → ledger_transactions.id&#10;FK account_id → ledger_accounts.id&#10;amount_cents : BIGINT&#10;created_at" style="rounded=1;align=left;whiteSpace=wrap;html=0;fillColor=#dbeafe;strokeColor=#64748b;fontColor=#16324f;fontFamily=Helvetica;fontSize=16;spacing=12;verticalAlign=top;spacingTop=20;" vertex="1" parent="1">
+          <mxGeometry x="1510" y="190" width="420" height="340" as="geometry" />
+        </mxCell>
+        <mxCell id="m" value="markets&#10;PK id : UUID&#10;match_id : VARCHAR (sin FK)&#10;market_key / market_type&#10;status / version / line&#10;source / practice&#10;UQ match_id + market_key" style="rounded=1;align=left;whiteSpace=wrap;html=0;fillColor=#dbeafe;strokeColor=#64748b;fontColor=#16324f;fontFamily=Helvetica;fontSize=16;spacing=12;verticalAlign=top;spacingTop=20;" vertex="1" parent="1">
+          <mxGeometry x="40" y="710" width="420" height="340" as="geometry" />
+        </mxCell>
+        <mxCell id="b" value="bets&#10;PK id : UUID&#10;FK user_id → users.id&#10;FK market_id → markets.id&#10;FK hold_transaction_id → ledger_transactions.id&#10;selection_key / odds / market_version&#10;stake_cents / potential_payout_cents&#10;status / request_hash&#10;UQ user_id + idempotency_key" style="rounded=1;align=left;whiteSpace=wrap;html=0;fillColor=#dbeafe;strokeColor=#64748b;fontColor=#16324f;fontFamily=Helvetica;fontSize=16;spacing=12;verticalAlign=top;spacingTop=20;" vertex="1" parent="1">
+          <mxGeometry x="530" y="710" width="420" height="340" as="geometry" />
+        </mxCell>
+        <mxCell id="lt" value="ledger_transactions&#10;PK id : UUID&#10;FK created_by → users.id (nullable)&#10;type / reference&#10;idempotency_key&#10;created_at&#10;Append-only" style="rounded=1;align=left;whiteSpace=wrap;html=0;fillColor=#dbeafe;strokeColor=#64748b;fontColor=#16324f;fontFamily=Helvetica;fontSize=16;spacing=12;verticalAlign=top;spacingTop=20;" vertex="1" parent="1">
+          <mxGeometry x="1020" y="710" width="420" height="340" as="geometry" />
+        </mxCell>
+        <mxCell id="st" value="settlements&#10;PK/FK bet_id → bets.id&#10;FK market_id → markets.id&#10;FK ledger_transaction_id → ledger_transactions.id&#10;outcome : WON / LOST / VOID&#10;stake_cents / payout_cents&#10;resolver / resolved_at" style="rounded=1;align=left;whiteSpace=wrap;html=0;fillColor=#dbeafe;strokeColor=#64748b;fontColor=#16324f;fontFamily=Helvetica;fontSize=16;spacing=12;verticalAlign=top;spacingTop=20;" vertex="1" parent="1">
+          <mxGeometry x="1510" y="710" width="420" height="340" as="geometry" />
+        </mxCell>
+        <mxCell id="s" value="selections&#10;PK id : UUID&#10;FK market_id → markets.id&#10;selection_key / label&#10;probability : NUMERIC(12,8)&#10;odds : NUMERIC(8,3)&#10;UQ market_id + selection_key" style="rounded=1;align=left;whiteSpace=wrap;html=0;fillColor=#dbeafe;strokeColor=#64748b;fontColor=#16324f;fontFamily=Helvetica;fontSize=16;spacing=12;verticalAlign=top;spacingTop=20;" vertex="1" parent="1">
+          <mxGeometry x="40" y="1230" width="420" height="340" as="geometry" />
+        </mxCell>
+        <mxCell id="oh" value="odds_history&#10;PK id : BIGSERIAL&#10;FK market_id → markets.id&#10;version / selection_key&#10;probability / odds / source&#10;UQ market_id + version + selection_key&#10;Append-only" style="rounded=1;align=left;whiteSpace=wrap;html=0;fillColor=#dbeafe;strokeColor=#64748b;fontColor=#16324f;fontFamily=Helvetica;fontSize=16;spacing=12;verticalAlign=top;spacingTop=20;" vertex="1" parent="1">
+          <mxGeometry x="530" y="1230" width="420" height="340" as="geometry" />
+        </mxCell>
+        <mxCell id="mr" value="market_results&#10;PK/FK market_id → markets.id&#10;match_id : VARCHAR (sin FK)&#10;outcome : SETTLED / VOID&#10;winning_selection_key (nullable)&#10;resolver / details / resolved_at" style="rounded=1;align=left;whiteSpace=wrap;html=0;fillColor=#dbeafe;strokeColor=#64748b;fontColor=#16324f;fontFamily=Helvetica;fontSize=16;spacing=12;verticalAlign=top;spacingTop=20;" vertex="1" parent="1">
+          <mxGeometry x="1020" y="1230" width="420" height="340" as="geometry" />
+        </mxCell>
+        <mxCell id="res" value="match_results&#10;PK match_id : VARCHAR&#10;status : PENDING / READY / FAILED / VOID&#10;radiant_win / scores / duration_seconds&#10;objectives : JSONB / source&#10;attempts / next_attempt_at&#10;resolved_at" style="rounded=1;align=left;whiteSpace=wrap;html=0;fillColor=#dbeafe;strokeColor=#64748b;fontColor=#16324f;fontFamily=Helvetica;fontSize=16;spacing=12;verticalAlign=top;spacingTop=20;" vertex="1" parent="1">
+          <mxGeometry x="1510" y="1230" width="420" height="340" as="geometry" />
+        </mxCell>
+        <mxCell id="e0" value="1:0..1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;strokeColor=#64748b;strokeWidth=1.5;fontSize=14;labelBackgroundColor=#ffffff;endArrow=none;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="u" target="w">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e1" value="1:N" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;strokeColor=#64748b;strokeWidth=1.5;fontSize=14;labelBackgroundColor=#ffffff;endArrow=none;exitX=0.5;exitY=0;entryX=0.5;entryY=0;" edge="1" parent="1" source="u" target="la">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="250" y="155" />
+              <mxPoint x="1230" y="155" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e2" value="1:N" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;strokeColor=#64748b;strokeWidth=1.5;fontSize=14;labelBackgroundColor=#ffffff;endArrow=none;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="la" target="le">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e3" value="1:N" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;strokeColor=#64748b;strokeWidth=1.5;fontSize=14;labelBackgroundColor=#ffffff;endArrow=none;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="u" target="b">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="250" y="600" />
+              <mxPoint x="740" y="600" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e4" value="1:N" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;strokeColor=#64748b;strokeWidth=1.5;fontSize=14;labelBackgroundColor=#ffffff;endArrow=none;exitX=1;exitY=0.5;entryX=0.5;entryY=0;" edge="1" parent="1" source="u" target="lt">
+          <mxGeometry relative="1" as="geometry" x="0.5">
+            <Array as="points">
+              <mxPoint x="490" y="360" />
+              <mxPoint x="490" y="565" />
+              <mxPoint x="1230" y="565" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e5" value="1:N" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;strokeColor=#64748b;strokeWidth=1.5;fontSize=14;labelBackgroundColor=#ffffff;endArrow=none;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="m" target="b">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e6" value="0..1:N" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;strokeColor=#64748b;strokeWidth=1.5;fontSize=14;labelBackgroundColor=#ffffff;endArrow=none;exitX=0;exitY=0.5;entryX=1;entryY=0.5;" edge="1" parent="1" source="lt" target="b">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e7" value="1:N" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;strokeColor=#64748b;strokeWidth=1.5;fontSize=14;labelBackgroundColor=#ffffff;endArrow=none;exitX=0.5;exitY=0;entryX=0.5;entryY=1;" edge="1" parent="1" source="lt" target="le">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1230" y="640" />
+              <mxPoint x="1720" y="640" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e8" value="1:N" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;strokeColor=#64748b;strokeWidth=1.5;fontSize=14;labelBackgroundColor=#ffffff;endArrow=none;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="lt" target="st">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e9" value="1:0..1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;strokeColor=#64748b;strokeWidth=1.5;fontSize=14;labelBackgroundColor=#ffffff;endArrow=none;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="b" target="st">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="740" y="1120" />
+              <mxPoint x="1720" y="1120" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e10" value="1:N" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;strokeColor=#64748b;strokeWidth=1.5;fontSize=14;labelBackgroundColor=#ffffff;endArrow=none;exitX=0.5;exitY=1;entryX=1;entryY=0.5;" edge="1" parent="1" source="m" target="st">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="250" y="1085" />
+              <mxPoint x="1950" y="1085" />
+              <mxPoint x="1950" y="880" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e11" value="1:N" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;strokeColor=#64748b;strokeWidth=1.5;fontSize=14;labelBackgroundColor=#ffffff;endArrow=none;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="m" target="s">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e12" value="1:N" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;strokeColor=#64748b;strokeWidth=1.5;fontSize=14;labelBackgroundColor=#ffffff;endArrow=none;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="m" target="oh">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="250" y="1170" />
+              <mxPoint x="740" y="1170" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e13" value="1:0..1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;strokeColor=#64748b;strokeWidth=1.5;fontSize=14;labelBackgroundColor=#ffffff;endArrow=none;exitX=0;exitY=0.5;entryX=0.5;entryY=0;" edge="1" parent="1" source="m" target="mr">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="20" y="880" />
+              <mxPoint x="20" y="1205" />
+              <mxPoint x="1230" y="1205" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e14" value="match_id" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=0;strokeColor=#64748b;strokeWidth=1.5;fontSize=14;labelBackgroundColor=#ffffff;endArrow=none;exitX=1;exitY=0.5;entryX=0;entryY=0.5;dashed=1;" edge="1" parent="1" source="mr" target="res">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="legend" value="LEYENDA&#10;PK: clave primaria; FK: clave foránea; UQ: unicidad. 1:N = uno a cero o muchos; 1:0..1 = uno a cero o uno.&#10;Línea continua: FK física; discontinua: asociación lógica. Cardinalidades desde origen hacia destino.&#10;owner_user_id y created_by son opcionales. * Unicidad de cuenta por usuario/tipo solo cuando owner_user_id no es NULL." style="rounded=1;dashed=1;align=left;whiteSpace=wrap;html=0;fillColor=#f1f5f9;strokeColor=#64748b;fontColor=#16324f;fontFamily=Helvetica;fontSize=17;spacing=12;" vertex="1" parent="1">
+          <mxGeometry x="30" y="1600" width="1900" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="scope" value="REGLAS Y ALCANCE&#10;Dinero en céntimos; wallet disponible y retenido ≥ 0; ledger suma cero por transacción.&#10;La apuesta conserva selección y cuota aceptadas: no hay FK bets.selection_key → selections.&#10;Se omiten roles, idempotencia de wallet, historial de estados, auditoría, ingesta y streams para centrar la vista en el núcleo." style="rounded=1;dashed=1;align=left;whiteSpace=wrap;html=0;fillColor=#f1f5f9;strokeColor=#64748b;fontColor=#16324f;fontFamily=Helvetica;fontSize=16;spacing=12;" vertex="1" parent="1">
+          <mxGeometry x="30" y="1725" width="1900" height="105" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
