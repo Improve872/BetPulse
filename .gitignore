@@ -10,6 +10,10 @@ frontend/.next/
 frontend/out/
 npm-debug.log*
 
+# Playwright
+frontend/test-results/
+frontend/playwright-report/
+
 # Entorno
 .env
 .env.*
