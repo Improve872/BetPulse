@@ -183,8 +183,7 @@ public class BetService {
 		if (!OPEN.equals(market.status())) {
 			throw ApiException.conflict("MARKET_NOT_OPEN", "El mercado no está abierto para apuestas.");
 		}
-		if ("SOCCER".equals(market.sport())
-				&& (market.kickoffAt() == null || !clock.instant().isBefore(market.kickoffAt()))) {
+		if (market.kickoffAt() != null && !clock.instant().isBefore(market.kickoffAt())) {
 			throw ApiException.conflict("MATCH_STARTED",
 					"El partido ya comenzó. El mercado no acepta más apuestas.");
 		}

@@ -38,12 +38,12 @@ public class MarketResultService {
 		List<ResolvableMarket> markets = store.findResolvable(BATCH_SIZE);
 		int resolved = 0;
 		for (ResolvableMarket market : markets) {
-			Resolution resolution = "SOCCER".equals(market.sport())
-					? resolver.resolveFootball(market.marketKey(), market.line(), market.matchStatus(),
-							market.homeScore(), market.awayScore())
-					: resolver.resolve(market.marketKey(), market.line(), market.matchStatus(),
-							market.radiantWin(), market.radiantScore(), market.direScore(),
-							market.durationSeconds(), market.objectivesJson(), market.openedAt());
+			Resolution resolution = "DOTA".equals(market.sport())
+					? resolver.resolve(market.marketKey(), market.line(), market.matchStatus(), market.radiantWin(),
+							market.radiantScore(), market.direScore(), market.durationSeconds(),
+							market.objectivesJson(), market.openedAt())
+					: resolver.resolvePrematch(market.marketKey(), market.line(), market.matchStatus(),
+							market.homeScore(), market.awayScore());
 			String outcome = resolution.voided() ? "VOID" : "SETTLED";
 			store.save(new ResolvedMarket(market.marketId(), market.matchId(), outcome,
 					resolution.winningSelectionKey(), detailsJson(market, resolution)));

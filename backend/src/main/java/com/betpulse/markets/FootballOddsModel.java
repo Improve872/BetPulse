@@ -172,12 +172,4 @@ public class FootballOddsModel {
 		return new double[] { clamp(homeLambda, 0.2, 5.0), clamp(awayLambda, 0.2, 5.0) };
 	}
 
-	public record TeamStrength(double attack, double defense, int played) {
-
-		public static TeamStrength neutral() {
-			return new TeamStrength(1.0, 1.0, 0);
-		}
-
-	}
-
 }

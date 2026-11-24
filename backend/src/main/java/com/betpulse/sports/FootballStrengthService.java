@@ -11,7 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
-import com.betpulse.markets.FootballOddsModel.TeamStrength;
+import com.betpulse.markets.TeamStrength;
 import com.betpulse.sports.EspnStandingsDtos.Entry;
 import com.betpulse.sports.EspnStandingsDtos.Standings;
 import com.betpulse.sports.EspnStandingsDtos.Stat;

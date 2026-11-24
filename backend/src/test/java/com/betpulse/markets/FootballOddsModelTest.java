@@ -7,7 +7,7 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
-import com.betpulse.markets.FootballOddsModel.TeamStrength;
+import com.betpulse.markets.TeamStrength;
 import com.betpulse.markets.OddsEngine.Quote;
 
 class FootballOddsModelTest {

@@ -12,15 +12,26 @@ public class SportsController {
 
 	private final FixturesService fixturesService;
 	private final FootballMarketService footballMarketService;
+	private final BasketballFixturesService basketballFixturesService;
+	private final BasketballMarketService basketballMarketService;
 
-	public SportsController(FixturesService fixturesService, FootballMarketService footballMarketService) {
+	public SportsController(FixturesService fixturesService, FootballMarketService footballMarketService,
+			BasketballFixturesService basketballFixturesService,
+			BasketballMarketService basketballMarketService) {
 		this.fixturesService = fixturesService;
 		this.footballMarketService = footballMarketService;
+		this.basketballFixturesService = basketballFixturesService;
+		this.basketballMarketService = basketballMarketService;
 	}
 
 	@GetMapping("/fixtures")
 	public FixturesResponse fixtures() {
 		return footballMarketService.withMarkets(fixturesService.getFixtures());
+	}
+
+	@GetMapping("/basketball/fixtures")
+	public FixturesResponse basketballFixtures() {
+		return basketballMarketService.withMarkets(basketballFixturesService.getFixtures());
 	}
 
 }

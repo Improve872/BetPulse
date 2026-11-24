@@ -128,6 +128,24 @@ class MarketOutcomeResolverTest {
 	}
 
 	@Test
+	void basketballWinnerHasNoDraw() {
+		assertThat(resolver.resolvePrematch("MATCH_RESULT_2WAY", null, "READY", 112, 108)
+				.winningSelectionKey()).isEqualTo("HOME");
+		assertThat(resolver.resolvePrematch("MATCH_RESULT_2WAY", null, "READY", 101, 115)
+				.winningSelectionKey()).isEqualTo("AWAY");
+		assertThat(resolver.resolvePrematch("MATCH_RESULT_2WAY", null, "READY", 100, 100).voided()).isTrue();
+	}
+
+	@Test
+	void basketballTotalPointsComparesFinalScore() {
+		assertThat(resolver.resolvePrematch("TOTAL_POINTS", new BigDecimal("220.5"), "READY", 112, 110)
+				.winningSelectionKey()).isEqualTo("OVER");
+		assertThat(resolver.resolvePrematch("TOTAL_POINTS", new BigDecimal("225.5"), "READY", 112, 110)
+				.winningSelectionKey()).isEqualTo("UNDER");
+		assertThat(resolver.resolvePrematch("TOTAL_POINTS", null, "READY", 112, 110).voided()).isTrue();
+	}
+
+	@Test
 	void footballWithoutScoreOrVoidResultIsVoided() {
 		assertThat(resolver.resolveFootball("MATCH_RESULT_1X2", null, "VOID", 2, 1).voided()).isTrue();
 		assertThat(resolver.resolveFootball("MATCH_RESULT_1X2", null, "READY", null, 1).voided()).isTrue();

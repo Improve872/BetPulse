@@ -25,17 +25,19 @@ public class FootballScheduler {
 
 	private final FixturesService fixturesService;
 	private final FootballMarketService marketService;
-	private final FootballResultService resultService;
+	private final PrematchResultService resultService;
+	private final FootballProperties properties;
 	private final Clock clock;
 
 	private Instant lastMarketSync;
 	private Instant lastResultPoll;
 
 	public FootballScheduler(FixturesService fixturesService, FootballMarketService marketService,
-			FootballResultService resultService, Clock clock) {
+			PrematchResultService resultService, FootballProperties properties, Clock clock) {
 		this.fixturesService = fixturesService;
 		this.marketService = marketService;
 		this.resultService = resultService;
+		this.properties = properties;
 		this.clock = clock;
 	}
 
@@ -53,7 +55,7 @@ public class FootballScheduler {
 		}
 		try {
 			if (lastResultPoll == null || now.isAfter(lastResultPoll.plus(RESULT_INTERVAL))) {
-				resultService.pollOnce();
+				resultService.pollOnce("SOCCER", "soccer", properties.getResultVoidAfter());
 				lastResultPoll = now;
 			}
 		} catch (RuntimeException exception) {

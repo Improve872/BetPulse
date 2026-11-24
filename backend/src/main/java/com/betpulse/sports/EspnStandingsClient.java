@@ -26,8 +26,12 @@ public class EspnStandingsClient {
 	}
 
 	public Standings fetch(String leagueSlug) {
+		return fetchForSport("soccer", leagueSlug);
+	}
+
+	public Standings fetchForSport(String espnSport, String leagueSlug) {
 		String base = properties.getStandingsBaseUrl();
-		String url = stripTrailingSlash(base) + "/soccer/" + leagueSlug + "/standings";
+		String url = stripTrailingSlash(base) + "/" + espnSport + "/" + leagueSlug + "/standings";
 		try {
 			Standings body = restClient.get().uri(URI.create(url)).retrieve().body(Standings.class);
 			if (body == null) {

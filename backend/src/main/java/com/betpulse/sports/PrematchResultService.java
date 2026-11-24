@@ -22,42 +22,39 @@ import com.betpulse.sports.EspnScoreboardDtos.Scoreboard;
 import com.betpulse.sports.EspnScoreboardDtos.Status;
 
 /**
- * Ingesta el resultado final de los partidos de fútbol desde ESPN. Solo
- * escribe en {@code sport_results}; la resolución de mercados y el settlement
- * siguen siendo agnósticos a la fuente.
+ * Ingesta el resultado final de deportes pre-partida (fútbol, NBA) desde ESPN.
+ * Solo escribe en {@code sport_results}; la resolución de mercados y el
+ * settlement siguen siendo agnósticos a la fuente.
  */
 @Service
-public class FootballResultService {
+public class PrematchResultService {
 
-	private static final Logger log = LoggerFactory.getLogger(FootballResultService.class);
+	private static final Logger log = LoggerFactory.getLogger(PrematchResultService.class);
 	private static final int BATCH_SIZE = 40;
 
 	private final JdbcTemplate jdbcTemplate;
 	private final EspnScoreboardClient client;
-	private final FootballProperties properties;
 	private final Clock clock;
 
-	public FootballResultService(JdbcTemplate jdbcTemplate, EspnScoreboardClient client,
-			FootballProperties properties, Clock clock) {
+	public PrematchResultService(JdbcTemplate jdbcTemplate, EspnScoreboardClient client, Clock clock) {
 		this.jdbcTemplate = jdbcTemplate;
 		this.client = client;
-		this.properties = properties;
 		this.clock = clock;
 	}
 
-	public int pollOnce() {
+	public int pollOnce(String sport, String espnSport, Duration voidAfter) {
 		Instant now = clock.instant();
 		List<PendingFixture> pending = jdbcTemplate.query("""
 				SELECT match_id, league_slug, event_id, kickoff_at
 				FROM sport_results
-				WHERE status = 'PENDING' AND kickoff_at <= ?
+				WHERE status = 'PENDING' AND sport = ? AND kickoff_at <= ?
 				ORDER BY kickoff_at
 				LIMIT ?
 				""", (resultSet, rowNumber) -> new PendingFixture(
 				resultSet.getString("match_id"),
 				resultSet.getString("league_slug"),
 				resultSet.getString("event_id"),
-				resultSet.getTimestamp("kickoff_at").toInstant()), Timestamp.from(now), BATCH_SIZE);
+				resultSet.getTimestamp("kickoff_at").toInstant()), sport, Timestamp.from(now), BATCH_SIZE);
 		if (pending.isEmpty()) {
 			return 0;
 		}
@@ -66,27 +63,38 @@ public class FootballResultService {
 		int updated = 0;
 		for (PendingFixture fixture : pending) {
 			LocalDate date = LocalDate.ofInstant(fixture.kickoff(), ZoneOffset.UTC);
-			Event event = findEvent(board(boards, fixture.league(), date), fixture.eventId());
+			Event event = findEvent(board(boards, espnSport, fixture.league(), date), fixture.eventId());
 			if (event == null) {
 				// ESPN agrupa por fecha local; un partido nocturno en UTC puede
 				// aparecer en el scoreboard del día anterior.
-				event = findEvent(board(boards, fixture.league(), date.minusDays(1)), fixture.eventId());
+				event = findEvent(board(boards, espnSport, fixture.league(), date.minusDays(1)),
+						fixture.eventId());
 			}
-			if (apply(fixture, event, now)) {
+			if (apply(fixture, event, now, voidAfter)) {
 				updated++;
 			}
 		}
 		return updated;
 	}
 
-	private Scoreboard board(Map<String, Scoreboard> boards, String league, LocalDate date) {
-		String key = league + "|" + date;
+	private Scoreboard board(Map<String, Scoreboard> boards, String espnSport, String league, LocalDate date) {
+		String key = espnSport + "|" + league + "|" + date;
 		if (boards.containsKey(key)) {
 			return boards.get(key);
 		}
-		Scoreboard board = fetchBoard(league, date);
+		Scoreboard board = fetchBoard(espnSport, league, date);
 		boards.put(key, board);
 		return board;
+	}
+
+	private Scoreboard fetchBoard(String espnSport, String league, LocalDate date) {
+		try {
+			return client.fetchForSport(espnSport, league, date);
+		} catch (RuntimeException exception) {
+			log.warn("No se pudo consultar el resultado de {} {} el {}: {}", espnSport, league, date,
+					exception.getMessage());
+			return null;
+		}
 	}
 
 	private static Event findEvent(Scoreboard board, String eventId) {
@@ -99,16 +107,7 @@ public class FootballResultService {
 				.orElse(null);
 	}
 
-	private Scoreboard fetchBoard(String league, LocalDate date) {
-		try {
-			return client.fetch(league, date);
-		} catch (RuntimeException exception) {
-			log.warn("No se pudo consultar el resultado de {} el {}: {}", league, date, exception.getMessage());
-			return null;
-		}
-	}
-
-	private boolean apply(PendingFixture fixture, Event event, Instant now) {
+	private boolean apply(PendingFixture fixture, Event event, Instant now, Duration voidAfter) {
 		if (event != null && event.competitions() != null && !event.competitions().isEmpty()) {
 			Competition competition = event.competitions().get(0);
 			Status status = competition.status() != null ? competition.status() : event.status();
@@ -121,9 +120,8 @@ public class FootballResultService {
 		}
 
 		Duration elapsed = Duration.between(fixture.kickoff(), now);
-		if (elapsed.compareTo(properties.getResultVoidAfter()) > 0) {
-			return saveVoid(fixture, "Sin resultado de ESPN en "
-					+ properties.getResultVoidAfter().toHours() + " h");
+		if (elapsed.compareTo(voidAfter) > 0) {
+			return saveVoid(fixture, "Sin resultado de ESPN en " + voidAfter.toHours() + " h");
 		}
 		jdbcTemplate.update("""
 				UPDATE sport_results
@@ -154,7 +152,7 @@ public class FootballResultService {
 				WHERE match_id = ? AND status = 'PENDING'
 				""", homeScore, awayScore, winner, fixture.matchId());
 		if (rows > 0) {
-			log.info("Resultado de fútbol {}: {}-{} ({})", fixture.matchId(), homeScore, awayScore, winner);
+			log.info("Resultado de {}: {}-{} ({})", fixture.matchId(), homeScore, awayScore, winner);
 		}
 		return rows > 0;
 	}
@@ -167,7 +165,7 @@ public class FootballResultService {
 				WHERE match_id = ? AND status = 'PENDING'
 				""", truncate(detail), fixture.matchId());
 		if (rows > 0) {
-			log.info("Partido de fútbol {} anulado: {}", fixture.matchId(), detail);
+			log.info("Partido {} anulado: {}", fixture.matchId(), detail);
 		}
 		return rows > 0;
 	}

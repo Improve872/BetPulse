@@ -61,25 +61,43 @@ public class MarketOutcomeResolver {
 	}
 
 	/**
-	 * Resuelve un mercado pre-partida de fútbol con el marcador final. El
-	 * empate es un resultado válido de 1X2; sin marcador o con partido anulado
-	 * el mercado se anula.
+	 * Resuelve un mercado pre-partida (fútbol o baloncesto) con el marcador
+	 * final. El empate es válido para 1X2; en NBA no existe y se anula.
 	 */
-	public Resolution resolveFootball(String marketKey, BigDecimal line, String resultStatus, Integer homeScore,
+	public Resolution resolvePrematch(String marketKey, BigDecimal line, String resultStatus, Integer homeScore,
 			Integer awayScore) {
 		if ("VOID".equals(resultStatus)) {
 			return Resolution.voidedResolution();
 		}
-		FootballMarketKind kind;
-		try {
-			kind = FootballMarketKind.valueOf(marketKey);
-		} catch (RuntimeException exception) {
-			return Resolution.voidedResolution();
+		FootballMarketKind footballKind = parse(FootballMarketKind.class, marketKey);
+		if (footballKind != null) {
+			return switch (footballKind) {
+				case MATCH_RESULT_1X2 -> matchResult1X2(homeScore, awayScore);
+				case TOTAL_GOALS -> totalScore(line, homeScore, awayScore);
+			};
 		}
-		return switch (kind) {
-			case MATCH_RESULT_1X2 -> matchResult1X2(homeScore, awayScore);
-			case TOTAL_GOALS -> totalGoals(line, homeScore, awayScore);
-		};
+		BasketballMarketKind basketballKind = parse(BasketballMarketKind.class, marketKey);
+		if (basketballKind != null) {
+			return switch (basketballKind) {
+				case MATCH_RESULT_2WAY -> matchResult2Way(homeScore, awayScore);
+				case TOTAL_POINTS -> totalScore(line, homeScore, awayScore);
+			};
+		}
+		return Resolution.voidedResolution();
+	}
+
+	/** Compatibilidad con el nombre usado por M8b. */
+	public Resolution resolveFootball(String marketKey, BigDecimal line, String resultStatus, Integer homeScore,
+			Integer awayScore) {
+		return resolvePrematch(marketKey, line, resultStatus, homeScore, awayScore);
+	}
+
+	private static <E extends Enum<E>> E parse(Class<E> type, String value) {
+		try {
+			return Enum.valueOf(type, value);
+		} catch (RuntimeException exception) {
+			return null;
+		}
 	}
 
 	private Resolution matchResult1X2(Integer homeScore, Integer awayScore) {
@@ -90,7 +108,14 @@ public class MarketOutcomeResolver {
 		return Resolution.settled(comparison > 0 ? "HOME" : comparison < 0 ? "AWAY" : "DRAW");
 	}
 
-	private Resolution totalGoals(BigDecimal line, Integer homeScore, Integer awayScore) {
+	private Resolution matchResult2Way(Integer homeScore, Integer awayScore) {
+		if (homeScore == null || awayScore == null || homeScore.equals(awayScore)) {
+			return Resolution.voidedResolution();
+		}
+		return Resolution.settled(homeScore > awayScore ? "HOME" : "AWAY");
+	}
+
+	private Resolution totalScore(BigDecimal line, Integer homeScore, Integer awayScore) {
 		if (line == null || homeScore == null || awayScore == null) {
 			return Resolution.voidedResolution();
 		}

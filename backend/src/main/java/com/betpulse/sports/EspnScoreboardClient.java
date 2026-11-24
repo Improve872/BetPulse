@@ -26,14 +26,22 @@ public class EspnScoreboardClient {
 	}
 
 	public Scoreboard fetch(String leagueSlug, java.time.LocalDate date) {
-		String day = java.time.format.DateTimeFormatter.BASIC_ISO_DATE.format(date);
-		return get("/soccer/" + leagueSlug + "/scoreboard?dates=" + day, leagueSlug);
+		return fetchForSport("soccer", leagueSlug, date);
 	}
 
 	/** Un mes completo en una sola petición: ESPN acepta `dates=YYYYMM`. */
 	public Scoreboard fetch(String leagueSlug, java.time.YearMonth month) {
+		return fetchForSport("soccer", leagueSlug, month);
+	}
+
+	public Scoreboard fetchForSport(String espnSport, String leagueSlug, java.time.LocalDate date) {
+		String day = java.time.format.DateTimeFormatter.BASIC_ISO_DATE.format(date);
+		return get("/" + espnSport + "/" + leagueSlug + "/scoreboard?dates=" + day, leagueSlug);
+	}
+
+	public Scoreboard fetchForSport(String espnSport, String leagueSlug, java.time.YearMonth month) {
 		String key = java.time.format.DateTimeFormatter.ofPattern("yyyyMM").format(month);
-		return get("/soccer/" + leagueSlug + "/scoreboard?dates=" + key, leagueSlug);
+		return get("/" + espnSport + "/" + leagueSlug + "/scoreboard?dates=" + key, leagueSlug);
 	}
 
 	private Scoreboard get(String path, String leagueSlug) {

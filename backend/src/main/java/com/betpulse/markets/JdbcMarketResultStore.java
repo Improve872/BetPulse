@@ -46,7 +46,7 @@ public class JdbcMarketResultStore implements MarketResultStore {
 				WHERE r.status IN ('READY', 'VOID')
 				  AND mr.market_id IS NULL
 				  AND m.status IN ('OPEN', 'SUSPENDED', 'CLOSED')
-				  AND m.sport = 'SOCCER'
+				  AND m.sport IN ('SOCCER', 'BASKETBALL')
 				ORDER BY match_id, market_key
 				LIMIT ?
 				""", (resultSet, rowNumber) -> mapResolvable(resultSet), limit);
