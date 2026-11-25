@@ -47,7 +47,7 @@ se creó, el cambio no se aplica hasta hacer `reset.ps1`.
 5. Billetera: tarjeta, Yape/Plin o transferencia; comprobante con nuevo saldo.
 6. Detalle de partida, mercados, boleto y apuesta.
 7. Mis apuestas.
-8. Fútbol y NBA pre-partida: `/sports`, pestañas Fútbol/NBA, cuotas y apuesta.
+8. Fútbol y NBA pre-partida: portada, `/sports` y `/nba`, cuotas y apuesta.
 9. Admin: usuarios, acreditar saldo, mercados, streams.
 10. Anular una apuesta para ver el reembolso y la auditoría.
 
@@ -77,10 +77,10 @@ docker compose logs -f backend
 - **Puerto ocupado:** `.\start.ps1 -Port 3100`.
 - **No cargan imágenes:** verifica que `betpulse-demo-images.tar` esté junto al `docker-compose.yml`.
 - **Lobby vacío:** revisa internet; OpenDota es la fuente de partidas.
-- **`/sports` sin cuotas:** espera ~30 s tras arrancar; el backend consulta ESPN
+- **`/sports` o `/nba` sin cuotas:** espera ~30 s tras arrancar; el backend consulta ESPN
   y publica los mercados en el primer ciclo. Si ESPN está caído, el calendario
   queda vacío o sin cuotas y Dota no se afecta.
-- **Sin partidos en `/sports`:** ESPN solo publica partidos programados en los
+- **Sin partidos en `/sports` o `/nba`:** ESPN solo publica partidos programados en los
   próximos 10 días; en fechas sin calendario la página queda vacía.
 - **Pantalla de advertencia de Windows:** ejecuta el `.ps1` con `-ExecutionPolicy Bypass` como se indica arriba.
 

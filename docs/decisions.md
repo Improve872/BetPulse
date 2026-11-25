@@ -857,3 +857,84 @@ tabla de la NBA sin clave; la tabla viene separada por conferencia.
   son reutilizables; la duplicación restante está en la capa de presentación
   por deporte y debería extraerse a una estrategia común.
 - Sigue vigente el riesgo de ESPN (API no oficial, sin SLA).
+
+## ADR-046 — Rediseño de la UX/UI pública (2026-11-25)
+
+**Estado:** propuesta (2026-11-25), verificada técnicamente; pendiente de visto
+bueno visual final
+**Relacionada:** ADR-036 (stream), ADR-043/044/045 (deportes), M8 y M9 del
+trabajo de diseño.
+
+**Contexto:** la aplicación funcionaba, pero la portada era una arena de Dota
+con el mismo evento repetido en destacado, rail y listado; todas las superficies
+eran cards navy con el mismo peso. Fútbol y NBA quedaban detrás de un enlace
+“Fútbol” y el boleto aparecía después del hero y los filtros. Se pidió una
+experiencia deportiva con identidad, sin inventar eventos ni promociones.
+
+**Decisión:**
+
+- **Portada editorial.** `/` muestra tres destacados visibles (NBA, fútbol y
+  esports en vivo) como cards fotográficas de 232 px, seguidas de filas
+  compactas agrupadas por competición. Los eventos destacados se excluyen de las
+  filas para no repetirlos.
+- **Destacados con imagen.** Cada card lleva foto a sangre, degradado,
+  competición/estado, equipos y cuotas en píldoras blancas dentro de la card.
+  El fondo es un recurso atmosférico con licencia; datos y cuotas son HTML real.
+- **Header de 64 px.** Barra azul tinta `#101D34`, wordmark claro, navegación
+  `Inicio / En vivo / Mis apuestas`, `ES / EN`, `Iniciar sesión` con borde y
+  `Registrarse` naranja. Debajo, una única navegación deportiva blanca de 56 px
+  (`Destacados / Fútbol / NBA / Esports`) con buscador a la derecha.
+- **Composición.** Margen de 28 px, columna principal flexible y boleto fijo de
+  300 px con 24 px de separación. El boleto no tiene panel vacío debajo; solo el
+  enlace `Ver mis apuestas`.
+- **Superficies.** Cuerpo `paper` claro, cards blancas, tinta navy, naranja para
+  acciones y selección, lima solo para “en vivo”. El detalle de partido conserva
+  la arena oscura; cuenta, wallet, apuestas y admin siguen claros.
+- **Filas comparables.** 78 px de alto, equipos a 15 px y cuotas a 16 px. La
+  cabecera de cada competición alinea las etiquetas de mercado: fútbol `1/X/2` +
+  total de goles; NBA ganador + total de puntos; esports ganador + kills +
+  duración. Los mercados de ganador usan el nombre corto del equipo.
+- **Boleto accesible.** Panel derecho compacto (`Tu boleto · 0`) con importe,
+  retorno y confirmación; en móvil, barra inferior persistente y hoja con el
+  mismo componente. El importe se teclea, nunca se preselecciona una cuota.
+- **Buscador.** Filtra en cliente sobre el calendario ya cargado (equipo, liga,
+  torneo) y no recorta por día mientras hay texto.
+- **Catálogo de deportes.** `/sports` y `/nba` reutilizan las filas de la
+  portada con rail de competiciones, buscador y rangos compartidos. El rail solo
+  aparece cuando hay más de una liga; en NBA se listan todos los partidos. Con
+  `Todas` se muestran 4 partidos por liga y el rail permite verlas completas.
+- **Banner de deporte.** `/sports` y `/nba` abren con una migaja
+  `Inicio / deporte / liga` y un hero partido: foto 2:1 a la izquierda y panel
+  azul tinta a la derecha con competición, escudos, `VS`, día/hora y
+  `Ver mercados`. Se prioriza el partido que coincide con la foto de portada
+  (Forest–Chelsea, Denver). Toda la pieza abre los mercados y el partido sigue
+  en la tabla. Se evita el banner a sangre porque los archivos son 2:1 y una
+  banda de 7:1 recortaría el 70 % del alto; la generación de panorámicas no
+  estaba disponible por crédito.
+- **Mis apuestas.** Pestañas `Abiertas / Resueltas` con contadores reales,
+  filtro por deporte, buscador, filas densas y panel de detalle con línea de
+  tiempo (`Aceptada` → `Liquidada` o `En espera`). En móvil el detalle es una
+  hoja. La pestaña inicial es `Abiertas`, o `Resueltas` si no hay abiertas.
+- **Fotos.** Los destacados usan las tres fotografías entregadas por el autor
+  del proyecto (`output/prototypes/banner-assets`), recortadas a 2:1 y
+  recomprimidas en `public/hero`, con créditos en `CREDITS.md`. Son fondos
+  atmosféricos: no representan necesariamente el evento de la tarjeta; los
+  datos y cuotas son los del backend.
+- **Sin dependencias nuevas.** Recortes con herramientas del sistema, texturas
+  CSS y escudos existentes de ESPN/OpenDota.
+
+**Consecuencias:**
+
+- La portada depende de ESPN para fútbol/NBA; si cae, esas secciones quedan
+  vacías o sin cuotas y Dota sigue funcionando.
+- El tema público claro convive con la arena oscura del detalle; los tokens no
+  se mezclan y deben revisarse por contraste.
+- La extracción de la tabla NBA se ajustó porque ESPN dejó de publicar
+  `gamesPlayed`: se deriva de `wins + losses` para que las cuotas no caigan
+  todas a equipos neutros. Hay test de regresión.
+- Si se recuperan filtros avanzados de Esports, conviene una ruta `/esports`
+  propia; hoy la sección de la portada muestra todos los partidos en vivo.
+- El kit de demo debe regenerarse para incluir este rediseño.
+- `/bets` no puede mostrar los dos equipos de cada apuesta porque el contrato de
+  apuestas solo devuelve `matchId`, mercado y selección. Se muestra el mercado y
+  la selección; añadir nombres requeriría cambiar el backend.

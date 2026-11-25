@@ -44,9 +44,7 @@ ADR-044 y ADR-045.
 
 ## Verificación
 
-- Backend: 139/139 tests (modelos, resoluciones, flujo fútbol y NBA hasta
-  settlement, aislamiento Dota/fútbol).
-- Frontend: lint, build y 18/18 tests de Vitest.
+- Backend: 139/139 tests al cerrar M8 (hoy 140/140 con la regresión de la tabla NBA).- Frontend: lint, build y 18/18 tests de Vitest.
 - Flyway V1–V13 en Testcontainers y PostgreSQL local.
 - Funcional con ESPN real: 60 fixtures de fútbol y 21–22 de NBA, todos con dos
   mercados; apuesta por API y por el proxy del frontend con hold correcto.

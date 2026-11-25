@@ -2,294 +2,462 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
-import { BetSlip, type BetTarget } from "@/components/bet-slip";
+import { useMemo, useState } from "react";
+import type { BetTarget } from "@/components/bet-slip";
+import { SearchIcon } from "@/components/icons";
 import { LoginModal, type LoginMode } from "@/components/login-modal";
 import { Modal } from "@/components/modal";
-import { OddsButton } from "@/components/odds-button";
+import {
+  CompetitionRows,
+  type CompetitionSection,
+} from "@/components/public/competition-rows";
+import { MobileBetBar } from "@/components/public/mobile-bet-bar";
+import { PrematchMarketsModal } from "@/components/public/prematch-markets-modal";
+import { QuickBetSlip } from "@/components/public/quick-bet-slip";
+import { RangeTabs, type DateRange } from "@/components/public/range-tabs";
+import { SportHero } from "@/components/public/sport-hero";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
-import { TicketIcon } from "@/components/icons";
-import { cn } from "@/lib/format";
+import { cn, normalizeText } from "@/lib/format";
 import { useLanguage } from "@/lib/i18n";
-import {
-  marketTitle,
-  selectionLabelForType,
-  type Market,
-  type MarketStatus,
-} from "@/lib/markets";
+import { selectionLabelForType } from "@/lib/markets";
+import { fixtureToMarket, type PublicSport } from "@/lib/prematch";
 import type {
   Fixture,
   FixtureMarket,
   FixtureSelection,
-  FixtureTeam,
   FixturesResponse,
 } from "@/lib/sports";
 
-type BetSelectionRef = {
+type SelectionRef = {
   fixtureId: string;
   marketId: string;
   selectionKey: string;
 };
 
 export function SportsBoard({
-  soccer,
-  basketball,
+  data,
+  sport,
 }: {
-  soccer: FixturesResponse;
-  basketball: FixturesResponse;
+  data: FixturesResponse;
+  sport: PublicSport;
 }) {
   const { t, language } = useLanguage();
   const router = useRouter();
-  const [sport, setSport] = useState<"soccer" | "basketball">("soccer");
-  const [selected, setSelected] = useState<string>("all");
-  const [now, setNow] = useState<number | null>(null);
+  const [leagueId, setLeagueId] = useState("all");
+  const [query, setQuery] = useState("");
   const [loginOpen, setLoginOpen] = useState(false);
   const [loginMode, setLoginMode] = useState<LoginMode>("login");
-  const [betSelection, setBetSelection] = useState<BetSelectionRef | null>(null);
+  const [selection, setSelection] = useState<SelectionRef | null>(null);
   const [betPanelOpen, setBetPanelOpen] = useState(false);
-  const data = sport === "soccer" ? soccer : basketball;
+  const [modalFixture, setModalFixture] = useState<Fixture | null>(null);
 
-  useEffect(() => {
-    setNow(Date.now());
-    const interval = window.setInterval(() => setNow(Date.now()), 30_000);
-    return () => window.clearInterval(interval);
-  }, []);
+  const allFixtures = useMemo(
+    () => data.leagues.flatMap((item) => item.fixtures),
+    [data.leagues],
+  );
+
+  const [range, setRange] = useState<DateRange>(() => {
+    const start = new Date();
+    start.setHours(0, 0, 0, 0);
+    const end = start.getTime() + 24 * 60 * 60 * 1000;
+    return allFixtures.some((fixture) => {
+      const kickoff = new Date(fixture.kickoff).getTime();
+      return kickoff >= start.getTime() && kickoff < end;
+    })
+      ? "today"
+      : "week";
+  });
+
+  const needle = normalizeText(query);
+
+  const visible = useMemo(() => {
+    const matches = (fixture: Fixture) =>
+      needle.length === 0 ||
+      normalizeText(fixture.leagueName).includes(needle) ||
+      normalizeText(fixture.home.name).includes(needle) ||
+      normalizeText(fixture.away.name).includes(needle);
+
+    const inRange = (kickoff: string) => {
+      if (needle.length > 0) {
+        return true;
+      }
+      const time = new Date(kickoff).getTime();
+      const start = new Date();
+      start.setHours(0, 0, 0, 0);
+      const day = 24 * 60 * 60 * 1000;
+      if (range === "today") {
+        return time >= start.getTime() && time < start.getTime() + day;
+      }
+      if (range === "tomorrow") {
+        return (
+          time >= start.getTime() + day && time < start.getTime() + 2 * day
+        );
+      }
+      return time >= start.getTime() && time < start.getTime() + 8 * day;
+    };
+
+    return allFixtures.filter(
+      (fixture) => inRange(fixture.kickoff) && matches(fixture),
+    );
+  }, [allFixtures, needle, range]);
+
+  const counts = useMemo(() => {
+    const map = new Map<string, number>();
+    visible.forEach((fixture) => {
+      map.set(fixture.leagueId, (map.get(fixture.leagueId) ?? 0) + 1);
+    });
+    return map;
+  }, [visible]);
+
+  const leagues = useMemo(
+    () =>
+      data.leagues
+        .map((league) => ({
+          id: league.id,
+          name: league.name,
+          count: counts.get(league.id) ?? 0,
+        }))
+        .filter((league) => league.count > 0),
+    [counts, data.leagues],
+  );
+
+  const sections = useMemo<CompetitionSection[]>(() => {
+    const visibleIds = new Set(visible.map((fixture) => fixture.id));
+    const capRows = leagues.length > 1 && leagueId === "all";
+    return data.leagues
+      .filter((league) => leagueId === "all" || league.id === leagueId)
+      .map((league) => {
+        const rows = league.fixtures
+          .filter((fixture) => visibleIds.has(fixture.id))
+          .slice()
+          .sort((a, b) => a.kickoff.localeCompare(b.kickoff));
+        return {
+          id: `sports:${league.id}`,
+          name: league.name,
+          sport,
+          rows: (capRows ? rows.slice(0, 4) : rows).map((fixture) => ({
+            kind: "fixture" as const,
+            fixture,
+            sport,
+          })),
+        };
+      })
+      .filter((section) => section.rows.length > 0);
+  }, [data.leagues, leagueId, leagues.length, sport, visible]);
+
+  const betTarget = useMemo<BetTarget | null>(() => {
+    if (!selection) {
+      return null;
+    }
+    const fixture = allFixtures.find((item) => item.id === selection.fixtureId);
+    const fixtureMarket = fixture?.markets.find(
+      (item) => item.id === selection.marketId,
+    );
+    const picked = fixtureMarket?.selections.find(
+      (item) => item.key === selection.selectionKey,
+    );
+    if (!fixture || !fixtureMarket || !picked) {
+      return null;
+    }
+    return {
+      subject: {
+        id: fixture.id,
+        homeName: fixture.home.name,
+        awayName: fixture.away.name,
+        homeCrestUrl: fixture.home.crestUrl,
+        awayCrestUrl: fixture.away.crestUrl,
+      },
+      market: fixtureToMarket(fixture, fixtureMarket, sport),
+      selection: picked,
+      selectionLabel: selectionLabelForType(
+        fixtureMarket.marketKey,
+        fixtureMarket.line,
+        picked.key,
+        t,
+        { home: fixture.home.name, away: fixture.away.name },
+      ),
+    };
+  }, [allFixtures, selection, sport, t]);
+
+  const select = (
+    fixture: Fixture,
+    market: FixtureMarket,
+    picked: FixtureSelection,
+  ) => {
+    setSelection({
+      fixtureId: fixture.id,
+      marketId: market.id,
+      selectionKey: picked.key,
+    });
+  };
 
   const openLogin = (mode: LoginMode) => {
     setLoginMode(mode);
     setLoginOpen(true);
   };
 
-  const selectSport = (next: "soccer" | "basketball") => {
-    if (next === sport) {
-      return;
-    }
-    setSport(next);
-    setSelected("all");
-    setBetSelection(null);
-  };
+  const title =
+    sport === "nba" ? t("sports.titleBasketball") : t("sports.title");
+  const subtitle =
+    sport === "nba" ? t("sports.subtitleBasketball") : t("sports.subtitle");
+  const updatedLabel =
+    data.status === "DOWN"
+      ? t("sports.down")
+      : `${t("sports.updated")} ${new Intl.DateTimeFormat(
+          language === "es" ? "es-PE" : "en-US",
+          { hour: "2-digit", minute: "2-digit" },
+        ).format(new Date(data.updatedAt))}`;
+  const showRail = leagues.length > 1;
+  const capRows = showRail && leagueId === "all";
 
-  const leagues = useMemo(
-    () => data.leagues.filter((league) => league.fixtures.length > 0),
-    [data.leagues],
-  );
-  const visible =
-    selected === "all" ? leagues : leagues.filter((league) => league.id === selected);
-  const total = leagues.reduce((sum, league) => sum + league.fixtures.length, 0);
-
-  const betTarget = useMemo<BetTarget | null>(() => {
-    if (!betSelection) {
-      return null;
-    }
-    for (const league of leagues) {
-      const fixture = league.fixtures.find(
-        (candidate) => candidate.id === betSelection.fixtureId,
-      );
-      if (!fixture) {
-        continue;
-      }
-      const market = fixture.markets.find(
-        (candidate) => candidate.id === betSelection.marketId,
-      );
-      const selection = market?.selections.find(
-        (candidate) => candidate.key === betSelection.selectionKey,
-      );
-      if (!market || !selection) {
-        return null;
-      }
-      return {
-        subject: {
-          id: fixture.id,
-          homeName: fixture.home.name,
-          awayName: fixture.away.name,
-          homeCrestUrl: fixture.home.crestUrl,
-          awayCrestUrl: fixture.away.crestUrl,
-        },
-        market: toMarket(fixture, market),
-        selection,
-        selectionLabel: selectionLabelForType(
-          market.marketKey,
-          market.line,
-          selection.key,
-          t,
-          { home: fixture.home.name, away: fixture.away.name },
-        ),
-      };
-    }
-    return null;
-  }, [betSelection, leagues, t]);
-
-  const pick = (fixture: Fixture, market: FixtureMarket, selection: FixtureSelection) => {
-    setBetSelection((current) =>
-      current?.marketId === market.id && current?.selectionKey === selection.key
-        ? current
-        : {
-            fixtureId: fixture.id,
-            marketId: market.id,
-            selectionKey: selection.key,
-          },
+  const featuredFixture = useMemo(() => {
+    const pool = visible.filter(
+      (fixture) =>
+        fixture.state !== "FINISHED" &&
+        (leagueId === "all" || fixture.leagueId === leagueId),
     );
-  };
-
-  const isPicked = (market: FixtureMarket, selection: FixtureSelection) =>
-    betSelection?.marketId === market.id &&
-    betSelection?.selectionKey === selection.key;
+    // Las fotos de portada muestran un partido concreto (Forest–Chelsea y
+    // Denver): si ese equipo juega en el rango, se destaca para que la imagen
+    // y los escudos concuerden. Si no, se usa el próximo encuentro.
+    const photoTeams =
+      sport === "nba" ? /nuggets|denver/i : /nottingham|chelsea/i;
+    const preferred = pool.find(
+      (fixture) =>
+        photoTeams.test(fixture.home.name) ||
+        photoTeams.test(fixture.away.name),
+    );
+    return (
+      preferred ??
+      pool.slice().sort((a, b) => a.kickoff.localeCompare(b.kickoff))[0]
+    );
+  }, [leagueId, sport, visible]);
 
   return (
-    <div className="min-h-screen bg-arena text-arena-ink">
+    <div className="min-h-screen bg-paper text-ink">
       <SiteHeader
         game="dota2"
         activeView="all"
+        activeSport={sport}
+        showSportsNav
         onGameChange={() => undefined}
         onNavigate={() => router.push("/")}
         onLogin={() => openLogin("login")}
         onRegister={() => openLogin("register")}
       />
-      <main className="mx-auto max-w-[1320px] px-4 py-8 sm:px-6 lg:px-8">
+
+      <main className="mx-auto max-w-[1440px] px-4 pb-28 pt-6 sm:px-7 xl:pb-16">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
             <Link
               href="/"
-              className="text-xs font-semibold uppercase tracking-[0.18em] text-accent transition hover:text-accent-bright"
+              className="text-[10px] font-bold uppercase tracking-[0.18em] text-accent-strong transition hover:text-accent"
             >
-              {t("nav.arena")}
+              {t("nav.home")}
             </Link>
-            <h1 className="mt-2 text-2xl font-semibold tracking-tight sm:text-3xl">
-              {sport === "soccer"
-                ? t("sports.title")
-                : t("sports.titleBasketball")}
+            <h1 className="mt-2 font-display text-[26px] font-bold tracking-tight sm:text-[30px]">
+              {title}
             </h1>
-            <p className="mt-1 max-w-2xl text-sm text-arena-muted">
-              {sport === "soccer"
-                ? t("sports.subtitle")
-                : t("sports.subtitleBasketball")}
-            </p>
+            <p className="mt-1 max-w-2xl text-sm text-muted">{subtitle}</p>
           </div>
-          <div className="text-right text-xs text-arena-muted">
-            <p>
-              {data.status === "DOWN"
-                ? t("sports.down")
-                : `${t("sports.updated")} ${timeLabel(data.updatedAt, language)}`}
-            </p>
+          <div className="text-right text-xs text-muted">
+            <p>{updatedLabel}</p>
             <p className="mt-1 font-score tabular-nums">
-              {total} {t("sports.matches")}
+              {visible.length} {t("sports.matches")}
             </p>
           </div>
         </div>
 
-        <div className="mt-6 inline-flex rounded-xl border border-arena-line bg-arena-surface/60 p-1">
-          <SportTab
-            active={sport === "soccer"}
-            label={t("sports.sport.soccer")}
-            onClick={() => selectSport("soccer")}
+        {featuredFixture ? (
+          <SportHero
+            fixture={featuredFixture}
+            sport={sport}
+            onOpen={setModalFixture}
           />
-          <SportTab
-            active={sport === "basketball"}
-            label={t("sports.sport.basketball")}
-            onClick={() => selectSport("basketball")}
-          />
-        </div>
-
-        {leagues.length > 0 ? (
-          <div className="mt-4 flex flex-wrap gap-2">
-            <FilterChip
-              active={selected === "all"}
-              label={t("sports.allLeagues")}
-              onClick={() => setSelected("all")}
-            />
-            {leagues.map((league) => (
-              <FilterChip
-                key={league.id}
-                active={selected === league.id}
-                label={league.name}
-                onClick={() => setSelected(league.id)}
-              />
-            ))}
-          </div>
         ) : null}
 
-        <div className="mt-8 grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
-          <div>
-            {visible.length === 0 ? (
-              <div className="rounded-2xl border border-arena-line bg-arena-surface/60 p-8 text-center text-sm text-arena-muted">
-                {data.status === "DOWN" ? t("sports.down") : t("sports.empty")}
-              </div>
-            ) : (
-              <div className="space-y-10">
-                {visible.map((league) => (
-                  <section key={league.id}>
-                    <div className="flex items-center gap-3">
-                      <h2 className="text-sm font-semibold uppercase tracking-[0.16em] text-arena-muted">
-                        {league.name}
-                      </h2>
-                      <span className="h-px flex-1 bg-arena-line" />
-                    </div>
-                    <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-                      {league.fixtures.map((fixture) => (
-                        <FixtureCard
-                          key={`${fixture.leagueId}-${fixture.id}`}
-                          fixture={fixture}
-                          now={now}
-                          onPick={pick}
-                          isPicked={isPicked}
-                        />
-                      ))}
-                    </div>
-                  </section>
+        <div
+          className={cn(
+            "mt-6 grid gap-6",
+            showRail
+              ? "xl:grid-cols-[200px_minmax(0,1fr)_300px]"
+              : "xl:grid-cols-[minmax(0,1fr)_300px]",
+          )}
+        >
+          {showRail ? (
+            <aside className="hidden xl:block">
+            <div className="sticky top-[136px] rounded-xl border border-line bg-white p-3">
+              <p className="px-2 pb-2 text-[11px] font-bold uppercase tracking-[0.14em] text-subtle">
+                {t("sports.competitions")}
+              </p>
+              <nav className="space-y-0.5">
+                <LeagueItem
+                  active={leagueId === "all"}
+                  name={t("sports.allLeagues")}
+                  count={visible.length}
+                  onClick={() => setLeagueId("all")}
+                />
+                {leagues.map((league) => (
+                  <LeagueItem
+                    key={league.id}
+                    active={leagueId === league.id}
+                    name={league.name}
+                    count={league.count}
+                    onClick={() => setLeagueId(league.id)}
+                  />
                 ))}
+              </nav>
+            </div>
+            </aside>
+          ) : null}
+
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <RangeTabs value={range} onChange={setRange} />
+              <div className="relative w-full sm:w-[280px]">
+                <SearchIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-subtle" />
+                <input
+                  type="search"
+                  value={query}
+                  onChange={(event) => setQuery(event.target.value)}
+                  placeholder={t("sports.search")}
+                  aria-label={t("sports.search")}
+                  className="h-9 w-full rounded-lg border border-line bg-white pl-9 pr-3 text-sm text-ink outline-none transition placeholder:text-subtle focus:border-accent focus:ring-2 focus:ring-accent/20"
+                />
               </div>
-            )}
+            </div>
+
+            {showRail ? (
+              <div className="no-scrollbar mt-3 flex items-center gap-2 overflow-x-auto xl:hidden">
+              <button
+                type="button"
+                onClick={() => setLeagueId("all")}
+                aria-pressed={leagueId === "all"}
+                className={cn(
+                  "inline-flex h-8 shrink-0 items-center gap-1.5 rounded-lg border px-3 text-[12px] font-semibold transition",
+                  leagueId === "all"
+                    ? "border-accent bg-accent text-masthead"
+                    : "border-line bg-white text-ink hover:border-accent/40",
+                )}
+              >
+                {t("sports.allLeagues")}
+                <span className="tabular-nums opacity-70">{visible.length}</span>
+              </button>
+              {leagues.map((league) => (
+                <button
+                  key={league.id}
+                  type="button"
+                  onClick={() => setLeagueId(league.id)}
+                  aria-pressed={leagueId === league.id}
+                  className={cn(
+                    "inline-flex h-8 shrink-0 items-center gap-1.5 rounded-lg border px-3 text-[12px] font-semibold transition",
+                    leagueId === league.id
+                      ? "border-accent bg-accent text-masthead"
+                      : "border-line bg-white text-ink hover:border-accent/40",
+                  )}
+                >
+                  {league.name}
+                  <span className="tabular-nums opacity-70">{league.count}</span>
+                </button>
+              ))}
+              </div>
+            ) : null}
+
+            <div className="mt-4">
+              {sections.length === 0 ? (
+                <div className="rounded-xl border border-dashed border-line bg-white px-6 py-12 text-center">
+                  <p className="text-sm font-semibold text-ink">
+                    {query.trim().length > 0
+                      ? t("sports.searchEmpty")
+                      : data.status === "DOWN"
+                        ? t("sports.down")
+                        : t("sports.empty")}
+                  </p>
+                  <p className="mt-1 text-xs text-muted">
+                    {t("sports.emptyBody")}
+                  </p>
+                </div>
+              ) : (
+                <CompetitionRows
+                  sections={sections}
+                  selected={
+                    selection
+                      ? {
+                          kind: "fixture",
+                          id: selection.fixtureId,
+                          marketId: selection.marketId,
+                          selectionKey: selection.selectionKey,
+                        }
+                      : null
+                  }
+                  onFixtureSelect={select}
+                  onFixtureOpen={setModalFixture}
+                  onDotaSelect={() => undefined}
+                  onDotaOpen={() => undefined}
+                />
+              )}
+            </div>
+
+            {capRows && sections.length > 0 ? (
+              <p className="mt-3 text-[11px] text-muted">
+                {t("sports.railHint")}
+              </p>
+            ) : null}
           </div>
 
-          <div className="hidden lg:block">
-            <BetSlip
-              target={betTarget}
-              onClear={() => setBetSelection(null)}
-              onLogin={() => openLogin("login")}
-              onExplore={() => router.push("/")}
-            />
-          </div>
+          <aside className="hidden xl:block">
+            <div className="sticky top-[136px]">
+              <QuickBetSlip
+                target={betTarget}
+                onClear={() => setSelection(null)}
+                onLogin={() => openLogin("login")}
+              />
+            </div>
+          </aside>
         </div>
       </main>
-      <SiteFooter variant="dark" />
 
-      {betSelection ? (
-        <button
-          type="button"
-          onClick={() => setBetPanelOpen(true)}
-          className="fixed bottom-5 right-5 z-40 inline-flex items-center gap-2 rounded-full bg-accent px-5 py-3 text-sm font-semibold text-navy shadow-lg lg:hidden"
-        >
-          <TicketIcon className="h-4 w-4" />
-          {t("bet.title")}
-          <span className="grid h-5 w-5 place-items-center rounded-full bg-navy/15 text-[11px]">
-            1
-          </span>
-        </button>
-      ) : null}
+      <SiteFooter />
+
+      <MobileBetBar target={betTarget} onOpen={() => setBetPanelOpen(true)} />
 
       <Modal
         open={betPanelOpen}
         onClose={() => setBetPanelOpen(false)}
         labelledBy="sports-bet-title"
-        variant="dark"
-        panelClassName="max-w-md w-full"
+        panelClassName="max-w-md"
       >
         <h2 id="sports-bet-title" className="sr-only">
-          {t("bet.title")}
+          {t("home.betbar")}
         </h2>
-        <BetSlip
+        <QuickBetSlip
           compact
           target={betTarget}
           onClear={() => {
-            setBetSelection(null);
+            setSelection(null);
             setBetPanelOpen(false);
           }}
           onLogin={() => openLogin("login")}
-          onExplore={() => router.push("/")}
           onClose={() => setBetPanelOpen(false)}
         />
       </Modal>
+
+      {modalFixture ? (
+        <PrematchMarketsModal
+          fixture={modalFixture}
+          sport={sport}
+          selected={
+            selection?.fixtureId === modalFixture.id
+              ? {
+                  marketId: selection.marketId,
+                  selectionKey: selection.selectionKey,
+                }
+              : null
+          }
+          onSelect={select}
+          onClose={() => setModalFixture(null)}
+        />
+      ) : null}
 
       {loginOpen ? (
         <LoginModal
@@ -303,28 +471,15 @@ export function SportsBoard({
   );
 }
 
-function toMarket(fixture: Fixture, market: FixtureMarket): Market {
-  return {
-    id: market.id,
-    matchId: `FB:${fixture.id}`,
-    marketKey: market.marketKey,
-    marketType: market.marketKey,
-    title: market.title,
-    status: market.status as MarketStatus,
-    line: market.line,
-    version: market.version,
-    updatedAt: new Date().toISOString(),
-    selections: market.selections,
-  };
-}
-
-function SportTab({
+function LeagueItem({
   active,
-  label,
+  name,
+  count,
   onClick,
 }: {
   active: boolean;
-  label: string;
+  name: string;
+  count: number;
   onClick: () => void;
 }) {
   return (
@@ -333,187 +488,21 @@ function SportTab({
       onClick={onClick}
       aria-pressed={active}
       className={cn(
-        "rounded-lg px-4 py-1.5 text-xs font-semibold transition",
+        "flex w-full items-center justify-between gap-2 rounded-md border-l-2 px-2.5 py-2 text-left text-[13px] font-medium transition",
         active
-          ? "bg-accent text-navy"
-          : "text-arena-muted hover:bg-white/5 hover:text-arena-ink",
+          ? "border-accent bg-accent/10 text-accent-strong"
+          : "border-transparent text-ink hover:bg-paper",
       )}
     >
-      {label}
-    </button>
-  );
-}
-
-function FilterChip({
-  active,
-  label,
-  onClick,
-}: {
-  active: boolean;
-  label: string;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-pressed={active}
-      className={cn(
-        "rounded-lg border px-3 py-1.5 text-xs font-semibold transition",
-        active
-          ? "border-accent/40 bg-accent/15 text-accent"
-          : "border-arena-line bg-white/[0.03] text-arena-muted hover:bg-white/[0.06] hover:text-arena-ink",
-      )}
-    >
-      {label}
-    </button>
-  );
-}
-
-function FixtureCard({
-  fixture,
-  now,
-  onPick,
-  isPicked,
-}: {
-  fixture: Fixture;
-  now: number | null;
-  onPick: (fixture: Fixture, market: FixtureMarket, selection: FixtureSelection) => void;
-  isPicked: (market: FixtureMarket, selection: FixtureSelection) => boolean;
-}) {
-  const { t, language } = useLanguage();
-  const kickoff = new Date(fixture.kickoff);
-  const relative = now === null ? null : countdown(kickoff.getTime() - now, language);
-  const started = kickoff.getTime() <= (now ?? Date.now());
-
-  return (
-    <article className="flex flex-col rounded-2xl border border-arena-line bg-arena-surface/70 p-4">
-      <div className="flex items-center justify-between gap-3 text-[11px] text-arena-muted">
-        <span>
-          {new Intl.DateTimeFormat(language === "es" ? "es-PE" : "en-US", {
-            weekday: "short",
-            day: "2-digit",
-            month: "short",
-            hour: "2-digit",
-            minute: "2-digit",
-          }).format(kickoff)}
-        </span>
-        <span className="rounded-full border border-arena-line px-2 py-0.5 font-semibold uppercase tracking-wide">
-          {relative ?? t("sports.scheduled")}
-        </span>
-      </div>
-
-      <div className="mt-4 space-y-3">
-        <TeamRow team={fixture.home} />
-        <TeamRow team={fixture.away} />
-      </div>
-
-      <div className="mt-4 flex-1 space-y-3 border-t border-arena-line pt-3">
-        {fixture.markets.length === 0 ? (
-          <p className="text-[11px] text-arena-muted">{t("sports.oddsPending")}</p>
-        ) : started ? (
-          <p className="text-[11px] text-arena-muted">{t("sports.closed")}</p>
-        ) : (
-          fixture.markets.map((market) => (
-            <div key={market.id}>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-arena-muted">
-                {marketTitle(toMarket(fixture, market), t)}
-                {market.line != null ? ` · ${market.line}` : ""}
-              </p>
-              <div
-                className={cn(
-                  "mt-1.5 grid gap-1.5",
-                  market.selections.length === 2 ? "grid-cols-2" : "grid-cols-3",
-                )}
-              >
-                {market.selections.map((selection) => (
-                  <OddsButton
-                    key={selection.key}
-                    market={toMarket(fixture, market)}
-                    selection={selection}
-                    size="sm"
-                    label={selectionLabelForType(
-                      market.marketKey,
-                      market.line,
-                      selection.key,
-                      t,
-                      { home: fixture.home.name, away: fixture.away.name },
-                    )}
-                    selected={isPicked(market, selection)}
-                    onSelect={() => onPick(fixture, market, selection)}
-                  />
-                ))}
-              </div>
-            </div>
-          ))
+      <span className="min-w-0 truncate">{name}</span>
+      <span
+        className={cn(
+          "shrink-0 text-[11px] tabular-nums",
+          active ? "text-accent-strong/70" : "text-subtle",
         )}
-      </div>
-
-      {fixture.venue ? (
-        <p className="mt-3 truncate text-[11px] text-arena-muted">{fixture.venue}</p>
-      ) : null}
-    </article>
-  );
-}
-
-function TeamRow({ team }: { team: FixtureTeam }) {
-  return (
-    <div className="flex items-center gap-3">
-      <Crest team={team} />
-      <span className="min-w-0 flex-1 truncate text-sm font-semibold">{team.name}</span>
-    </div>
-  );
-}
-
-function Crest({ team }: { team: FixtureTeam }) {
-  const [failed, setFailed] = useState(false);
-  const initials = team.name
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((part) => part.charAt(0))
-    .join("")
-    .toUpperCase();
-
-  if (!team.crestUrl || failed) {
-    return (
-      <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-white/10 text-[10px] font-bold text-arena-muted">
-        {initials}
+      >
+        {count}
       </span>
-    );
-  }
-
-  return (
-    // Las crestas vienen del CDN público de ESPN; CSP permite ese origen.
-    // eslint-disable-next-line @next/next/no-img-element
-    <img
-      src={team.crestUrl}
-      alt=""
-      loading="lazy"
-      onError={() => setFailed(true)}
-      className="h-8 w-8 shrink-0 object-contain"
-    />
+    </button>
   );
-}
-
-function countdown(diffMillis: number, language: "es" | "en"): string {
-  if (diffMillis <= 0) {
-    return language === "es" ? "en juego" : "live";
-  }
-  const minutes = Math.floor(diffMillis / 60_000);
-  if (minutes < 60) {
-    return language === "es" ? `en ${minutes} min` : `in ${minutes} min`;
-  }
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) {
-    return language === "es" ? `en ${hours} h` : `in ${hours} h`;
-  }
-  const days = Math.floor(hours / 24);
-  return language === "es" ? `en ${days} d` : `in ${days} d`;
-}
-
-function timeLabel(value: string, language: "es" | "en"): string {
-  return new Intl.DateTimeFormat(language === "es" ? "es-PE" : "en-US", {
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(new Date(value));
 }

@@ -252,6 +252,26 @@ Aceptación: fixtures de fútbol visibles con cuotas pre-partida; liquidación c
 resultado final; NBA equivalente; el producto no afirma tener eventos en vivo
 de fútbol/NBA.
 
+### M9 — Rediseño de la UX/UI pública (2026-11-25)
+
+**Estado:** propuesta 2026-11-25, pendiente de aprobación visual. Decisión:
+ADR-046.
+
+Objetivo: convertir la portada en un catálogo deportivo con identidad, sin
+duplicar eventos y con el boleto accesible desde el primer scroll.
+
+Tareas:
+
+- Portada: tres destacados fotográficos con cuotas dentro de la card, filas por competición de 78 px, buscador y rangos.
+- Navegación deportiva única `Destacados / Fútbol / NBA / Esports`; `/sports` fútbol y `/nba` propia.
+- `/sports` y `/nba` con rail de competiciones, buscador y banner del próximo partido; modal de mercados directo; boleto de 300 px y barra móvil.
+- `/bets` con pestañas Abiertas/Resueltas, filtro por deporte y panel de detalle.
+- Estados, teclado, contraste y movimiento reducido.
+- QA 390/1024/1440, lint/build, Vitest, backend y E2E.
+
+Aceptación: destacados con datos reales, sin repeticiones, mercados accesibles y
+boleto visible; `/nba` fuera de Fútbol; verificado en los tres anchos.
+
 ## Programación referencial
 
 El estado de avance vive solo en `docs/STATUS.md`. Aquí únicamente el calendario previsto.
@@ -268,6 +288,7 @@ El estado de avance vive solo en `docs/STATUS.md`. Aquí únicamente el calendar
 | M6b | S13 |
 | M7 | S14–S15 |
 | M8 | S16–S18 |
+| M9 | S19 |
 | Buffer | S19 |
 
 Las semanas son relativas porque la fecha de inicio está por definir. Con 16 GB de RAM y Docker solo para PostgreSQL, el desarrollo es viable.

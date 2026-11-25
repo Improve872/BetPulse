@@ -76,7 +76,7 @@ public class BasketballStrengthService {
 			}
 			for (Entry entry : child.standings().entries()) {
 				totalPointsFor += stat(entry, "pointsFor");
-				totalGames += stat(entry, "gamesPlayed");
+				totalGames += played(entry);
 			}
 		}
 		double leagueAverage = totalGames <= 0
@@ -100,7 +100,7 @@ public class BasketballStrengthService {
 				if (teamId <= 0) {
 					continue;
 				}
-				double played = stat(entry, "gamesPlayed");
+				double played = played(entry);
 				double pointsFor = stat(entry, "pointsFor");
 				double pointsAgainst = stat(entry, "pointsAgainst");
 				if (played <= 0) {
@@ -128,6 +128,15 @@ public class BasketballStrengthService {
 			}
 		}
 		return 0;
+	}
+
+	/** ESPN dejó de publicar `gamesPlayed` en la NBA; se deriva del récord. */
+	private static double played(Entry entry) {
+		double games = stat(entry, "gamesPlayed");
+		if (games > 0) {
+			return games;
+		}
+		return stat(entry, "wins") + stat(entry, "losses") + stat(entry, "ties");
 	}
 
 	private static long parseId(String value) {

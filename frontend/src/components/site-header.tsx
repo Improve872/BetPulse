@@ -1,14 +1,19 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { GameSwitcher } from "@/components/game-switcher";
 import {
+  BasketballIcon,
   ChevronDownIcon,
   CloseIcon,
   EyeIcon,
   EyeOffIcon,
+  FootballIcon,
+  GamepadIcon,
   MenuIcon,
+  SearchIcon,
+  StarIcon,
   UserIcon,
   WalletIcon,
 } from "@/components/icons";
@@ -17,14 +22,19 @@ import { Logo } from "@/components/logo";
 import { apiFetch, type WalletBalance } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { cn, formatMoney } from "@/lib/format";
-import { games } from "@/lib/games";
 import { useLanguage } from "@/lib/i18n";
 import type { GameId, LobbyView } from "@/lib/lobby";
 import { WALLET_UPDATED_EVENT } from "@/lib/wallet-events";
 
+export type PublicSport = "esports" | "football" | "nba";
+
 type SiteHeaderProps = {
   game: GameId;
   activeView: LobbyView;
+  activeSport?: PublicSport;
+  showSportsNav?: boolean;
+  searchQuery?: string;
+  onSearchChange?: (value: string) => void;
   onGameChange: (game: GameId) => void;
   onNavigate: (view: LobbyView) => void;
   onLogin: () => void;
@@ -32,16 +42,29 @@ type SiteHeaderProps = {
 };
 
 const navBase =
-  "inline-flex items-center justify-center whitespace-nowrap rounded-lg px-3 py-2 text-sm font-semibold transition";
+  "inline-flex h-9 items-center justify-center whitespace-nowrap rounded-md px-3 text-[15px] font-medium transition";
+
+const sportItemBase =
+  "relative inline-flex h-14 shrink-0 items-center gap-2 px-2.5 text-[14px] font-medium transition after:absolute after:inset-x-2 after:bottom-0 after:h-[2px] after:rounded-full after:transition sm:px-3 sm:text-[15px]";
+
+function sportItemClass(active: boolean) {
+  return cn(
+    sportItemBase,
+    active
+      ? "text-accent after:bg-accent"
+      : "text-ink/75 after:bg-transparent hover:bg-paper hover:text-ink",
+  );
+}
 
 export function SiteHeader({
-  game,
-  activeView,
-  onGameChange,
-  onNavigate,
+  activeSport,
+  showSportsNav = false,
+  searchQuery = "",
+  onSearchChange,
   onLogin,
   onRegister,
 }: SiteHeaderProps) {
+  const pathname = usePathname();
   const { t, language } = useLanguage();
   const { user, loading, logout } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -153,11 +176,6 @@ export function SiteHeader({
     };
   }, [accountOpen, menuOpen]);
 
-  const handleNavigate = (view: LobbyView) => {
-    setMenuOpen(false);
-    onNavigate(view);
-  };
-
   const handleLogin = () => {
     setMenuOpen(false);
     onLogin();
@@ -184,40 +202,41 @@ export function SiteHeader({
   return (
     <header
       ref={headerRef}
-      className="sticky top-0 z-40 border-b border-white/10 bg-arena-soft/95 text-white backdrop-blur"
+      className="sticky top-0 z-40 bg-masthead text-white shadow-[0_1px_0_rgba(16,29,52,0.9)]"
     >
-      <div className="mx-auto flex h-16 max-w-[1320px] items-center gap-3 px-4 sm:px-6 lg:px-8">
-        <Logo />
+      <div className="mx-auto flex h-16 max-w-[1440px] items-center gap-4 px-4 sm:px-7">
+        <Logo tone="light" />
 
-        <div className="hidden h-6 w-px bg-white/10 lg:block" />
-
-        <div className="hidden xl:block">
-          <GameSwitcher value={game} onChange={onGameChange} />
-        </div>
-
-        <nav className="hidden items-center gap-1 lg:flex" aria-label="Principal">
-          <button
-            type="button"
-            onClick={() => handleNavigate("live")}
+        <nav className="hidden items-center gap-0.5 lg:flex" aria-label="Principal">
+          <Link
+            href="/"
             className={cn(
               navBase,
-              activeView === "live"
-                ? "bg-white/10 text-white"
-                : "text-white/60 hover:bg-white/5 hover:text-white",
+              pathname === "/"
+                ? "text-white"
+                : "text-white/65 hover:bg-white/10 hover:text-white",
             )}
           >
-            {t("nav.arena")}
-          </button>
+            {t("nav.home")}
+          </Link>
           <Link
-            href="/sports"
-            className={cn(navBase, "text-white/60 hover:bg-white/5 hover:text-white")}
+            href="/#esports"
+            className={cn(
+              navBase,
+              "text-white/65 hover:bg-white/10 hover:text-white",
+            )}
           >
-            {t("nav.football")}
+            {t("nav.live")}
           </Link>
           {user ? (
             <Link
               href="/bets"
-              className={cn(navBase, "text-white/60 hover:bg-white/5 hover:text-white")}
+              className={cn(
+                navBase,
+                pathname === "/bets"
+                  ? "text-white"
+                  : "text-white/65 hover:bg-white/10 hover:text-white",
+              )}
             >
               {t("nav.myBets")}
             </Link>
@@ -225,7 +244,10 @@ export function SiteHeader({
             <button
               type="button"
               onClick={handleLogin}
-              className={cn(navBase, "text-white/60 hover:bg-white/5 hover:text-white")}
+              className={cn(
+                navBase,
+                "text-white/65 hover:bg-white/10 hover:text-white",
+              )}
             >
               {t("nav.myBets")}
             </button>
@@ -233,7 +255,7 @@ export function SiteHeader({
           {user?.roles.includes("ADMIN") ? (
             <Link
               href="/admin"
-              className={cn(navBase, "text-accent hover:bg-accent/10")}
+              className={cn(navBase, "text-accent hover:bg-white/10")}
             >
               {t("nav.admin")}
             </Link>
@@ -242,23 +264,25 @@ export function SiteHeader({
 
         <div className="ml-auto flex items-center gap-2">
           <div className="hidden lg:block">
-            <LanguageToggle />
+            <LanguageToggle variant="bare" />
           </div>
 
           {loading ? (
-            <div className="hidden h-8 w-28 animate-pulse rounded-lg bg-white/10 sm:block" />
+            <div className="hidden h-9 w-28 animate-pulse rounded-lg bg-white/10 sm:block" />
           ) : user ? (
             <>
-              <div className="flex items-center rounded-lg border border-white/10 bg-white/[0.06] p-0.5">
+              <div className="hidden items-center rounded-lg border border-white/15 bg-white/5 p-0.5 sm:flex">
                 <Link
                   href="/wallet"
                   aria-label={t("header.wallet")}
-                  className="inline-flex min-w-[76px] items-center justify-center rounded-md px-2 py-1.5 text-xs font-semibold text-white/85 transition hover:bg-white/10 hover:text-white"
+                  className="inline-flex min-w-[76px] items-center justify-center rounded-md px-2 py-1.5 text-xs font-semibold text-white transition hover:bg-white/10"
                 >
                   {balanceLoading && balanceCents === null ? (
-                    <span className="h-3 w-12 animate-pulse rounded bg-white/15" />
+                    <span className="h-3 w-12 animate-pulse rounded bg-white/20" />
                   ) : hideBalance ? (
-                    <span className="tracking-[0.18em] text-white/55">S/ ••••</span>
+                    <span className="tracking-[0.18em] text-white/60">
+                      S/ ••••
+                    </span>
                   ) : (
                     <span className="font-score tabular-nums">
                       {balanceCents === null
@@ -276,7 +300,7 @@ export function SiteHeader({
                       : t("header.hideBalance")
                   }
                   aria-pressed={hideBalance}
-                  className="grid h-7 w-7 place-items-center rounded-md text-white/55 transition hover:bg-white/10 hover:text-white"
+                  className="grid h-7 w-7 place-items-center rounded-md text-white/60 transition hover:bg-white/10 hover:text-white"
                 >
                   {hideBalance ? (
                     <EyeIcon className="h-3.5 w-3.5" />
@@ -291,9 +315,10 @@ export function SiteHeader({
                   onClick={() => setAccountOpen((current) => !current)}
                   aria-expanded={accountOpen}
                   aria-haspopup="menu"
-                  className="hidden max-w-[190px] items-center gap-1.5 truncate rounded-lg px-2.5 py-2 text-sm font-semibold text-white/85 transition hover:bg-white/10 hover:text-white sm:inline-flex"
+                  className="inline-flex h-9 max-w-[190px] items-center gap-1.5 truncate rounded-md px-2.5 text-sm font-semibold text-white transition hover:bg-white/10"
                 >
-                  <span className="truncate">{user.displayName}</span>
+                  <UserIcon className="h-4 w-4 text-white/60" />
+                  <span className="truncate">{t("nav.account")}</span>
                   <ChevronDownIcon
                     className={cn(
                       "h-3.5 w-3.5 shrink-0 transition",
@@ -304,28 +329,28 @@ export function SiteHeader({
                 {accountOpen ? (
                   <div
                     role="menu"
-                    className="absolute right-0 top-full z-50 mt-2 w-56 overflow-hidden rounded-xl border border-arena-line bg-arena-surface p-1.5 text-arena-ink shadow-xl"
+                    className="absolute right-0 top-full z-50 mt-2 w-56 overflow-hidden rounded-xl border border-line bg-white p-1.5 text-ink shadow-xl"
                   >
                     <Link
                       href="/account"
                       onClick={() => setAccountOpen(false)}
-                      className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-arena-ink transition hover:bg-white/5"
+                      className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-ink transition hover:bg-paper"
                     >
-                      <UserIcon className="h-4 w-4 text-arena-muted" />
+                      <UserIcon className="h-4 w-4 text-muted" />
                       {t("nav.account")}
                     </Link>
                     <Link
                       href="/wallet"
                       onClick={() => setAccountOpen(false)}
-                      className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-arena-ink transition hover:bg-white/5"
+                      className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-ink transition hover:bg-paper"
                     >
-                      <WalletIcon className="h-4 w-4 text-arena-muted" />
+                      <WalletIcon className="h-4 w-4 text-muted" />
                       {t("header.wallet")}
                     </Link>
                     <Link
                       href="/bets"
                       onClick={() => setAccountOpen(false)}
-                      className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-arena-ink transition hover:bg-white/5"
+                      className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-ink transition hover:bg-paper"
                     >
                       {t("nav.myBets")}
                     </Link>
@@ -333,7 +358,7 @@ export function SiteHeader({
                       <Link
                         href="/admin"
                         onClick={() => setAccountOpen(false)}
-                        className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-accent transition hover:bg-accent/10"
+                        className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-accent-strong transition hover:bg-accent/10"
                       >
                         {t("nav.admin")}
                       </Link>
@@ -342,22 +367,27 @@ export function SiteHeader({
                       type="button"
                       onClick={() => void handleLogout()}
                       disabled={signingOut}
-                      className="mt-1 flex w-full items-center gap-2 rounded-lg border-t border-arena-line px-3 py-2 pt-2 text-left text-sm text-arena-muted transition hover:bg-white/5 hover:text-arena-ink disabled:cursor-not-allowed disabled:opacity-50"
+                      className="mt-1 flex w-full items-center gap-2 rounded-lg border-t border-line px-3 py-2 pt-2 text-left text-sm text-muted transition hover:bg-paper hover:text-ink disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       {t("header.logout")}
                     </button>
                   </div>
                 ) : null}
               </div>
+              <Link
+                href="/wallet"
+                className="hidden h-10 items-center rounded-lg bg-accent px-4 text-sm font-semibold text-masthead transition hover:bg-accent-bright sm:inline-flex"
+              >
+                {t("header.deposit")}
+              </Link>
             </>
           ) : (
             <>
               <button
                 type="button"
                 onClick={handleLogin}
-                className="hidden items-center gap-2 whitespace-nowrap rounded-lg px-3 py-2 text-sm font-medium text-white/75 transition hover:bg-white/10 hover:text-white sm:inline-flex"
+                className="hidden h-10 items-center whitespace-nowrap rounded-lg border border-white/35 px-4 text-sm font-semibold text-white transition hover:border-white/60 hover:bg-white/10 sm:inline-flex"
               >
-                <UserIcon className="h-4 w-4" />
                 {t("header.login")}
               </button>
 
@@ -365,7 +395,7 @@ export function SiteHeader({
                 type="button"
                 onClick={handleLogin}
                 aria-label={t("header.login")}
-                className="grid h-9 w-9 place-items-center rounded-lg text-white/75 transition hover:bg-white/10 hover:text-white sm:hidden"
+                className="grid h-9 w-9 place-items-center rounded-md text-white/75 transition hover:bg-white/10 hover:text-white sm:hidden"
               >
                 <UserIcon className="h-5 w-5" />
               </button>
@@ -373,7 +403,7 @@ export function SiteHeader({
               <button
                 type="button"
                 onClick={handleRegister}
-                className="hidden whitespace-nowrap rounded-lg bg-accent px-3.5 py-2 text-sm font-semibold text-navy transition hover:bg-accent-bright sm:inline-flex"
+                className="hidden h-10 items-center whitespace-nowrap rounded-lg bg-accent px-4 text-sm font-semibold text-masthead transition hover:bg-accent-bright sm:inline-flex"
               >
                 {t("header.register")}
               </button>
@@ -385,7 +415,7 @@ export function SiteHeader({
             onClick={() => setMenuOpen((currentOpen) => !currentOpen)}
             aria-expanded={menuOpen}
             aria-label={menuOpen ? t("header.closeMenu") : t("header.openMenu")}
-            className="grid h-9 w-9 place-items-center rounded-lg text-white/75 transition hover:bg-white/10 hover:text-white lg:hidden"
+            className="grid h-9 w-9 place-items-center rounded-md text-white/80 transition hover:bg-white/10 hover:text-white lg:hidden"
           >
             {menuOpen ? (
               <CloseIcon className="h-5 w-5" />
@@ -396,71 +426,135 @@ export function SiteHeader({
         </div>
       </div>
 
-      {menuOpen ? (
-        <div className="border-t border-white/10 bg-arena-surface px-4 pb-5 pt-4 text-arena-ink shadow-xl lg:hidden">
-          <div className="mx-auto max-w-[1320px] space-y-5">
-            <div>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-arena-muted">
-                {t("games.label")}
-              </p>
-              <div className="mt-2 flex flex-wrap gap-2">
-                {games.map((gameOption) => (
-                  <button
-                    key={gameOption.id}
-                    type="button"
-                    disabled={!gameOption.available}
-                    onClick={() => {
-                      if (!gameOption.available) {
-                        return;
-                      }
-                      onGameChange(gameOption.id);
-                      setMenuOpen(false);
-                    }}
-                    className={cn(
-                      "inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition",
-                      gameOption.available
-                        ? "border-accent/30 bg-accent/10 text-accent"
-                        : "cursor-not-allowed border-arena-line bg-white/[0.03] text-arena-muted/60",
-                      gameOption.id === game && "ring-1 ring-accent/30",
-                    )}
-                  >
-                    <span className="text-[10px] font-bold">{gameOption.mark}</span>
-                    {gameOption.name}
-                    {!gameOption.available ? (
-                      <span className="rounded bg-white/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-arena-muted">
-                        {t("games.soon")}
-                      </span>
-                    ) : null}
-                  </button>
-                ))}
+      {showSportsNav ? (
+        <div className="border-t border-white/10 bg-white">
+          <div className="mx-auto flex h-14 max-w-[1440px] items-center gap-3 px-4 sm:px-7">
+            <nav
+              aria-label="Deportes"
+              className="no-scrollbar flex flex-1 items-center gap-0.5 overflow-x-auto"
+            >
+              <Link href="/" className={sportItemClass(pathname === "/")}>
+                <StarIcon
+                  className="h-4 w-4 sm:h-5 sm:w-5"
+                  filled={pathname === "/"}
+                />
+                {t("nav.featured")}
+              </Link>
+              <Link
+                href="/sports"
+                className={sportItemClass(activeSport === "football")}
+              >
+                <FootballIcon className="hidden h-5 w-5 sm:block" />
+                {t("nav.football")}
+              </Link>
+              <Link href="/nba" className={sportItemClass(activeSport === "nba")}>
+                <BasketballIcon className="hidden h-5 w-5 sm:block" />
+                {t("nav.nba")}
+              </Link>
+              <Link
+                href="/#esports"
+                className={sportItemClass(activeSport === "esports")}
+              >
+                <GamepadIcon className="hidden h-5 w-5 sm:block" />
+                {t("nav.esports")}
+              </Link>
+            </nav>
+
+            {onSearchChange ? (
+              <div className="relative hidden shrink-0 lg:block">
+                <SearchIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-subtle" />
+                <input
+                  type="search"
+                  value={searchQuery}
+                  onChange={(event) => onSearchChange(event.target.value)}
+                  placeholder={t("home.search")}
+                  aria-label={t("home.search")}
+                  className="h-10 w-[300px] rounded-lg border border-line bg-white pl-9 pr-3 text-sm text-ink outline-none transition placeholder:text-subtle focus:border-accent focus:ring-2 focus:ring-accent/20"
+                />
               </div>
-            </div>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
+
+      {menuOpen ? (
+        <div className="border-t border-white/10 bg-white px-4 pb-5 pt-4 text-ink shadow-xl lg:hidden">
+          <div className="mx-auto max-w-[1320px] space-y-5">
+            {onSearchChange ? (
+              <div className="relative">
+                <SearchIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-subtle" />
+                <input
+                  type="search"
+                  value={searchQuery}
+                  onChange={(event) => onSearchChange(event.target.value)}
+                  placeholder={t("home.search")}
+                  aria-label={t("home.search")}
+                  className="h-11 w-full rounded-lg border border-line bg-white pl-9 pr-3 text-sm text-ink outline-none transition placeholder:text-subtle focus:border-accent focus:ring-2 focus:ring-accent/20"
+                />
+              </div>
+            ) : null}
 
             <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => handleNavigate("live")}
+              <Link
+                href="/"
+                onClick={() => setMenuOpen(false)}
                 className={cn(
-                  "rounded-lg border px-3 py-2.5 text-left text-sm font-medium transition",
-                  activeView === "live"
-                    ? "border-accent/30 bg-accent/10 text-accent"
-                    : "border-arena-line bg-white/[0.03] text-arena-ink hover:bg-white/[0.06]",
+                  "flex items-center gap-2 rounded-lg border px-3 py-2.5 text-sm font-semibold transition",
+                  pathname === "/"
+                    ? "border-accent/30 bg-accent/10 text-accent-strong"
+                    : "border-line bg-white text-ink hover:bg-paper",
                 )}
               >
-                {t("nav.arena")}
-              </button>
+                <StarIcon className="h-4 w-4" filled={pathname === "/"} />
+                {t("nav.featured")}
+              </Link>
               <Link
                 href="/sports"
                 onClick={() => setMenuOpen(false)}
-                className="rounded-lg border border-arena-line bg-white/[0.03] px-3 py-2.5 text-left text-sm font-medium text-arena-ink transition hover:bg-white/[0.06]"
+                className={cn(
+                  "flex items-center gap-2 rounded-lg border px-3 py-2.5 text-sm font-semibold transition",
+                  activeSport === "football"
+                    ? "border-accent/30 bg-accent/10 text-accent-strong"
+                    : "border-line bg-white text-ink hover:bg-paper",
+                )}
               >
+                <FootballIcon className="h-4 w-4" />
                 {t("nav.football")}
               </Link>
+              <Link
+                href="/nba"
+                onClick={() => setMenuOpen(false)}
+                className={cn(
+                  "flex items-center gap-2 rounded-lg border px-3 py-2.5 text-sm font-semibold transition",
+                  activeSport === "nba"
+                    ? "border-accent/30 bg-accent/10 text-accent-strong"
+                    : "border-line bg-white text-ink hover:bg-paper",
+                )}
+              >
+                <BasketballIcon className="h-4 w-4" />
+                {t("nav.nba")}
+              </Link>
+              <Link
+                href="/#esports"
+                onClick={() => setMenuOpen(false)}
+                className={cn(
+                  "flex items-center gap-2 rounded-lg border px-3 py-2.5 text-sm font-semibold transition",
+                  activeSport === "esports"
+                    ? "border-accent/30 bg-accent/10 text-accent-strong"
+                    : "border-line bg-white text-ink hover:bg-paper",
+                )}
+              >
+                <GamepadIcon className="h-4 w-4" />
+                {t("nav.esports")}
+              </Link>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
               {user ? (
                 <Link
                   href="/bets"
                   onClick={() => setMenuOpen(false)}
-                  className="rounded-lg border border-arena-line bg-white/[0.03] px-3 py-2.5 text-left text-sm font-medium text-arena-ink transition hover:bg-white/[0.06]"
+                  className="rounded-lg border border-line bg-white px-3 py-2.5 text-left text-sm font-medium text-ink transition hover:bg-paper"
                 >
                   {t("nav.myBets")}
                 </Link>
@@ -468,7 +562,7 @@ export function SiteHeader({
                 <button
                   type="button"
                   onClick={handleLogin}
-                  className="rounded-lg border border-arena-line bg-white/[0.03] px-3 py-2.5 text-left text-sm font-medium text-arena-ink transition hover:bg-white/[0.06]"
+                  className="rounded-lg border border-line bg-white px-3 py-2.5 text-left text-sm font-medium text-ink transition hover:bg-paper"
                 >
                   {t("nav.myBets")}
                 </button>
@@ -477,7 +571,7 @@ export function SiteHeader({
                 <Link
                   href="/account"
                   onClick={() => setMenuOpen(false)}
-                  className="rounded-lg border border-arena-line bg-white/[0.03] px-3 py-2.5 text-left text-sm font-medium text-arena-ink transition hover:bg-white/[0.06]"
+                  className="rounded-lg border border-line bg-white px-3 py-2.5 text-left text-sm font-medium text-ink transition hover:bg-paper"
                 >
                   {t("nav.account")}
                 </Link>
@@ -493,18 +587,18 @@ export function SiteHeader({
               ) : null}
             </div>
 
-            <div className="flex items-center justify-between gap-3 border-t border-arena-line pt-4">
+            <div className="flex items-center justify-between gap-3 border-t border-line pt-4">
               <div className="flex items-center gap-3">
                 <LanguageToggle />
                 {user ? (
-                  <span className="max-w-[150px] truncate text-sm font-semibold text-arena-ink">
+                  <span className="max-w-[150px] truncate text-sm font-semibold text-ink">
                     {user.displayName}
                   </span>
                 ) : (
                   <button
                     type="button"
                     onClick={handleLogin}
-                    className="text-sm font-semibold text-accent"
+                    className="text-sm font-semibold text-accent-strong"
                   >
                     {t("header.login")}
                   </button>
@@ -515,7 +609,7 @@ export function SiteHeader({
                   type="button"
                   onClick={handleLogout}
                   disabled={signingOut}
-                  className="rounded-lg border border-arena-line px-3.5 py-2 text-sm font-semibold text-arena-ink transition hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="rounded-lg border border-line px-3.5 py-2 text-sm font-semibold text-ink transition hover:bg-paper disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {t("header.logout")}
                 </button>
@@ -523,7 +617,7 @@ export function SiteHeader({
                 <button
                   type="button"
                   onClick={handleRegister}
-                  className="rounded-lg bg-accent px-3.5 py-2 text-sm font-semibold text-navy transition hover:bg-accent-bright"
+                  className="rounded-lg bg-accent px-3.5 py-2 text-sm font-semibold text-masthead transition hover:bg-accent-bright"
                 >
                   {t("header.register")}
                 </button>

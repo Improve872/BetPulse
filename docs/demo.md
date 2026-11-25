@@ -169,8 +169,8 @@ nuevo no toca el núcleo de pagos.
 
 ### 5. Deportes pre-partida: fútbol y NBA
 
-- `/sports` consulta **ESPN** y publica solo partidos programados de las cinco
-  grandes ligas y de la NBA. No hay cobertura en vivo.
+- `/sports` (fútbol) y `/nba` consultan **ESPN** y publican solo partidos
+  programados de las cinco grandes ligas y de la NBA. No hay cobertura en vivo.
 - Dos mercados por partido:
   - Fútbol: `MATCH_RESULT_1X2` (local/empate/visitante) y `TOTAL_GOALS`.
   - NBA: `MATCH_RESULT_2WAY` (local/visitante, sin empate) y `TOTAL_POINTS`.
@@ -231,7 +231,7 @@ asientos que no pueden dejar de cuadrar.
 |---|---|---|---|
 | 0–2 | Lobby | "Dota 2 en vivo, cuotas propias, apuestas contra la casa, saldo en soles" | Producto y propuesta |
 | 2–4 | Registro → `/account` | "Sesión HttpOnly, CSRF, roles; la cuenta se crea con wallet propia" | Identidad |
-| 4–6 | Lobby | Partido destacado, rail en vivo, escudos, tabs, cuotas que se mueven solas | OpenDota + SSE |
+| 4–6 | Lobby | Tres destacados con foto y cuotas, filas por competición, buscador, cuotas que se mueven solas | OpenDota + SSE |
 | 6–8 | `/match/[id]` | Marcador, timeline, mercados, stream oficial click-to-load | Ingesta y detalle |
 | 8–11 | `/wallet` | Checkout en 3 pasos: monto → pago → confirmar; tarjeta/Yape/transferencia | Producto de pagos |
 | 11–13 | `/wallet` comprobante | "El backend solo recibió monto y clave de idempotencia" | Privacidad de datos |
@@ -245,13 +245,17 @@ asientos que no pueden dejar de cuadrar.
 
 Se inserta entre `/wallet` y la partida de Dota, o al final si sobra tiempo.
 
-1. Abrir `/sports` y mostrar el selector **Fútbol / NBA**.
-2. Fútbol: señalar `1X2` y total de goles con cuotas del servidor y cuenta
-   atrás. Mencionar que salen de la tabla real, no de una API de cuotas.
-3. Elegir una selección; el boleto muestra equipos, mercado, versión y cuota.
+1. Abrir la portada `/`: tres destacados fotográficos (NBA, fútbol y Dota en
+   vivo), buscador y filas por competición. Mostrar que los destacados no se
+   repiten en las filas.
+2. Fútbol: entrar a `/sports`, mostrar el rail de competiciones, el banner del
+   próximo partido y `1X2` + total de goles con cuotas del servidor. Mencionar
+   que salen de la tabla real, no de una API de cuotas.
+3. Elegir una selección; el boleto muestra equipos, mercado y cuota.
 4. Apostar `S/ 10` con el usuario de demo y volver a `/bets` para ver `PLACED`
-   y el hold.
-5. NBA: repetir con ganador o total de puntos y explicar que no hay empate.
+   y el hold; abrir el detalle de la apuesta en el panel derecho.
+5. NBA: entrar a `/nba` y repetir con ganador o total de puntos; explicar que
+   no hay empate.
 6. Cerrar diciendo que la liquidación ocurre al terminar el partido y usa el
    mismo motor ya mostrado con Dota. **No hay que esperar** a que termine un
    partido para demostrar el dinero.
@@ -271,7 +275,7 @@ Se inserta entre `/wallet` y la partida de Dota, o al final si sobra tiempo.
 | Yape/Plin | `987 654 321`, OTP `123456` |
 | Transferencia | BCP, operación `12345678` |
 | Monto | `150.00` |
-| Apuesta pre-partida | Cualquier partido de `/sports`, stake `10.00` |
+| Apuesta pre-partida | Cualquier partido de `/sports` o `/nba`, stake `10.00` |
 
 > El checkout acepta cualquier fecha con formato válido y mes entre 01 y 12;
 > no compara contra el reloj para no bloquear la demo con tarjetas de ejemplo

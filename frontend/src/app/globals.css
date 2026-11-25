@@ -5,6 +5,8 @@
   --color-navy-soft: #101a2c;
   --color-paper: #eef2f6;
   --color-surface: #ffffff;
+  --color-masthead: #101d34;
+  --color-masthead-soft: #17253f;
   --color-ink: #0f172a;
   --color-muted: #475569;
   --color-subtle: #5b6b80;
@@ -24,8 +26,15 @@
   --color-arena-ink: #f8fafc;
   --color-arena-muted: #94a3b8;
 
+  --color-pitch: #0f7a55;
+  --color-pitch-soft: #e7f5ef;
+  --color-court: #1d4ed8;
+  --color-court-soft: #e8eefc;
+  --color-paper-soft: #f7f9fc;
+
   --font-display: "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif;
   --font-body: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+  --font-headline: "Bahnschrift", "DIN Alternate", "Arial Narrow", "Segoe UI", sans-serif;
   --font-score: "Bahnschrift", "DIN Alternate", "Arial Narrow", sans-serif;
   --font-mono: "Cascadia Mono", "Consolas", monospace;
 
@@ -115,6 +124,33 @@ body {
 
 .odds-flash-down {
   animation: odds-flash-down 0.7s ease-out;
+}
+
+.no-scrollbar {
+  scrollbar-width: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.headline {
+  font-family: var(--font-headline);
+  letter-spacing: -0.02em;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 :focus-visible {

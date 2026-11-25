@@ -23,6 +23,63 @@ export function ArrowRightIcon({ className }: IconProps) {
   );
 }
 
+export function SearchIcon({ className }: IconProps) {
+  return (
+    <svg {...iconProps(className)}>
+      <circle cx="11" cy="11" r="6.8" />
+      <path d="m20 20-3.6-3.6" />
+    </svg>
+  );
+}
+
+export function StarIcon({
+  className,
+  filled = false,
+}: IconProps & { filled?: boolean }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill={filled ? "currentColor" : "none"}
+      stroke="currentColor"
+      strokeWidth={1.6}
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
+      <path d="m12 3.6 2.6 5.4 5.9.8-4.3 4.1 1.1 5.9-5.3-2.9-5.3 2.9 1.1-5.9-4.3-4.1 5.9-.8Z" />
+    </svg>
+  );
+}
+
+export function FootballIcon({ className }: IconProps) {
+  return (
+    <svg {...iconProps(className)}>
+      <circle cx="12" cy="12" r="8.4" />
+      <path d="m12 8.1 3.3 2.4-1.2 3.9h-4.2l-1.2-3.9Z" />
+      <path d="M12 3.6v4.5M4.1 9.9l4.4 1.2M19.9 9.9l-4.4 1.2M7.5 19.2l1.4-4.4M16.5 19.2l-1.4-4.4" />
+    </svg>
+  );
+}
+
+export function BasketballIcon({ className }: IconProps) {
+  return (
+    <svg {...iconProps(className)}>
+      <circle cx="12" cy="12" r="8.4" />
+      <path d="M3.6 12h16.8M12 3.6v16.8" />
+      <path d="M5.7 5.7a11 11 0 0 1 0 12.6M18.3 5.7a11 11 0 0 0 0 12.6" />
+    </svg>
+  );
+}
+
+export function GamepadIcon({ className }: IconProps) {
+  return (
+    <svg {...iconProps(className)}>
+      <path d="M8.6 8h6.8a4.4 4.4 0 0 1 4.3 5.3l-.6 3.1a2.6 2.6 0 0 1-4.6 1.2L13.3 16h-2.6l-1.2 1.6a2.6 2.6 0 0 1-4.6-1.2l-.6-3.1A4.4 4.4 0 0 1 8.6 8Z" />
+      <path d="M7.4 11.2v2.2M6.3 12.3h2.2M16.1 11.4h.01M17.6 13.2h.01" />
+    </svg>
+  );
+}
+
 export function ChevronDownIcon({ className }: IconProps) {
   return (
     <svg {...iconProps(className)}>

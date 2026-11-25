@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { PulseMark } from "@/components/pulse-mark";
+import { cn } from "@/lib/format";
 
-export function Logo() {
+export function Logo({ tone = "dark" }: { tone?: "dark" | "light" }) {
   return (
     <Link
       href="/"
@@ -11,7 +12,12 @@ export function Logo() {
       <span className="grid h-9 w-9 place-items-center rounded-xl bg-accent text-navy shadow-[0_8px_20px_-10px_rgba(249,115,22,0.9)] transition group-hover:bg-accent-bright">
         <PulseMark className="h-5 w-5" />
       </span>
-      <span className="font-display text-[17px] font-semibold tracking-tight text-white">
+      <span
+        className={cn(
+          "font-display text-[17px] font-semibold tracking-tight",
+          tone === "light" ? "text-white" : "text-ink",
+        )}
+      >
         Bet<span className="text-accent">Pulse</span>
       </span>
     </Link>

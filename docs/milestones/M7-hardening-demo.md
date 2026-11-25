@@ -33,7 +33,7 @@ ADR-041 y ADR-042.
 
 ## Verificación
 
-- Backend: 116/116 tests al cerrar la base (hoy 139/139 con M8).
+- Backend: 116/116 tests al cerrar la base (hoy 140/140 con M8 y UX).
 - Frontend: 18/18 tests de checkout; lint y build verdes.
 - E2E: 1/1 en Chromium (~14 s en local) con el flujo completo de dinero; job
   `e2e` en CI.

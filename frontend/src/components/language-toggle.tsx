@@ -6,9 +6,42 @@ import { useLanguage } from "@/lib/i18n";
 export function LanguageToggle({
   variant = "dark",
 }: {
-  variant?: "dark" | "light";
+  variant?: "dark" | "light" | "bare";
 }) {
   const { language, setLanguage, t } = useLanguage();
+
+  if (variant === "bare") {
+    return (
+      <div
+        className="flex items-center gap-1"
+        role="group"
+        aria-label={t("lang.label")}
+      >
+        {(["es", "en"] as const).map((lang, index) => (
+          <span key={lang} className="flex items-center gap-1">
+            {index > 0 ? (
+              <span aria-hidden="true" className="text-[11px] text-white/35">
+                /
+              </span>
+            ) : null}
+            <button
+              type="button"
+              onClick={() => setLanguage(lang)}
+              aria-pressed={language === lang}
+              className={cn(
+                "px-1 py-1 text-[11px] font-bold uppercase tracking-[0.16em] transition",
+                language === lang
+                  ? "text-accent"
+                  : "text-white/55 hover:text-white",
+              )}
+            >
+              {lang === "es" ? t("lang.es") : t("lang.en")}
+            </button>
+          </span>
+        ))}
+      </div>
+    );
+  }
 
   return (
     <div

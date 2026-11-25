@@ -79,6 +79,52 @@ export function formatOdds(value: number): string {
   return Number.isFinite(value) ? value.toFixed(3) : "—";
 }
 
+export type KickoffTiming = {
+  day: "today" | "tomorrow" | "later";
+  time: string;
+  weekday: string;
+};
+
+export function kickoffTiming(
+  iso: string,
+  language: "es" | "en",
+): KickoffTiming {
+  const locale = language === "es" ? "es-PE" : "en-US";
+  const date = new Date(iso);
+  const dayNumber = (value: Date) =>
+    Date.parse(
+      new Intl.DateTimeFormat("en-CA", {
+        timeZone: "America/Lima",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+      }).format(value),
+    ) / (24 * 60 * 60 * 1000);
+  const days = Math.round(dayNumber(date) - dayNumber(new Date()));
+
+  const time = normalizeIntlSpacing(
+    new Intl.DateTimeFormat(locale, {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+      timeZone: "America/Lima",
+    }).format(date),
+  );
+  const weekday = normalizeIntlSpacing(
+    new Intl.DateTimeFormat(locale, {
+      weekday: "short",
+      day: "2-digit",
+      timeZone: "America/Lima",
+    }).format(date),
+  ).replace(/\.$/, "");
+
+  return {
+    day: days === 0 ? "today" : days === 1 ? "tomorrow" : "later",
+    time,
+    weekday,
+  };
+}
+
 export function getInitials(name: string): string {
   const words = name.trim().split(/\s+/).filter(Boolean);
   if (words.length === 0) {
@@ -88,4 +134,12 @@ export function getInitials(name: string): string {
     .slice(0, 2)
     .map((word) => word[0]?.toUpperCase() ?? "")
     .join("");
+}
+
+export function normalizeText(value: string): string {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
 }

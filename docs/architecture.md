@@ -68,12 +68,13 @@ En desarrollo, Next.js hace proxy de `/api` al backend para evitar CORS y compar
 - `app/page.tsx` es un server component dinámico; obtiene el lobby con `getLobbyData()`.
 - `lib/catalog.ts` consulta el backend en `BACKEND_URL` (por defecto `http://127.0.0.1:8081`) vía `GET /api/catalog/lobby`, con timeout de 7 s y `cache: "no-store"`. Si el backend no responde, devuelve lobby vacío con `feed.status=DOWN`.
 - `lib/live.ts` abre `EventSource("/api/live/stream")`, escucha `lobby`, `markets` y `heartbeat`, y expone `data`, `markets`, `connection` (`connecting|connected|disconnected`) y `retry` a `HomeLobby`.
-- `components/home-lobby.tsx` usa el snapshot inicial del servidor y lo reemplaza con cada evento SSE; muestra estado de conexión/feed en ES/EN y orquesta partido destacado, tabs En vivo/Resultados, rail de torneos, lista, bet slip, modales y navegación.
-- Componentes de arena: `featured-match`, `match-card`, `live-rail`, `odds-button`, `team-crest`, `lobby-tabs`, `filter-rail`, `bet-slip`, `match-detail-modal`, `stream-player` y `match-detail-page`.
-- Tokens en `app/globals.css`: arena `#070D18`, superficies `#0F1A2C`/`#142136`, líneas `#223149`, texto `#F8FAFC`, muted `#94A3B8`, naranja `#F97316`; el tema claro de cuenta conserva `--color-paper` y `--color-surface`. Tipografía local con números tabulares.
+- `components/home-lobby.tsx` usa el snapshot inicial del servidor y lo reemplaza con cada evento SSE; orquesta los tres destacados, las filas por competición, el buscador, los rangos de fecha, el boleto y los modales.
+- Componentes públicos: `featured-events` (destacados), `competition-rows` (tablas por competición), `sport-hero` (banner de deporte), `range-tabs`, `quick-bet-slip`, `mobile-bet-bar`, `prematch-markets-modal`, `crest` y `price-pill`. El detalle de partido usa `match-detail-modal`, `odds-button`, `team-crest` y `stream-player`.
+- Tokens en `app/globals.css`: `masthead #101D34`, `paper #EEF2F6`, `surface #FFFFFF`, `ink #0F172A`, `accent #F97316`, `live #E11D48`; la arena del detalle conserva `#070D18`/`#0F1A2C`. Tipografía local con números tabulares.
 - Headers de seguridad en `next.config.ts`: CSP (default-src self, frame-src Twitch/YouTube, frame-ancestors none), `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy` y `Permissions-Policy` (ADR-042).
-- Superficies: lobby y `/match/[id]` son “arena” oscura; `/wallet`, `/account`, `/bets`, `/admin`, `/admin/markets`, `/admin/streams` y `/admin/users` son “cuenta” claras.
-- `LiveRail` muestra un carrusel horizontal de partidas en vivo (sin la destacada) con torneo, escudos, marcador, tiempo y cuotas del mercado principal; reutiliza `OddsButton` y la selección del boleto.
+- Superficies: portada, deportes, cuenta, wallet, apuestas y admin son claros con header azul tinta; `/match/[id]` conserva la arena oscura.
+- Portada: tres destacados fotográficos con cuotas dentro de la card, filas de 78 px por competición, buscador en cliente, rangos `Hoy/Mañana/Esta semana` y filtro `En vivo`. Los eventos destacados se excluyen de las filas.
+- `/sports` y `/nba`: rail de competiciones (solo si hay más de una liga), banner partido con migaja y próximo encuentro, buscador y las mismas filas de la portada. `/bets`: pestañas Abiertas/Resueltas, filtro por deporte, buscador y panel de detalle con línea de tiempo.
 - Header autenticado: saldo disponible junto al usuario con toggle de visibilidad persistido en `localStorage`; menú con Mi cuenta, Mi billetera, Mis apuestas, Admin (solo `ADMIN`) y Salir. En móvil se replica en el menú lateral y el saldo sigue visible. El saldo se refresca al abrir/operar la billetera, al apostar, al recuperar foco y cada 30 s.
 - Escudos: `LobbyTeam.teamId` viaja desde el catálogo; `TeamCrest` consume `GET /api/catalog/teams/{id}/logo`, que redirige al CDN cacheado por `TeamLogoCache`. Fallback a monograma.
 - `OddsButton` muestra etiqueta + cuota, estado suspendido, estado “en tu boleto” y flash breve cuando la cuota cambia; respeta `prefers-reduced-motion`.
@@ -87,7 +88,8 @@ En desarrollo, Next.js hace proxy de `/api` al backend para evitar CORS y compar
 - M5 implementado: `/bets` muestra estado, pago y fecha de liquidación; `/admin` lista apuestas en revisión/pendientes y permite anular con motivo (rol `ADMIN`).
 - M2b implementado: `/match/[id]` muestra la partida propia en vivo por SSE (marcador, jugadores, net worth, timeline y Roshan). El enlace aparece en la card de "Mi partida".
 - Admin de mercados implementado: `/admin/markets` lista mercados y permite suspender, reanudar o cambiar cuota; cada acción se audita y, en override, sube versión e inserta `odds_history`.
-- `/sports` (M8a/M8b/M8c): página arena con selector Fútbol/NBA y calendario real desde `lib/sports.ts`; agrupa fixtures por liga, filtra por liga, muestra escudos con fallback y cuenta atrás. Cada fixture publica sus mercados pre-partida (`1X2`, total de goles, ganador NBA y total de puntos) con cuotas del servidor y boleto reutilizando `BetSlip`. Sin cobertura en vivo.
+- `/sports` (M8a/M8b/M8c): calendario real desde `lib/sports.ts`; rail de ligas, banner del próximo partido, buscador, filtros de fecha y filas con `1/X/2` y total de goles. Cada fixture publica sus mercados pre-partida con cuotas del servidor y boleto reutilizando `QuickBetSlip`. Sin cobertura en vivo.
+- Rediseño público (2026-11-25): header azul tinta de 64 px, navegación deportiva blanca de 56 px, portada de tres destacados y filas por competición; `/sports` y `/nba` como calendarios con rail y banner; `/bets` con pestañas, filtros y detalle. El detalle de partido conserva la arena.
 
 ## Flujo de datos
 

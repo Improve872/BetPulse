@@ -29,6 +29,7 @@ import {
 type MatchDetailModalProps = {
   match: LobbyMatch;
   markets?: Market[];
+  initialTab?: "summary" | "markets";
   onClose: () => void;
   onSelect: (match: LobbyMatch, market: Market, selection: Selection) => void;
 };
@@ -101,11 +102,12 @@ function Stat({ label, value }: { label: string; value: string }) {
 export function MatchDetailModal({
   match,
   markets = [],
+  initialTab = "markets",
   onClose,
   onSelect,
 }: MatchDetailModalProps) {
   const { t, language } = useLanguage();
-  const [tab, setTab] = useState<"summary" | "markets">("summary");
+  const [tab, setTab] = useState<"summary" | "markets">(initialTab);
   const finished = match.state === "finished";
   const tournament = matchTournamentLabel(match, t);
   const source = matchSourceLabel(match, t);
@@ -114,8 +116,8 @@ export function MatchDetailModal({
     : match.dire.name;
 
   useEffect(() => {
-    setTab("summary");
-  }, [match.id]);
+    setTab(initialTab);
+  }, [match.id, initialTab]);
 
   return (
     <Modal
@@ -290,10 +292,11 @@ export function MatchDetailModal({
                           {marketTitle(market, t)}
                         </p>
                         <p className="mt-1 text-[11px] text-arena-muted">
-                          {t("market.version", { version: market.version })}
                           {market.line != null
-                            ? ` · ${t("market.line", { line: Number(market.line).toFixed(1) })}`
-                            : ""}
+                            ? t("market.line", {
+                                line: Number(market.line).toFixed(1),
+                              })
+                            : null}
                         </p>
                       </div>
                       <span

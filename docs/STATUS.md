@@ -1,21 +1,21 @@
 # Estado del proyecto
 
-Última actualización: 2026-11-23
+Última actualización: 2026-11-25
 
 > Estado vigente únicamente. El histórico de hitos cerrados vive en `docs/milestones/`.
 
 ## Hito actual
 
-**M7: hardening base cerrado. M8a cerrado: calendario de fútbol con ESPN. M8b cerrado: mercados 1X2 y total de goles con liquidación. M8c cerrado: NBA con ganador y total de puntos.** Siguiente: CI de M8 y opcionales (E2E de dinero). M3c sigue bloqueado por falta de calendario pre-partida.
+**M7 y M8 cerrados. Rediseño UX público implementado y verificado (2026-11-25), pendiente de visto bueno visual final y de regenerar el kit de demo.** Backend 140/140, frontend 18/18, E2E 1/1, lint y build verdes. M3c sigue bloqueado por falta de calendario pre-partida.
 
 Cerrados: M0 (capturas GSI reales), M1 (identidad y wallet), M2a (catálogo OpenDota + SSE), M2b (partida propia GSI), M3a y M3b (cuatro mercados en vivo con cuotas), M4 (apuestas simples con holds), M5 (liquidación, payout/void, admin y auditoría), M6a (arena visual y sistema de diseño), M6b (streaming oficial y cierre de producto), M6c (copy de producto y saldo administrativo), M6d (cuenta, rail en vivo y checkout simulado), M8b (fútbol pre-partida apostable), M8c (NBA pre-partida apostable). Detalle en `docs/milestones/`.
 
 ## Estado del sistema
 
 - Backend Spring Boot 3.5.16 / Java 21 en `8081`; compila y arranca con PostgreSQL real.
-- Frontend Next.js 15.5.28 + React 19.1 + Tailwind 4; lint y build verdes. Rutas `/`, `/account`, `/wallet`, `/bets`, `/sports`, `/admin`, `/admin/markets`, `/admin/streams`, `/admin/users` y `/match/[id]`.
-- Lobby responsive con cards, filtros, modal de partida con mercados múltiples, bet slip y página de apuestas.
-- M6a: lobby y `/match/[id]` usan el tema arena nocturna; wallet, apuestas y admin conservan superficies claras. Tabs En vivo/Resultados, partido destacado, escudos reales, cuotas tipo price tile, estado “en tu boleto” y boleto vacío discreto.
+- Frontend Next.js 15.5.28 + React 19.1 + Tailwind 4; lint y build verdes. Rutas `/`, `/account`, `/wallet`, `/bets`, `/sports`, `/nba`, `/admin`, `/admin/markets`, `/admin/streams`, `/admin/users` y `/match/[id]`.
+- Lobby con datos reales por SSE: portada de tres destacados, filas por competición de 78 px, buscador, rangos de fecha, boleto de 300 px y modales de mercados.
+- M6a: el detalle de partido y `/match/[id]` conservan el tema arena nocturna con escudos reales y cuotas tipo price tile; el lobby evolucionó al tema claro (UX 2026-11-25).
 - Escudos: `LobbyTeam.teamId` desde OpenDota y proxy cacheado `GET /api/catalog/teams/{id}/logo`; fallback a monograma si el equipo o el CDN fallan.
 - Movimiento de cuota sutil mediante SSE; respeta `prefers-reduced-motion`. Sin cambios en cuotas, settlement ni wallet.
 - M6b: streaming oficial Twitch/YouTube con `match_streams` por partida o liga. `GET /api/catalog/lobby` expone `stream`; `/match/[id]` monta `StreamPlayer` click-to-load debajo del scoreboard; el lobby solo muestra CTA “Ver stream” y badges.
@@ -24,7 +24,6 @@ Cerrados: M0 (capturas GSI reales), M1 (identidad y wallet), M2a (catálogo Open
 - Admin `/admin/users` busca usuarios y acredita/debita saldo con motivo, ledger `ADMIN_ADJUSTMENT` y auditoría `WALLET_ADMIN_ADJUSTMENT`; el usuario se registra solo, sin cuenta demo fija.
 - M6d: `/account` muestra nombre, correo, alta, rol, resumen de wallet y cambio de contraseña (`POST /api/auth/password`).
 - M6d: el header autenticado agrupa cuenta, billetera, apuestas, admin y salir; en móvil son enlaces del menú. El saldo disponible aparece junto al usuario con un botón de ojo para ocultarlo; la preferencia persiste y el saldo se refresca al abrir la billetera, al apostar, al volver a la pestaña y cada 30 s.
-- M6d: el lobby incorpora `LiveRail`, un carrusel horizontal de partidas en vivo (sin la destacada) con torneo, escudos, marcador, tiempo y cuotas del mercado principal.
 - M6d: `/wallet` es un checkout de pasarela en tres pasos (monto → pago → confirmar). Tarjeta con vista previa, detección Visa/Mastercard/Amex, formato, vencimiento y CVV; Yape/Plin con celular y OTP de 6 dígitos; transferencia con banco, cuenta/CCI, referencia y número de operación. Incluye resumen, procesamiento y comprobante con nuevo saldo.
 - M6d: los datos de tarjeta, OTP y cuentas viven solo en memoria del navegador; se enmascaran en la revisión y no se envían, registran ni guardan. El backend sigue recibiendo solo `amountCents` e `Idempotency-Key`.
 - M6d: logos locales de Visa, Mastercard, Amex, Yape y Plin como indicadores de método; sin sellos de certificación ni afiliación.
@@ -51,6 +50,17 @@ Cerrados: M0 (capturas GSI reales), M1 (identidad y wallet), M2a (catálogo Open
 - M8c: modelo normal sobre la tabla real de ESPN (puntos a favor/contra por conferencia): `P(gana) = Φ(Δ/12)`, total con σ=18 y ventaja de local 2%. Sin tabla, media de liga y equipos neutros.
 - M8c: `/sports` tiene selector Fútbol/NBA; el boleto es el mismo. El resultado final de ESPN incluye prórroga; un empate imposible anula el mercado.
 - M8c: `PrematchMarketPublisher` y `PrematchResultService` se comparten entre fútbol y NBA; cada deporte solo aporta líneas, cuotas y etiquetas.
+- UX pública (2026-11-25): portada de tres destacados fotográficos con cuotas reales, navegación deportiva única con buscador y filas por competición de 78 px. Header azul tinta de 64 px y boleto de 300 px.
+- UX: boleto derecho compacto con importe, retorno y confirmación; `Ver mis apuestas` como enlace. Barra inferior y hoja en móvil. `/sports` es fútbol y `/nba` es ruta propia.
+- UX: fotografías de acción entregadas por el autor, recortadas a 2:1 en `public/hero` con créditos. Sin dependencias nuevas.
+- UX: `/sports` y `/nba` usan rail de competiciones, buscador, rangos compartidos y las filas de la portada; el rail se oculta cuando solo hay una liga.
+- UX: banner de deporte partido (foto 2:1 + panel azul) con migaja, escudos, `VS` y día/hora del próximo partido; abre mercados al pulsar.
+- UX: `/bets` tiene pestañas Abiertas/Resueltas con contadores, filtro por deporte, buscador, filas densas y panel de detalle con línea de tiempo real; en móvil el detalle es una hoja. Sin nombres de equipos: el contrato de apuestas no los expone.
+- UX: “Ver mercados” abre el modal en la pestaña de mercados; los totales muestran “Más/Menos de X”; versiones internas y delays salen del contenido principal.
+- UX: el esqueleto de carga (`app/loading.tsx`) usa la composición clara; al navegar entre deportes ya no aparece el fondo oscuro anterior.
+- UX: la columna derecha de `/wallet` (`Resumen` + movimientos) queda fija bajo el header y se desplaza dentro cuando excede la ventana.
+- Accesibilidad: foco visible, controles de 44 px en móvil, carrusel de destacados operable con teclado y `prefers-reduced-motion`.
+- NBA (2026-11-25): ESPN dejó de publicar `gamesPlayed` en la tabla; se deriva de `wins + losses` para que las cuotas varíen por equipo. Test de regresión `BasketballStrengthServiceTest`.
 - M7 (2026-11-23): kit de demo regenerado con M8. `dist/betpulse-demo-kit` incluye V13, fútbol y NBA; `demo-kit/README.md` y `docs/demo.md` explican pre-partida, ESPN y el cierre en kickoff.
 - M7 (2026-11-24): E2E de dinero con Playwright. Un navegador real recorre depósito, apuesta en el lobby, `POST_GAME` GSI firmado, liquidación `exactly-once` y saldo final; corre en el job `e2e` del CI.
 - Catálogo con datos reales de OpenDota; sin fixtures ni datos inventados en el producto.
@@ -86,9 +96,9 @@ Cerrados: M0 (capturas GSI reales), M1 (identidad y wallet), M2a (catálogo Open
 
 ## Próxima acción
 
-1. Opcional: subir `next` de `15.5.28` a `15.5.29` para cerrar las 2 vulnerabilidades de producción de `npm audit` (el audit lo propone como parche; no aplicado).
-2. Opcional: M3c si aparece calendario fiable; Steam `GetLiveLeagueGames` si hay API key; pulido admin (usuarios, exposición, salud).
-3. M8 cerrado; siguiente hito a definir en `docs/plan.md`.
+1. Regenerar el kit de demo con el rediseño y probarlo en limpio.
+2. Opcional: subir `next` de `15.5.28` a `15.5.29` para cerrar las 2 vulnerabilidades de producción de `npm audit` (el audit lo propone como parche; no aplicado).
+3. Opcional: M3c si aparece calendario fiable; Steam `GetLiveLeagueGames` si hay API key; pulido admin (usuarios, exposición, salud).
 
 ## Pendiente de entorno (opcional)
 
@@ -109,7 +119,7 @@ El settlement es **agnóstico a la fuente**: consume `market_results` ya resuelt
 
 El **fútbol y la NBA son solo pre-partida**: los mercados se cierran en el kickoff y no hay cuotas ni cobertura en vivo. El lobby de Dota filtra `sport='DOTA'`; los catálogos no se mezclan.
 
-La **arena** (lobby y detalle de partido) usa tema oscuro; **cuenta, wallet, apuestas y admin** usan tema claro. Los tokens de ambos entornos no se mezclan sin revisar contraste.
+La **portada y las páginas de deportes** usan cuerpo claro con header azul tinta de 64 px y navegación deportiva blanca de 56 px; el detalle de partido conserva la arena nocturna. **Cuenta, wallet, apuestas y admin** siguen claros. Los tokens no se mezclan sin revisar contraste.
 
 El **stream oficial** vive en `/match/[id]`, no en el lobby. El lobby solo muestra CTA “Ver stream”/badge; el iframe se carga con click-to-load y sin autoplay (ADR-036).
 
@@ -130,6 +140,14 @@ npm run build
 cd ..
 .\scripts\e2e.ps1
 ```
+
+Resultados 2026-11-25 (UX pública):
+
+- QA visual a 390, 1024 y 1440 con datos reales: tres destacados fotográficos, filas por competición, rail de ligas en Fútbol, tabla completa en NBA, banner de deporte partido, boleto y paneles de `/bets`.
+- Corrección de layout móvil: sin scroll horizontal a 390 px; navegación deportiva sin recortes y CTA del banner reubicado.
+- Backend: 140/140 tests verdes, incluido `BasketballStrengthServiceTest`; las cuotas NBA vuelven a variar por equipo tras derivar los partidos jugados del récord.
+- Frontend: `tsc --noEmit`, lint y build verdes; 18/18 tests de Vitest.
+- E2E: `money-flow` 1/1 en verde sobre frontend de producción y backend local.
 
 Resultados 2026-11-24 (E2E de dinero):
 

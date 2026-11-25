@@ -1,611 +1,717 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
-import { BetSlip, type BetTarget } from "@/components/bet-slip";
-import { FeaturedMatch } from "@/components/featured-match";
-import { FilterRail } from "@/components/filter-rail";
-import { LiveRail } from "@/components/live-rail";
-import { LobbyTabs } from "@/components/lobby-tabs";
+import { useMemo, useState } from "react";
+import { ArrowRightIcon } from "@/components/icons";
 import { LoginModal, type LoginMode } from "@/components/login-modal";
-import { MatchCard } from "@/components/match-card";
 import { MatchDetailModal } from "@/components/match-detail-modal";
 import { Modal } from "@/components/modal";
-import { PulseMark } from "@/components/pulse-mark";
+import {
+  CompetitionRows,
+  type CompetitionSection,
+  type EventRow,
+} from "@/components/public/competition-rows";
+import {
+  FeaturedEvents,
+  type FeaturedEvent,
+} from "@/components/public/featured-events";
+import { MobileBetBar } from "@/components/public/mobile-bet-bar";
+import { PrematchMarketsModal } from "@/components/public/prematch-markets-modal";
+import { QuickBetSlip } from "@/components/public/quick-bet-slip";
+import { RangeTabs, type DateRange } from "@/components/public/range-tabs";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
-import {
-  ArrowRightIcon,
-  InfoIcon,
-  TicketIcon,
-} from "@/components/icons";
-import { useAuth } from "@/lib/auth";
-import { cn, formatNumber, formatOdds, formatUpdatedAt } from "@/lib/format";
+import { formatGameTime, kickoffTiming, normalizeText } from "@/lib/format";
 import { useLanguage } from "@/lib/i18n";
 import { useLobbyFeed } from "@/lib/live";
 import { matchSelectionLabel } from "@/lib/match-labels";
-import type {
-  GameId,
-  LobbyData,
-  LobbyMatch,
-  LobbyView,
-} from "@/lib/lobby";
+import type { LobbyData, LobbyMatch } from "@/lib/lobby";
 import {
   indexMarkets,
-  marketTitle,
+  selectionLabelForType,
   type LiveMarketsData,
   type Market,
   type Selection,
 } from "@/lib/markets";
+import {
+  fixtureToMarket,
+  primaryFixtureMarket,
+  type PublicSport,
+} from "@/lib/prematch";
+import type {
+  Fixture,
+  FixtureMarket,
+  FixtureSelection,
+  FixturesResponse,
+} from "@/lib/sports";
 
 type HomeLobbyProps = {
   data: LobbyData;
   markets: LiveMarketsData;
+  soccer: FixturesResponse;
+  basketball: FixturesResponse;
 };
 
-type BetSelectionRef = {
-  matchId: string;
-  marketId: string;
-  selectionKey: string;
-};
+type Range = DateRange;
 
-function hasTeamIdentity(match: LobbyMatch) {
-  return match.radiant.name !== "Radiant" && match.dire.name !== "Dire";
-}
+type BetSelection =
+  | { kind: "dota"; matchId: string; marketId: string; selectionKey: string }
+  | {
+      kind: "fixture";
+      sport: PublicSport;
+      fixtureId: string;
+      marketId: string;
+      selectionKey: string;
+    };
 
-export function HomeLobby({ data: initialData, markets: initialMarkets }: HomeLobbyProps) {
+export function HomeLobby({
+  data: initialData,
+  markets: initialMarkets,
+  soccer,
+  basketball,
+}: HomeLobbyProps) {
   const { t, language } = useLanguage();
-  const { user } = useAuth();
   const { data, markets, connection, retry } = useLobbyFeed(
     initialData,
     initialMarkets,
   );
-  const [game, setGame] = useState<GameId>("dota2");
-  const [view, setView] = useState<LobbyView>("live");
-  const [tournament, setTournament] = useState("all");
+  const [range, setRange] = useState<Range>(() => {
+    const start = new Date();
+    start.setHours(0, 0, 0, 0);
+    const end = start.getTime() + 24 * 60 * 60 * 1000;
+    const fixtures = [...soccer.leagues, ...basketball.leagues].flatMap(
+      (league) => league.fixtures,
+    );
+    return fixtures.some((fixture) => {
+      const kickoff = new Date(fixture.kickoff).getTime();
+      return kickoff >= start.getTime() && kickoff < end;
+    })
+      ? "today"
+      : "week";
+  });
+  const [liveOnly, setLiveOnly] = useState(false);
+  const [query, setQuery] = useState("");
   const [loginOpen, setLoginOpen] = useState(false);
   const [loginMode, setLoginMode] = useState<LoginMode>("login");
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [betSelection, setBetSelection] = useState<BetSelectionRef | null>(null);
+  const [betSelection, setBetSelection] = useState<BetSelection | null>(null);
   const [betPanelOpen, setBetPanelOpen] = useState(false);
-  const [ownHelpOpen, setOwnHelpOpen] = useState(false);
+  const [dotaModalId, setDotaModalId] = useState<string | null>(null);
+  const [fixtureModal, setFixtureModal] = useState<{
+    fixture: Fixture;
+    sport: PublicSport;
+  } | null>(null);
 
-  const allMatches = useMemo(
-    () => [...data.live, ...data.recent],
-    [data.live, data.recent],
-  );
-  const ownMatches = useMemo(
-    () => data.live.filter((match) => match.source === "GSI"),
-    [data.live],
-  );
-  const liveMatches = useMemo(
-    () =>
-      data.live
-        .filter((match) => match.source !== "GSI")
-        .slice()
-        .sort((a, b) => {
-          const identity = Number(hasTeamIdentity(b)) - Number(hasTeamIdentity(a));
-          if (identity !== 0) {
-            return identity;
-          }
-          const tournament = Number(Boolean(b.tournament)) - Number(Boolean(a.tournament));
-          if (tournament !== 0) {
-            return tournament;
-          }
-          return (
-            (b.spectators ?? 0) - (a.spectators ?? 0) ||
-            (b.averageMmr ?? 0) - (a.averageMmr ?? 0)
-          );
-        }),
-    [data.live],
-  );
-  const resultCount = data.recent.length;
   const marketByMatchId = useMemo(() => indexMarkets(markets), [markets]);
 
-  const betTarget = useMemo<BetTarget | null>(() => {
+  const liveMatches = useMemo(
+    () =>
+      [...data.live].sort(
+        (a, b) =>
+          Number(b.source === "GSI") - Number(a.source === "GSI") ||
+          (b.spectators ?? 0) - (a.spectators ?? 0),
+      ),
+    [data.live],
+  );
+
+  const soccerFixtures = useMemo(
+    () => soccer.leagues.flatMap((league) => league.fixtures),
+    [soccer.leagues],
+  );
+  const nbaFixtures = useMemo(
+    () => basketball.leagues.flatMap((league) => league.fixtures),
+    [basketball.leagues],
+  );
+
+  const footballPool = useMemo(
+    () => soccerFixtures.filter((fixture) => fixture.markets.length > 0),
+    [soccerFixtures],
+  );
+  const nbaPool = useMemo(
+    () => nbaFixtures.filter((fixture) => fixture.markets.length > 0),
+    [nbaFixtures],
+  );
+  const dotaPool = useMemo(
+    () =>
+      liveMatches.filter(
+        (match) => (marketByMatchId.get(match.id)?.length ?? 0) > 0,
+      ),
+    [liveMatches, marketByMatchId],
+  );
+  const namedDota = useMemo(
+    () =>
+      dotaPool.filter(
+        (match) =>
+          match.radiant.name !== "Radiant" && match.dire.name !== "Dire",
+      ),
+    [dotaPool],
+  );
+
+  const featuredSeeds = useMemo(() => {
+    const seeds: { kind: "fixture" | "dota"; value: Fixture | LobbyMatch }[] =
+      [];
+    // La foto del destacado NBA muestra a un jugador de Denver: si hay partido
+    // suyo en el calendario, se destaca para que la imagen y los equipos
+    // concuerden. Si no, se usa el primero disponible.
+    const nbaFeatured =
+      nbaPool.find(
+        (fixture) =>
+          /nuggets|denver/i.test(fixture.home.name) ||
+          /nuggets|denver/i.test(fixture.away.name),
+      ) ?? nbaPool[0];
+    if (nbaFeatured) seeds.push({ kind: "fixture", value: nbaFeatured });
+    if (footballPool[0]) seeds.push({ kind: "fixture", value: footballPool[0] });
+    const dotaSeed = namedDota[0] ?? dotaPool[0];
+    if (dotaSeed) seeds.push({ kind: "dota", value: dotaSeed });
+    if (seeds.length < 3 && footballPool[1]) {
+      seeds.push({ kind: "fixture", value: footballPool[1] });
+    }
+    const nbaFallback = nbaPool.find((fixture) => fixture !== nbaFeatured);
+    if (seeds.length < 3 && nbaFallback) {
+      seeds.push({ kind: "fixture", value: nbaFallback });
+    }
+    return seeds.slice(0, 3);
+  }, [dotaPool, footballPool, namedDota, nbaPool]);
+
+  const featuredEvents = useMemo<FeaturedEvent[]>(
+    () =>
+      featuredSeeds.map((seed) => {
+        if (seed.kind === "dota") {
+          const match = seed.value as LobbyMatch;
+          const market = marketByMatchId.get(match.id)?.[0];
+          return {
+            id: `d:${match.id}`,
+            sport: "esports",
+            competition: match.tournament || "Dota 2",
+            homeName: match.radiant.name,
+            awayName: match.dire.name,
+            homeCrestUrl: match.radiant.teamId
+              ? `/api/catalog/teams/${match.radiant.teamId}/logo`
+              : null,
+            awayCrestUrl: match.dire.teamId
+              ? `/api/catalog/teams/${match.dire.teamId}/logo`
+              : null,
+            homeScore: match.radiant.score,
+            awayScore: match.dire.score,
+            status: match.state === "live" ? "LIVE" : "FINISHED",
+            meta: formatGameTime(match.durationSeconds),
+            image: "/hero/esports-wide.jpg",
+            market,
+          } satisfies FeaturedEvent;
+        }
+        const fixture = seed.value as Fixture;
+        const primary = primaryFixtureMarket(fixture);
+        const sport: PublicSport = nbaPool.includes(fixture) ? "nba" : "football";
+        const timing = kickoffTiming(fixture.kickoff, language);
+        const dayLabel =
+          timing.day === "today"
+            ? t("home.filter.today")
+            : timing.day === "tomorrow"
+              ? t("home.filter.tomorrow")
+              : timing.weekday;
+        return {
+          id: `f:${fixture.id}`,
+          sport,
+          competition: fixture.leagueName,
+          homeName: fixture.home.name,
+          awayName: fixture.away.name,
+          homeCrestUrl: fixture.home.crestUrl,
+          awayCrestUrl: fixture.away.crestUrl,
+          homeScore: fixture.homeScore,
+          awayScore: fixture.awayScore,
+          status:
+            fixture.state === "LIVE"
+              ? "LIVE"
+              : fixture.state === "FINISHED"
+                ? "FINISHED"
+                : "SCHEDULED",
+          meta: `${dayLabel} ${timing.time}`,
+          image:
+            sport === "nba"
+              ? "/hero/basketball-wide.jpg"
+              : "/hero/football-wide.jpg",
+          market: primary ? fixtureToMarket(fixture, primary, sport) : undefined,
+        } satisfies FeaturedEvent;
+      }),
+    [featuredSeeds, language, marketByMatchId, nbaPool, t],
+  );
+
+  const featuredIds = useMemo(
+    () => new Set(featuredEvents.map((event) => event.id)),
+    [featuredEvents],
+  );
+
+  const rangeStart = useMemo(() => {
+    const start = new Date();
+    start.setHours(0, 0, 0, 0);
+    return start;
+  }, []);
+
+  const sections = useMemo<CompetitionSection[]>(() => {
+    const day = 24 * 60 * 60 * 1000;
+    const start = rangeStart.getTime();
+    const within = (kickoff: string) => {
+      const time = new Date(kickoff).getTime();
+      // La búsqueda recorre todo el calendario cargado, sin recortar por día.
+      if (query.trim().length > 0) {
+        return true;
+      }
+      if (range === "today") {
+        return time >= start && time < start + day;
+      }
+      if (range === "tomorrow") {
+        return time >= start + day && time < start + 2 * day;
+      }
+      return time >= start && time < start + 8 * day;
+    };
+
+    const needle = normalizeText(query);
+    const matches = (...values: Array<string | null | undefined>) =>
+      needle.length === 0 ||
+      values.some((value) =>
+        value ? normalizeText(value).includes(needle) : false,
+      );
+
+    const result: CompetitionSection[] = [];
+
+    if (!liveOnly) {
+      const nbaRows = nbaPool
+        .filter(
+          (fixture) =>
+            !featuredIds.has(`f:${fixture.id}`) &&
+            within(fixture.kickoff) &&
+            matches(fixture.leagueName, fixture.home.name, fixture.away.name),
+        )
+        .slice()
+        .sort((a, b) => a.kickoff.localeCompare(b.kickoff))
+        .slice(0, 8);
+      if (nbaRows.length > 0) {
+        result.push({
+          id: "nba",
+          name: "NBA",
+          sport: "nba",
+          rows: nbaRows.map((fixture) => ({
+            kind: "fixture" as const,
+            fixture,
+            sport: "nba" as const,
+          })),
+        });
+      }
+
+      const available = footballPool.filter(
+        (fixture) =>
+          !featuredIds.has(`f:${fixture.id}`) &&
+          within(fixture.kickoff) &&
+          matches(fixture.leagueName, fixture.home.name, fixture.away.name),
+      );
+      const byLeague = new Map<string, Fixture[]>();
+      available.forEach((fixture) => {
+        const list = byLeague.get(fixture.leagueName) ?? [];
+        list.push(fixture);
+        byLeague.set(fixture.leagueName, list);
+      });
+      const leagueOrder = new Map(
+        soccer.leagues.map((league, index) => [league.name, index]),
+      );
+      [...byLeague.entries()]
+        .map(([name, fixtures]) => ({
+          name,
+          fixtures: fixtures
+            .slice()
+            .sort((a, b) => a.kickoff.localeCompare(b.kickoff)),
+        }))
+        .filter((entry) => entry.fixtures.length > 0)
+        .sort(
+          (a, b) =>
+            (leagueOrder.get(a.name) ?? 99) - (leagueOrder.get(b.name) ?? 99),
+        )
+        .slice(0, 3)
+        .forEach((entry) => {
+          result.push({
+            id: `football:${entry.name}`,
+            name: entry.name,
+            sport: "football",
+            rows: entry.fixtures.slice(0, 4).map((fixture) => ({
+              kind: "fixture" as const,
+              fixture,
+              sport: "football" as const,
+            })),
+          });
+        });
+    }
+
+    const dotaRows = liveMatches
+      .filter(
+        (match) =>
+          !featuredIds.has(`d:${match.id}`) &&
+          (marketByMatchId.get(match.id)?.length ?? 0) > 0 &&
+          matches(
+            match.tournament,
+            match.radiant.name,
+            match.dire.name,
+            "dota",
+          ),
+      )
+      .slice(0, 6);
+    if (dotaRows.length > 0) {
+      result.push({
+        id: "esports",
+        name: "Dota 2",
+        sport: "esports",
+        rows: dotaRows.map<EventRow>((match) => ({
+          kind: "dota",
+          match,
+          markets: marketByMatchId.get(match.id) ?? [],
+        })),
+      });
+    }
+
+    return result;
+  }, [
+    featuredIds,
+    footballPool,
+    liveMatches,
+    liveOnly,
+    marketByMatchId,
+    nbaPool,
+    query,
+    range,
+    rangeStart,
+    soccer.leagues,
+  ]);
+
+  const betTarget = useMemo(() => {
     if (!betSelection) {
       return null;
     }
-    const match = allMatches.find(
-      (candidate) => candidate.id === betSelection.matchId,
+    if (betSelection.kind === "dota") {
+      const match = liveMatches.find(
+        (candidate) => candidate.id === betSelection.matchId,
+      );
+      const market = marketByMatchId
+        .get(betSelection.matchId)
+        ?.find((candidate) => candidate.id === betSelection.marketId);
+      const selection = market?.selections.find(
+        (candidate) => candidate.key === betSelection.selectionKey,
+      );
+      if (!match || !market || !selection) {
+        return null;
+      }
+      return {
+        subject: {
+          id: match.id,
+          homeName: match.radiant.name,
+          awayName: match.dire.name,
+          homeTeam: match.radiant,
+          awayTeam: match.dire,
+        },
+        market,
+        selection,
+        selectionLabel: matchSelectionLabel(match, market, selection.key, t),
+      };
+    }
+    const fixture = [...soccerFixtures, ...nbaFixtures].find(
+      (candidate) => candidate.id === betSelection.fixtureId,
     );
-    const market = marketByMatchId
-      .get(betSelection.matchId)
-      ?.find((candidate) => candidate.id === betSelection.marketId);
-    const selection = market?.selections.find(
+    const fixtureMarket = fixture?.markets.find(
+      (candidate) => candidate.id === betSelection.marketId,
+    );
+    const selection = fixtureMarket?.selections.find(
       (candidate) => candidate.key === betSelection.selectionKey,
     );
-    if (!match || !market || !selection) {
+    if (!fixture || !fixtureMarket || !selection) {
       return null;
     }
     return {
       subject: {
-        id: match.id,
-        homeName: match.radiant.name,
-        awayName: match.dire.name,
-        homeTeam: match.radiant,
-        awayTeam: match.dire,
+        id: fixture.id,
+        homeName: fixture.home.name,
+        awayName: fixture.away.name,
+        homeCrestUrl: fixture.home.crestUrl,
+        awayCrestUrl: fixture.away.crestUrl,
       },
-      market,
+      market: fixtureToMarket(fixture, fixtureMarket, betSelection.sport),
       selection,
-      selectionLabel: matchSelectionLabel(match, market, selection.key, t),
+      selectionLabel: selectionLabelForType(
+        fixtureMarket.marketKey,
+        fixtureMarket.line,
+        selection.key,
+        t,
+        { home: fixture.home.name, away: fixture.away.name },
+      ),
     };
-  }, [allMatches, betSelection, marketByMatchId, t]);
+  }, [betSelection, liveMatches, marketByMatchId, nbaFixtures, soccerFixtures, t]);
 
-  useEffect(() => {
-    if (betSelection && !betTarget) {
-      setBetSelection(null);
-      setBetPanelOpen(false);
-    }
-  }, [betSelection, betTarget]);
-
-  const tournaments = useMemo(() => {
-    const counts = new Map<string, number>();
-    const matches = view === "results" ? data.recent : liveMatches;
-    for (const match of matches) {
-      const name = match.tournament?.trim();
-      if (!name) {
-        continue;
-      }
-      counts.set(name, (counts.get(name) ?? 0) + 1);
-    }
-    return Array.from(counts, ([name, count]) => ({ name, count })).sort((a, b) =>
-      a.name.localeCompare(b.name),
-    );
-  }, [data.recent, liveMatches, view]);
-
-  const featuredMatch = useMemo(() => {
-    if (view !== "live") {
-      return null;
-    }
-    const candidates = [...ownMatches, ...liveMatches].filter(
-      (match) => tournament === "all" || match.tournament === tournament,
-    );
-    const hasMarket = (match: LobbyMatch) =>
-      (marketByMatchId.get(match.id)?.length ?? 0) > 0;
-
-    return (
-      candidates.find((match) => match.source === "GSI") ??
-      candidates.find(
-        (match) =>
-          hasTeamIdentity(match) && match.tournament && hasMarket(match),
-      ) ??
-      candidates.find(
-        (match) => hasTeamIdentity(match) && match.tournament,
-      ) ??
-      candidates.find(hasTeamIdentity) ??
-      candidates[0] ??
-      null
-    );
-  }, [liveMatches, marketByMatchId, ownMatches, tournament, view]);
-
-  const filteredMatches = useMemo(() => {
-    const base = view === "results" ? data.recent : liveMatches;
-    return base
-      .filter((match) => tournament === "all" || match.tournament === tournament)
-      .filter((match) => match.id !== featuredMatch?.id);
-  }, [data.recent, featuredMatch?.id, liveMatches, tournament, view]);
-
-  const selectedMatch =
-    allMatches.find((match) => match.id === selectedId) ?? null;
-
-  const title =
-    view === "results" ? t("lobby.titleResults") : t("lobby.titleLive");
-  const subtitle =
-    view === "results" ? t("lobby.subtitleResults") : t("lobby.subtitleLive");
-
-  const feedStatus = data.feed?.status ?? "STARTING";
-  const feedOffline =
-    connection === "disconnected" || feedStatus === "DOWN";
-  const feedLabel =
-    connection === "connecting"
-      ? t("feed.connecting")
-      : feedOffline
-        ? t("feed.offline")
-        : feedStatus === "STARTING"
-          ? t("feed.starting")
-          : feedStatus === "LIVE"
-            ? t("feed.live")
-            : t("feed.updating");
-  const feedTone = feedOffline
-    ? "border-red-400/25 bg-red-500/10 text-red-200"
-    : connection === "connecting" ||
-        feedStatus === "STARTING" ||
-        feedStatus === "DEGRADED" ||
-        feedStatus === "STALE"
-      ? "border-amber-400/25 bg-amber-400/10 text-amber-200"
-      : "border-live/25 bg-live/10 text-live";
-
-  const emptyState = (() => {
-    if (tournament !== "all") {
-      return {
-        title: t("empty.filterTitle"),
-        body: t("empty.filterBody"),
-        action: t("empty.clearFilter"),
-        onAction: () => setTournament("all"),
-      };
-    }
-    if (connection === "disconnected" && allMatches.length === 0) {
-      return {
-        title: t("empty.offlineTitle"),
-        body: t("empty.offlineBody"),
-        action: t("empty.retry"),
-        onAction: retry,
-      };
-    }
-    if (view === "live") {
-      return {
-        title: t("empty.liveTitle"),
-        body: t("empty.liveBody"),
-        action: t("empty.viewResults"),
-        onAction: () => handleNavigate("results"),
-      };
-    }
-    return {
-      title: t("empty.resultsTitle"),
-      body: t("empty.resultsBody"),
-      action: t("empty.viewLive"),
-      onAction: () => handleNavigate("live"),
-    };
-  })();
-
-  const scrollToMatches = () => {
-    document
-      .getElementById("matches")
-      ?.scrollIntoView({ behavior: "smooth", block: "start" });
-  };
-
-  const handleNavigate = (nextView: LobbyView) => {
-    setView(nextView === "results" ? "results" : "live");
-    setTournament("all");
-    scrollToMatches();
-  };
-
-  const handleClear = () => {
-    setTournament("all");
-  };
+  const selected = betSelection
+    ? betSelection.kind === "dota"
+      ? {
+          kind: "dota" as const,
+          id: betSelection.matchId,
+          marketId: betSelection.marketId,
+          selectionKey: betSelection.selectionKey,
+        }
+      : {
+          kind: "fixture" as const,
+          id: betSelection.fixtureId,
+          marketId: betSelection.marketId,
+          selectionKey: betSelection.selectionKey,
+        }
+    : null;
 
   const openLogin = (mode: LoginMode) => {
     setLoginMode(mode);
     setLoginOpen(true);
   };
 
-  const handleOpenMatch = (match: LobbyMatch) => {
-    setSelectedId(match.id);
-  };
-
-  const handleSelect = (
+  const selectDota = (
     match: LobbyMatch,
     market: Market,
     selection: Selection,
   ) => {
     setBetSelection({
+      kind: "dota",
       matchId: match.id,
       marketId: market.id,
       selectionKey: selection.key,
     });
-    setSelectedId(null);
-    if (
-      typeof window !== "undefined" &&
-      window.matchMedia("(max-width: 1023px)").matches
-    ) {
-      setBetPanelOpen(true);
-    } else {
-      document
-        .getElementById("bet-slip")
-        ?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  const selectFixture = (
+    fixture: Fixture,
+    market: FixtureMarket,
+    selection: FixtureSelection,
+    sport: PublicSport,
+  ) => {
+    setBetSelection({
+      kind: "fixture",
+      sport,
+      fixtureId: fixture.id,
+      marketId: market.id,
+      selectionKey: selection.key,
+    });
+  };
+
+  const openFeatured = (event: FeaturedEvent) => {
+    const id = event.id.slice(2);
+    if (event.sport === "esports") {
+      setDotaModalId(id);
+      return;
+    }
+    const fixture = [...soccerFixtures, ...nbaFixtures].find(
+      (candidate) => candidate.id === id,
+    );
+    if (fixture) {
+      setFixtureModal({
+        fixture,
+        sport: nbaFixtures.includes(fixture) ? "nba" : "football",
+      });
     }
   };
 
-  const handleClearBet = () => {
-    setBetSelection(null);
-    setBetPanelOpen(false);
+  const selectFeatured = (
+    event: FeaturedEvent,
+    market: Market,
+    selection: Selection,
+  ) => {
+    const id = event.id.slice(2);
+    if (event.sport === "esports") {
+      const match = liveMatches.find((candidate) => candidate.id === id);
+      if (match) {
+        selectDota(match, market, selection);
+      }
+      return;
+    }
+    const fixture = [...soccerFixtures, ...nbaFixtures].find(
+      (candidate) => candidate.id === id,
+    );
+    const fixtureMarket = fixture?.markets.find(
+      (candidate) => candidate.id === market.id,
+    );
+    if (fixture && fixtureMarket) {
+      selectFixture(
+        fixture,
+        fixtureMarket,
+        selection as FixtureSelection,
+        nbaFixtures.includes(fixture) ? "nba" : "football",
+      );
+    }
   };
 
-  const handleExplore = () => {
-    setBetPanelOpen(false);
-    scrollToMatches();
-  };
-
-  const selectedFor = (matchId: string) =>
-    betSelection?.matchId === matchId
+  const selectedDota = data.live.find((match) => match.id === dotaModalId);
+  const selectedFixtureMarket =
+    fixtureModal && betSelection?.kind === "fixture"
       ? {
           marketId: betSelection.marketId,
           selectionKey: betSelection.selectionKey,
         }
       : null;
 
-  const totalForView =
-    view === "results"
-      ? data.recent.length
-      : liveMatches.length + ownMatches.length;
-  const visibleForView =
-    filteredMatches.length + (featuredMatch ? 1 : 0);
-  const railMatches =
-    view === "live"
-      ? liveMatches.filter(
-          (match) =>
-            match.id !== featuredMatch?.id &&
-            (tournament === "all" || match.tournament === tournament),
-        )
-      : [];
+  const emptyCopy =
+    query.trim().length > 0
+      ? {
+          title: t("home.search.empty"),
+          body: t("home.search.emptyBody"),
+        }
+      : liveOnly
+        ? {
+            title: t("home.empty.live"),
+            body: t("home.empty.liveBody"),
+          }
+        : {
+            title: t("home.empty.section"),
+            body: t("home.empty.sectionBody"),
+          };
 
   return (
-    <div className="min-h-screen bg-arena text-arena-ink">
+    <div className="min-h-screen bg-paper text-ink">
       <SiteHeader
-        game={game}
-        activeView={view}
-        onGameChange={setGame}
-        onNavigate={handleNavigate}
+        game="dota2"
+        activeView="all"
+        showSportsNav
+        searchQuery={query}
+        onSearchChange={setQuery}
+        onGameChange={() => undefined}
+        onNavigate={() => undefined}
         onLogin={() => openLogin("login")}
         onRegister={() => openLogin("register")}
       />
-      <main className="mx-auto max-w-[1320px] px-4 pb-12 pt-6 sm:px-6 lg:px-8 lg:pb-16">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-accent">
-              {t("lobby.eyebrow")}
-            </p>
-            <h1 className="mt-1 font-display text-3xl font-semibold tracking-tight text-arena-ink sm:text-4xl">
-              {title}
-            </h1>
-            <p className="mt-1 max-w-xl text-sm text-arena-muted">{subtitle}</p>
-            {view === "live" && ownMatches.length === 0 ? (
-              <div className="mt-2 max-w-xl">
-                <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-arena-muted">
-                  <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-arena-muted/50" />
-                  <span className="font-medium text-arena-ink">
-                    {t("own.disconnected")}
-                  </span>
-                  <span className="hidden sm:inline">· {t("own.hint")}</span>
-                  <button
-                    type="button"
-                    onClick={() => setOwnHelpOpen((current) => !current)}
-                    className="inline-flex items-center gap-1 font-semibold text-accent transition hover:text-accent-bright"
-                  >
-                    <InfoIcon className="h-3 w-3" />
-                    {t("own.help")}
-                  </button>
-                </div>
-                {ownHelpOpen ? (
-                  <p className="mt-1 text-[11px] leading-4 text-arena-muted">
-                    {t("own.helpBody")}
-                  </p>
-                ) : null}
+
+      <main className="mx-auto max-w-[1440px] px-4 pb-28 pt-5 sm:px-7 xl:pb-16">
+        <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_300px]">
+          <div className="min-w-0">
+            <FeaturedEvents
+              events={featuredEvents}
+              selected={selected}
+              onOpen={openFeatured}
+              onSelect={selectFeatured}
+            />
+
+            <div className="mt-6 flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
+              <h1 className="font-display text-[26px] font-bold tracking-tight text-ink sm:text-[28px]">
+                {t("home.heading")}
+              </h1>
+              <div className="flex flex-wrap items-center gap-3">
+                <RangeTabs value={range} onChange={setRange} />
+                <span aria-hidden="true" className="h-5 w-px bg-line" />
+                <label className="flex cursor-pointer items-center gap-2 text-[13px] font-medium text-ink">
+                  <input
+                    type="checkbox"
+                    checked={liveOnly}
+                    onChange={(event) => setLiveOnly(event.target.checked)}
+                    className="h-4 w-4 rounded border-line accent-accent"
+                  />
+                  {t("home.filter.live")}
+                </label>
+              </div>
+            </div>
+
+            {connection === "disconnected" ? (
+              <div className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-900">
+                <span>{t("feed.staleBanner", { time: "—" })}</span>
+                <button
+                  type="button"
+                  onClick={retry}
+                  className="rounded-lg border border-amber-300 px-2.5 py-1 font-semibold transition hover:bg-amber-100"
+                >
+                  {t("feed.retry")}
+                </button>
               </div>
             ) : null}
-          </div>
 
-          <div className="flex flex-wrap items-center gap-2">
-            <span
-              className={cn(
-                "inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-[11px] font-semibold",
-                feedTone,
-              )}
-            >
-              <span
-                className={cn(
-                  "h-1.5 w-1.5 rounded-full",
-                  feedOffline
-                    ? "bg-red-300"
-                    : connection === "connecting" ||
-                        feedStatus === "STARTING" ||
-                        feedStatus === "DEGRADED" ||
-                        feedStatus === "STALE"
-                      ? "bg-amber-300"
-                      : "bg-live",
-                )}
-              />
-              {feedLabel}
-            </span>
-          </div>
-        </div>
-
-        {featuredMatch ? (
-          <div className="mt-5">
-            <FeaturedMatch
-              match={featuredMatch}
-              markets={marketByMatchId.get(featuredMatch.id)}
-              onOpen={handleOpenMatch}
-              onSelect={handleSelect}
-              selected={selectedFor(featuredMatch.id)}
-            />
-          </div>
-        ) : null}
-
-        {railMatches.length > 0 ? (
-          <LiveRail
-            matches={railMatches}
-            markets={marketByMatchId}
-            onOpen={handleOpenMatch}
-            onSelect={handleSelect}
-            selectedFor={selectedFor}
-          />
-        ) : null}
-
-        {connection === "disconnected" && allMatches.length > 0 ? (
-          <div className="mt-4 flex flex-wrap items-center gap-2 rounded-xl border border-amber-400/25 bg-amber-400/10 px-3 py-2 text-xs text-amber-200">
-            <span className="h-1.5 w-1.5 rounded-full bg-amber-300" />
-            <span>
-              {t("feed.staleBanner", {
-                time: formatUpdatedAt(
-                  data.feed?.lastSuccessAt ?? data.updatedAt,
-                  language,
-                ),
-              })}
-            </span>
-            <button
-              type="button"
-              onClick={retry}
-              className="ml-auto font-semibold text-amber-100 underline-offset-2 hover:underline"
-            >
-              {t("feed.retry")}
-            </button>
-          </div>
-        ) : null}
-
-        <LobbyTabs
-          view={view}
-          onChange={handleNavigate}
-          liveCount={liveMatches.length + ownMatches.length}
-          resultCount={resultCount}
-        />
-
-        <div className="mt-5 grid gap-6 lg:grid-cols-[200px_minmax(0,1fr)_330px]">
-          <div className="hidden lg:block">
-            <FilterRail
-              tournament={tournament}
-              onTournamentChange={setTournament}
-              tournaments={tournaments}
-              visibleCount={visibleForView}
-              totalCount={totalForView}
-              onClear={handleClear}
-            />
-          </div>
-
-          <section id="matches" className="min-w-0 scroll-mt-24">
-            <div className="mb-3 lg:hidden">
-              <label className="sr-only" htmlFor="tournament-filter">
-                {t("filters.tournament")}
-              </label>
-              <select
-                id="tournament-filter"
-                value={tournament}
-                onChange={(event) => setTournament(event.target.value)}
-                className="w-full rounded-lg border border-arena-line bg-arena-surface px-3 py-2 text-sm font-medium text-arena-ink outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/20"
-              >
-                <option value="all">{t("filters.allTournaments")}</option>
-                {tournaments.map((option) => (
-                  <option key={option.name} value={option.name}>
-                    {option.name} ({option.count})
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="mb-3 flex items-center justify-between gap-3 lg:hidden">
-              <p className="text-xs font-medium text-arena-muted">
-                {t("filters.showing", {
-                  count: formatNumber(visibleForView, language),
-                })}
-              </p>
-              <button
-                type="button"
-                onClick={handleClear}
-                disabled={tournament === "all"}
-                className="text-[11px] font-semibold text-accent transition hover:text-accent-bright disabled:cursor-not-allowed disabled:text-arena-muted/40"
-              >
-                {t("filters.clear")}
-              </button>
-            </div>
-
-            <div className="space-y-3">
-              {filteredMatches.map((match, index) => (
-                <MatchCard
-                  key={match.id}
-                  match={match}
-                  markets={marketByMatchId.get(match.id)}
-                  onOpen={handleOpenMatch}
-                  onSelect={handleSelect}
-                  selected={selectedFor(match.id)}
-                  index={index}
-                />
-              ))}
-
-              {filteredMatches.length === 0 && !featuredMatch ? (
-                <div className="rounded-3xl border border-dashed border-arena-line bg-arena-surface/50 px-6 py-12 text-center">
-                  <span className="mx-auto grid h-14 w-14 place-items-center rounded-2xl border border-arena-line bg-arena-raised text-arena-muted">
-                    <PulseMark className="h-6 w-6" />
-                  </span>
-                  <h2 className="mt-4 text-sm font-semibold text-arena-ink">
-                    {emptyState.title}
-                  </h2>
-                  <p className="mx-auto mt-1 max-w-sm text-xs leading-5 text-arena-muted">
-                    {emptyState.body}
+            <div className="mt-4">
+              {sections.length === 0 ? (
+                <div className="rounded-xl border border-dashed border-line bg-white px-6 py-12 text-center">
+                  <p className="text-sm font-semibold text-ink">
+                    {emptyCopy.title}
                   </p>
-                  <button
-                    type="button"
-                    onClick={emptyState.onAction}
-                    className="mt-5 inline-flex items-center gap-2 rounded-lg border border-arena-line px-4 py-2.5 text-sm font-semibold text-arena-ink transition hover:bg-white/5"
-                  >
-                    {emptyState.action}
-                    <ArrowRightIcon className="h-4 w-4" />
-                  </button>
+                  <p className="mt-1 text-xs text-muted">{emptyCopy.body}</p>
                 </div>
-              ) : null}
-
-              {filteredMatches.length === 0 && featuredMatch ? (
-                <p className="rounded-2xl border border-dashed border-arena-line bg-arena-surface/40 px-4 py-6 text-center text-xs text-arena-muted">
-                  {t("lobby.onlyFeatured")}
-                </p>
-              ) : null}
+              ) : (
+                <CompetitionRows
+                  sections={sections}
+                  selected={selected}
+                  onFixtureSelect={selectFixture}
+                  onFixtureOpen={(fixture, sport) =>
+                    setFixtureModal({ fixture, sport })
+                  }
+                  onDotaSelect={selectDota}
+                  onDotaOpen={(match) => setDotaModalId(match.id)}
+                />
+              )}
             </div>
-          </section>
 
-          <BetSlip
-            target={betTarget}
-            onClear={handleClearBet}
-            onLogin={() => openLogin("login")}
-            onExplore={handleExplore}
-          />
+            <Link
+              href="/sports"
+              className="mt-4 inline-flex items-center gap-1.5 text-[13px] font-semibold text-accent-strong transition hover:text-accent"
+            >
+              {t("home.viewAll")}
+              <ArrowRightIcon className="h-4 w-4" />
+            </Link>
+          </div>
+
+          <aside className="hidden xl:block">
+            <div className="sticky top-[136px]">
+              <QuickBetSlip
+                target={betTarget}
+                onClear={() => setBetSelection(null)}
+                onLogin={() => openLogin("login")}
+              />
+              <Link
+                href="/bets"
+                className="mt-3 inline-block text-[13px] font-medium text-ink underline underline-offset-4 transition hover:text-accent-strong"
+              >
+                {t("home.viewMyBets")}
+              </Link>
+            </div>
+          </aside>
         </div>
       </main>
 
-      <SiteFooter variant="dark" />
+      <SiteFooter />
 
-      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-arena-line bg-arena-surface/95 p-3 backdrop-blur lg:hidden">
-        <div className="mx-auto flex max-w-[1320px] items-center gap-3">
-          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-accent/15 text-accent">
-            <TicketIcon className="h-4 w-4" />
-          </span>
-          <div className="min-w-0 flex-1">
-            {betTarget ? (
-              <>
-                <p className="truncate text-xs font-semibold text-arena-ink">
-                  {betTarget.selectionLabel}
-                </p>
-                <p className="truncate text-[11px] text-arena-muted">
-                  {marketTitle(betTarget.market, t)} ·{" "}
-                  {formatOdds(betTarget.selection.odds)}
-                </p>
-              </>
-            ) : (
-              <>
-                <p className="text-xs font-semibold text-arena-ink">
-                  {t("bet.title")}
-                </p>
-                <p className="truncate text-[11px] text-arena-muted">
-                  {t("bet.emptyBody")}
-                </p>
-              </>
-            )}
-          </div>
-          {betTarget ? (
-            <button
-              type="button"
-              onClick={() => setBetPanelOpen(true)}
-              className="shrink-0 rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-navy transition hover:bg-accent-bright"
-            >
-              {t("bet.open")}
-            </button>
-          ) : user ? (
-            <Link
-              href="/wallet"
-              className="shrink-0 rounded-lg border border-arena-line px-4 py-2 text-sm font-semibold text-arena-ink transition hover:bg-white/5"
-            >
-              {t("header.wallet")}
-            </Link>
-          ) : (
-            <button
-              type="button"
-              onClick={() => openLogin("login")}
-              className="shrink-0 rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-navy transition hover:bg-accent-bright"
-            >
-              {t("bet.login")}
-            </button>
-          )}
-        </div>
-      </div>
+      <MobileBetBar target={betTarget} onOpen={() => setBetPanelOpen(true)} />
+
+      <Modal
+        open={betPanelOpen}
+        onClose={() => setBetPanelOpen(false)}
+        labelledBy="home-bet-title"
+        panelClassName="max-w-md"
+      >
+        <h2 id="home-bet-title" className="sr-only">
+          {t("home.betbar")}
+        </h2>
+        <QuickBetSlip
+          compact
+          target={betTarget}
+          onClear={() => {
+            setBetSelection(null);
+            setBetPanelOpen(false);
+          }}
+          onLogin={() => openLogin("login")}
+          onClose={() => setBetPanelOpen(false)}
+        />
+      </Modal>
+
+      {selectedDota ? (
+        <MatchDetailModal
+          match={selectedDota}
+          markets={marketByMatchId.get(selectedDota.id) ?? []}
+          initialTab="markets"
+          onClose={() => setDotaModalId(null)}
+          onSelect={selectDota}
+        />
+      ) : null}
+
+      {fixtureModal ? (
+        <PrematchMarketsModal
+          fixture={fixtureModal.fixture}
+          sport={fixtureModal.sport}
+          selected={selectedFixtureMarket}
+          onSelect={(fixture, market, selection) =>
+            selectFixture(fixture, market, selection, fixtureModal.sport)
+          }
+          onClose={() => setFixtureModal(null)}
+        />
+      ) : null}
 
       {loginOpen ? (
         <LoginModal
@@ -615,39 +721,7 @@ export function HomeLobby({ data: initialData, markets: initialMarkets }: HomeLo
           onClose={() => setLoginOpen(false)}
         />
       ) : null}
-
-      {selectedMatch ? (
-        <MatchDetailModal
-          match={selectedMatch}
-          markets={marketByMatchId.get(selectedMatch.id)}
-          onClose={() => setSelectedId(null)}
-          onSelect={handleSelect}
-        />
-      ) : null}
-
-      {betPanelOpen ? (
-        <Modal
-          open
-          onClose={() => setBetPanelOpen(false)}
-          labelledBy="mobile-bet-title"
-          panelClassName="sm:max-w-md"
-          variant="dark"
-        >
-          <div id="mobile-bet-title" className="sr-only">
-            {t("bet.title")}
-          </div>
-          <div className="p-3 sm:p-4">
-            <BetSlip
-              compact
-              target={betTarget}
-              onClear={handleClearBet}
-              onLogin={() => openLogin("login")}
-              onExplore={handleExplore}
-              onClose={() => setBetPanelOpen(false)}
-            />
-          </div>
-        </Modal>
-      ) : null}
     </div>
   );
 }
+

@@ -771,9 +771,10 @@ export function WalletPage() {
                 ) : null}
               </section>
 
-              <aside className="space-y-5">
+              <div className="lg:sticky lg:top-[88px] lg:max-h-[calc(100vh-104px)] lg:self-start lg:overflow-y-auto lg:overscroll-contain">
+                <aside className="space-y-5">
                 {step !== "success" && step !== "processing" ? (
-                  <section className="rounded-2xl border border-line bg-surface p-5 shadow-card lg:sticky lg:top-24">
+                  <section className="rounded-2xl border border-line bg-surface p-5 shadow-card">
                     <h2 className="text-sm font-semibold text-ink">
                       {t("wallet.summary")}
                     </h2>
@@ -863,7 +864,8 @@ export function WalletPage() {
                     </ul>
                   )}
                 </section>
-              </aside>
+                </aside>
+              </div>
             </div>
           </>
         )}

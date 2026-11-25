@@ -42,3 +42,6 @@ docs/cronograma-preview.png
 # SO
 Thumbs.db
 .DS_Store
+
+# Logs locales del agente
+tmp/

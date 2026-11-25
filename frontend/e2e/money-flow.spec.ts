@@ -87,13 +87,15 @@ test("depósito, apuesta, liquidación y saldo final", async ({ page, context })
 
   await page.goto("/");
   // La hidratación de React puede dejar por un instante el árbol SSR y el
-  // hidratado a la vez; se espera y se limita al contenido de `main`.
+  // hidratado a la vez; se espera y se limita a la card del partido GSI.
   await page.waitForTimeout(2_000);
-  const featured = page.locator('main [data-testid="featured-match"]').first();
-  await expect(featured).toBeVisible({ timeout: 30_000 });
+  const featured = page.locator(
+    `[data-testid="dota-match"][data-match-id="${matchId}"]`,
+  );
+  await expect(featured.first()).toBeVisible({ timeout: 30_000 });
 
   // Mercado principal: ganador del mapa. Radiant es la selección local.
-  await featured.getByRole("button", { name: /Radiant/i }).first().click();
+  await featured.first().getByRole("button", { name: /Radiant/i }).first().click();
 
   const slip = page.locator("#bet-slip");
   await expect(slip).toBeVisible();

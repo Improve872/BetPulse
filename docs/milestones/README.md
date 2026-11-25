@@ -17,3 +17,4 @@ El estado vigente está siempre en `docs/STATUS.md`.
 | M6d — Cuenta, rail en vivo y checkout simulado | `M6d-cuenta-checkout.md` | 2026-11-04 |
 | M7 — Hardening y empaquetado de demo | `M7-hardening-demo.md` | 2026-11-16 |
 | M8 — Deportes pre-partida: fútbol y NBA | `M8-deportes-prepartida.md` | 2026-11-23 |
+| M9 — Rediseño de la UX/UI pública | `M9-ux-publica.md` | 2026-11-25 |
