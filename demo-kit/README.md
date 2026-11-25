@@ -40,16 +40,28 @@ se creó, el cambio no se aplica hasta hacer `reset.ps1`.
 
 ## Flujo sugerido
 
-1. Lobby con partidas en vivo y cuotas.
+1. Portada: tres destacados fotográficos, filas por competición, buscador y
+   boleto de 300 px.
 2. Registro e inicio de sesión.
 3. Mi cuenta y cambio de contraseña.
 4. Saldo en el header (ojo para ocultarlo).
 5. Billetera: tarjeta, Yape/Plin o transferencia; comprobante con nuevo saldo.
-6. Detalle de partida, mercados, boleto y apuesta.
-7. Mis apuestas.
-8. Fútbol y NBA pre-partida: portada, `/sports` y `/nba`, cuotas y apuesta.
+6. Fútbol: `/sports` con rail de competiciones, banner del próximo partido,
+   cuotas y apuesta.
+7. NBA: `/nba` con ganador y total de puntos.
+8. Mis apuestas: pestañas Abiertas/Resueltas, filtros y panel de detalle.
 9. Admin: usuarios, acreditar saldo, mercados, streams.
 10. Anular una apuesta para ver el reembolso y la auditoría.
+
+## Dota 2 en esta demo
+
+El kit **no incluye el colector ni GSI**: Dota 2 aparece solo si OpenDota tiene
+partidas profesionales en vivo en ese momento (`/api/live`). Si no hay, la
+portada muestra únicamente fútbol y NBA y no es un error.
+
+Para una partida de Dota garantizada (tu propia partida o bots) usa el stack
+local con colector (`docs/demo.md`), que expone el backend en `8081` y permite
+inyectar GSI.
 
 ## Comandos
 
@@ -77,6 +89,8 @@ docker compose logs -f backend
 - **Puerto ocupado:** `.\start.ps1 -Port 3100`.
 - **No cargan imágenes:** verifica que `betpulse-demo-images.tar` esté junto al `docker-compose.yml`.
 - **Lobby vacío:** revisa internet; OpenDota es la fuente de partidas.
+- **Sin Dota en la portada:** no hay partidas en vivo en OpenDota en ese momento
+  (el kit no trae colector); fútbol y NBA siguen funcionando.
 - **`/sports` o `/nba` sin cuotas:** espera ~30 s tras arrancar; el backend consulta ESPN
   y publica los mercados en el primer ciclo. Si ESPN está caído, el calendario
   queda vacío o sin cuotas y Dota no se afecta.

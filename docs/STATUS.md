@@ -96,7 +96,7 @@ Cerrados: M0 (capturas GSI reales), M1 (identidad y wallet), M2a (catálogo Open
 
 ## Próxima acción
 
-1. Regenerar el kit de demo con el rediseño y probarlo en limpio.
+1. Visto bueno visual final y push del rediseño. El kit de demo ya está regenerado con la UI nueva.
 2. Opcional: subir `next` de `15.5.28` a `15.5.29` para cerrar las 2 vulnerabilidades de producción de `npm audit` (el audit lo propone como parche; no aplicado).
 3. Opcional: M3c si aparece calendario fiable; Steam `GetLiveLeagueGames` si hay API key; pulido admin (usuarios, exposición, salud).
 
@@ -148,6 +148,7 @@ Resultados 2026-11-25 (UX pública):
 - Backend: 140/140 tests verdes, incluido `BasketballStrengthServiceTest`; las cuotas NBA vuelven a variar por equipo tras derivar los partidos jugados del récord.
 - Frontend: `tsc --noEmit`, lint y build verdes; 18/18 tests de Vitest.
 - E2E: `money-flow` 1/1 en verde sobre frontend de producción y backend local.
+- Kit de demo regenerado (368 MB de imágenes) y probado en limpio en `3100`: portada con los tres destacados, filas, `/sports` con rail y banner, y backend con datos reales; los tres servicios `healthy`.
 
 Resultados 2026-11-24 (E2E de dinero):
 
